@@ -1,35 +1,48 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    internal class Outputs(int length) : Subject
+    internal class Outputs : Subject
     {
         #region  fields
-        private readonly bool[] values = new bool[Math.Max(length, 0)];
+        private readonly IOutputDevice[] devices;
         #endregion fields
 
         #region  properties
-        public int Length => values.Length;
+        public int Length => devices.Length;
+        public IOutputDevice this[int index]
+        {
+            get => devices[index];
+            set => devices[index] = value;
+        }
         #endregion properties
 
         #region constructors
+        public Outputs(int length)
+        {
+            devices = new IOutputDevice[Math.Max(length, 0)];
+            for (int i = 0; i < devices.Length; i++)
+            {
+                devices[i] = new DefaultOutputDevice();
+            }
+        }
         #endregion constructors
 
         #region  methods
         public void Reset()
         {
-            for (int i = 0; i < values.Length; i++)
+            for (int i = 0; i < devices.Length; i++)
             {
-                values[i] = false;
+                devices[i].Value = false;
             }
             Notify();
         }
         public void SetValue(int position, bool value)
         {
-            values[position] = value;
+            devices[position].Value = value;
             Notify();
         }
         public bool GetValue(int position)
         {
-            return values[position];
+            return devices[position].Value;
         }
         #endregion methods
     }
