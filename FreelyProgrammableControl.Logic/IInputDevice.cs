@@ -1,7 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public interface IInputDevice
+    public interface IInputDevice : IDevice, ISubject
     {
-        bool Value { get; }
     }
 }

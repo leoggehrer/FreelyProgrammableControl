@@ -7,8 +7,10 @@
         private readonly List<string> source = [];
 
         private readonly Stack<bool> stack = new();
+
         private readonly Memory<bool> memory = new(1024);
         private readonly Timers timers = new(264);
+        private readonly Counters counters = new(264);
         private readonly Inputs inputs = new(inputs);
         private readonly Outputs outputs = new(outputs);
         #endregion fields
@@ -16,6 +18,7 @@
         #region  properties
         public int MemoryLength => memory.Length;
         public int TimerLength => timers.Length;
+        public int CounterLength => counters.Length;
         public int InputLength => inputs.Length;
         public int OutputLength => outputs.Length;
         #endregion properties

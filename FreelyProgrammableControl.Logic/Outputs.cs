@@ -21,7 +21,7 @@
             devices = new IOutputDevice[Math.Max(length, 0)];
             for (int i = 0; i < devices.Length; i++)
             {
-                devices[i] = new DefaultOutputDevice();
+                devices[i] = new DefaultOutputDevice() { Label = $"Output {i, 2}" };
             }
         }
         #endregion constructors

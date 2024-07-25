@@ -1,7 +1,7 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public interface IOutputDevice
+    public interface IOutputDevice : IDevice
     {
-        bool Value { get; set; }
+        new bool Value { get;  set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    internal class Inputs
+    internal class Inputs : Subject
     {
         #region  fields
         private readonly IInputDevice[] devices;
@@ -21,7 +21,8 @@
             devices = new IInputDevice[Math.Max(length, 0)];
             for (int i = 0; i < devices.Length; i++)
             {
-                devices[i] = new Switch();
+                devices[i] = new Switch() { Label = $"Switch {i, 2}" };
+                devices[i].Attach((sender, e) => Notify());
             }
         }
         #endregion constructors

@@ -4,6 +4,7 @@
     {
         private bool _value;
 
+        public required string Label { get; set; }
         public bool Value 
         { 
             get => _value; 

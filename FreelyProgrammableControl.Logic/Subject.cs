@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public abstract class Subject
+    public abstract class Subject : ISubject
     {
         #region fields
         private readonly List<EventHandler> observers = [];
