@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    internal class Outputs : Subject
+    internal class Outputs : Subject, IOutputs
     {
         #region  fields
         private readonly IOutputDevice[] devices;
@@ -21,7 +21,7 @@
             devices = new IOutputDevice[Math.Max(length, 0)];
             for (int i = 0; i < devices.Length; i++)
             {
-                devices[i] = new DefaultOutputDevice() { Label = $"Output {i, 2}" };
+                devices[i] = new DefaultOutputDevice() { Label = $"Output {i,2}" };
             }
         }
         #endregion constructors

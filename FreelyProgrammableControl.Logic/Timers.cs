@@ -42,7 +42,7 @@
             timers[position] = new Timer(DateTime.Now, durationInMs);
         }
 
-        public bool GetTimer(int position)
+        public bool GetValue(int position)
         {
             return timers[position] == default ? false : timers[position].Value;
         }

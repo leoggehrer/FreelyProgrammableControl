@@ -8,6 +8,7 @@ namespace FreelyProgrammableControl.Logic
         public int LineNumber { get; }
         public bool IsComment { get; internal set; }
         public bool HasError { get; internal set; }
+        public string? ErrorMessage { get; internal set; }
         public string Source { get; }
         internal string Instruction { get; set; } = string.Empty;
         internal string Subject { get; set; } = string.Empty;
@@ -91,7 +92,7 @@ namespace FreelyProgrammableControl.Logic
                              && (items[1] == "O" || items[1] == "M"))
                     {
                         Instruction = "MOV";
-                        Subject = "V_OPD";  // V_OPD = Variable Operand
+                        Subject = items[1];  // O || M
                         Address = Convert.ToInt32(items[2]);
                         Value = 0;
                     }
@@ -105,53 +106,43 @@ namespace FreelyProgrammableControl.Logic
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);
                     }
-
-
-
-
-
-
-                    // e.g.: SET T 10 1500 => timers.SetValue(10, 1500)
-                    // e.g.: SET C 10 100 => counters.SetValue(10, 100)
-                    else if (items.Length == 4 && (items[0] == "C" || items[0] == "CMP")
-                             && (items[1] == "I" || items[1] == "O" || items[1] == "M" || items[1] == "T"))
+                    // e.g.: INC C 10 1 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
+                    else if (items.Length == 4 && (items[0] == "I" || items[0] == "INC")
+                             && (items[1] == "C"))
                     {
-                        Instruction = "SET";
+                        Instruction = "INC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
-                        Value = Convert.ToInt32(items[3]);
+                        Value = items[1] == "1" ? 1 : 0;
                     }
-
-                    else if (items.Length == 3 && items[0] == "G" 
-                             && (items[1] == "I" || items[1] == "O" || items[1] == "M" || items[1] == "T" || items[1] == "C"))
+                    // e.g.: DEC C 10 0 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
+                    else if (items.Length == 4 && (items[0] == "D" || items[0] == "DEC")
+                             && (items[1] == "C"))
                     {
-                        Instruction = "GET";
+                        Instruction = "DEC";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = items[1] == "1" ? 1 : 0;
+                    }
+                    // e.g.: CMP C 10 17 => stack.pop(17 == counters.GetValue(10))
+                    else if (items.Length == 4 && (items[0] == "C" || items[0] == "CMP")
+                             && (items[1] == "C"))
+                    {
+                        Instruction = "CMP";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
                         Value = 0;
                     }
-                    else if (items.Length == 4 && items[0] == "S"
-                             && (items[1] == "O" || items[1] == "M" || items[1] == "T" || items[1] == "C"))
+                    else
                     {
-                        Instruction = "SET";
-                        Subject = items[1];
-                        Address = Convert.ToInt32(items[2]);
-                        Value = items[3] == "T" ? 1 : 0;
+                        HasError = true;
+                        ErrorMessage = "Unknown instruction";
                     }
-                    else if (items.Length == 4 && items[0] == "S"
-                             && (items[1] == "O" || items[1] == "M" || items[1] == "T" || items[1] == "C"))
-                    {
-                        Instruction = "SET";
-                        Subject = items[1];
-                        Address = Convert.ToInt32(items[2]);
-                        Value = items[3] == "T" ? 1 : 0;
-                    }
-
                 }
                 catch (Exception ex)
                 {
-
-                    throw;
+                    HasError = true;
+                    ErrorMessage = ex.Message;
                 }
             }
         }

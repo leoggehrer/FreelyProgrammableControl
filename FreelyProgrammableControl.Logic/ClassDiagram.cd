@@ -2,34 +2,20 @@
 <ClassDiagram MajorVersion="1" MinorVersion="1">
   <Class Name="FreelyProgrammableControl.Logic.ExecutionUnit">
     <Position X="5.5" Y="4.5" Width="1.5" />
-    <AssociationLine Name="memory" Type="FreelyProgrammableControl.Logic.Memory&lt;T&gt;" FixedFromPoint="true" FixedToPoint="true">
-      <Path>
-        <Point X="5.5" Y="5.534" />
-        <Point X="3.281" Y="5.534" />
-        <Point X="3.281" Y="3.021" />
-      </Path>
-    </AssociationLine>
-    <AssociationLine Name="timers" Type="FreelyProgrammableControl.Logic.Timers" FixedFromPoint="true" FixedToPoint="true">
-      <Path>
-        <Point X="7" Y="5.534" />
-        <Point X="9.219" Y="5.534" />
-        <Point X="9.219" Y="3.151" />
-      </Path>
-    </AssociationLine>
-    <AssociationLine Name="inputs" Type="FreelyProgrammableControl.Logic.Inputs" FixedFromPoint="true">
-      <Path>
-        <Point X="7" Y="5.741" />
-        <Point X="10.25" Y="5.741" />
-      </Path>
-    </AssociationLine>
-    <AssociationLine Name="outputs" Type="FreelyProgrammableControl.Logic.Outputs" FixedFromPoint="true">
-      <Path>
-        <Point X="5.5" Y="5.741" />
-        <Point X="2" Y="5.741" />
-      </Path>
+    <NestedTypes>
+      <Class Name="FreelyProgrammableControl.Logic.ExecutionUnit.ExecutionLine" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>ExecutionUnit.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <AssociationLine Name="counters" Type="FreelyProgrammableControl.Logic.Counters">
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="1.118" Y="0.102" />
+      </MemberNameLabel>
     </AssociationLine>
     <TypeIdentifier>
-      <HashCode>IAQIAAAAAiAAAAYACAAACAAAAAgAAJAAIAAAACYIAAI=</HashCode>
+      <HashCode>IAQgAAABAiQAAAQACAAQSAAAQAgAAJAAIAAABC4IAAI=</HashCode>
       <FileName>ExecutionUnit.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -86,12 +72,12 @@
       </Class>
     </NestedTypes>
     <TypeIdentifier>
-      <HashCode>AAQAAAAAAAAABAAAAAAAAABAAAAAAAAAAAAAAEAABAA=</HashCode>
+      <HashCode>AAQAAAAAIAAABAAAAAAAAABAAAAAAAAAAAAAAAAABAA=</HashCode>
       <FileName>Timers.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="FreelyProgrammableControl.Logic.Counters">
-    <Position X="5.5" Y="9.25" Width="1.5" />
+    <Position X="2" Y="8" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAIAAABgAAAAAAAABAAAAAACAAAAAAAAAAAAA=</HashCode>
       <FileName>Counters.cs</FileName>

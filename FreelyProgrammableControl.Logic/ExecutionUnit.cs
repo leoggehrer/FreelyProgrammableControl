@@ -1,28 +1,10 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public class ExecutionUnit(int inputs, int outputs)
+    public class ExecutionUnit(int inputs, int outputs) : Subject
     {
-        #region embedded types
-        private class ExecutionLine
-        {
-            public int LineNumber { get; }
-            public string Source { get; }
-            public string Instruction { get; }
-            public string[] Arguments { get; }
-            public ExecutionLine(string source, int lineNumber, string instruction, string[] arguments)
-            {
-                Source = source;
-                LineNumber = lineNumber;
-                Instruction = instruction;
-                Arguments = arguments;
-            }
-        }
-        #endregion embedded types
-
         #region  fields
         private volatile bool running = false;
-        private readonly List<string> source = [];
-        private readonly List<string> executionSource = [];
+        private readonly List<ParsedLine> parsedLines = [];
 
         private readonly Stack<bool> stack = new();
 
@@ -34,13 +16,20 @@
         #endregion fields
 
         #region  properties
+        public bool HasParseError { get; private set; }
+        public string? ParseErrorMessage { get; private set; }
+        public bool HasExecutionError { get; private set; }
+        public string? ExecutionErrorMessage { get; private set; }
         public bool IsRunning => running;
         public int MemoryLength => memory.Length;
         public int TimerLength => timers.Length;
         public int CounterLength => counters.Length;
         public int InputLength => inputs.Length;
         public int OutputLength => outputs.Length;
-        public string[] Source => [.. source];
+        public string[] Source => parsedLines.Select(e => e.Source).ToArray();
+
+        public IInputs Inputs => inputs;
+        public IOutputs Outputs => outputs;
         #endregion properties
 
         #region constructors
@@ -51,23 +40,37 @@
         #endregion constructors
 
         #region  methods
-        public void SetSource(IEnumerable<string> source)
+        public ParsedLine[] Parse(IEnumerable<string> source)
         {
-            if (running) throw new Exception("Cannot set source while running");
-
-            this.source.Clear();
-            this.source.AddRange(source);
+            var result = new List<ParsedLine>();
+            var lineNumber = 0;
 
             foreach (var item in source)
             {
-
+                result.Add(new ParsedLine(lineNumber++, item));
             }
+            return [..result];
+        }
+        public void LoadSource(IEnumerable<string> source)
+        {
+            if (running) throw new Exception("Cannot set source while running");
+
+            HasParseError = false;
+            ParseErrorMessage = null;
+            parsedLines.Clear();
+            parsedLines.AddRange(Parse(source));
+
+            HasParseError = parsedLines.Any(e => e.HasError);
+            ParseErrorMessage = parsedLines.FirstOrDefault(e => e.HasError)?.ErrorMessage;
         }
         public void Start()
         {
-            if (running == false)
+            if (running == false && HasParseError == false && parsedLines.Any(e => e.IsComment == false))
             {
                 var thread = new Thread(Run) { IsBackground = true };
+
+                HasExecutionError = false;
+                ExecutionErrorMessage = null;
 
                 memory.Reset();
                 timers.Reset();
@@ -79,21 +82,128 @@
         public void Stop()
         {
             running = false;
+            Notify();
         }
         private void Run()
         {
             running = true;
             while (running)
             {
-                Execute(source);
+                Notify();
+                foreach (var parsedLine in parsedLines)
+                {
+                    Execute(parsedLine);
+                }
+
                 if (running)
                 {
                     Thread.Sleep(200);
                 }
             }
         }
-        private void Execute(List<string> source)
+        private void Execute(ParsedLine parsedLine)
         {
+            bool opd_A, opd_B;
+            try
+            {
+                if (parsedLine.IsComment == false)
+                {
+                    switch (parsedLine.Instruction)
+                    {
+                        case "GET":
+                            switch (parsedLine.Subject)
+                            {
+                                case "C_OPD":
+                                    stack.Push(parsedLine.Value == 1);
+                                    break;
+                                case "I":
+                                    stack.Push(inputs.GetValue(parsedLine.Address));
+                                    break;
+                                case "O":
+                                    stack.Push(outputs.GetValue(parsedLine.Address));
+                                    break;
+                                case "M":
+                                    stack.Push(memory.GetValue(parsedLine.Address));
+                                    break;
+                                case "T":
+                                    stack.Push(timers.GetValue(parsedLine.Address));
+                                    break;
+                            }
+                            break;
+                        case "NOT":
+                            stack.Push(!stack.Pop());
+                            break;
+                        case "AND":
+                            opd_A = stack.Pop();
+                            opd_B = stack.Pop();
+
+                            stack.Push(opd_A && opd_B);
+                            break;
+                        case "OR":
+                            opd_A = stack.Pop();
+                            opd_B = stack.Pop();
+
+                            stack.Push(opd_A || opd_B);
+                            break;
+                        case "XOR":
+                            opd_A = stack.Pop();
+                            opd_B = stack.Pop();
+
+                            stack.Push(opd_A ^ opd_B);
+                            break;
+                        case "MOV":
+                            switch (parsedLine.Subject)
+                            {
+                                case "O":
+                                    outputs.SetValue(parsedLine.Address, stack.Pop());
+                                    break;
+                                case "M":
+                                    memory.SetValue(parsedLine.Address, stack.Pop());
+                                    break;
+                            }
+                            break;
+                        case "SET":
+                            switch (parsedLine.Subject)
+                            {
+                                case "T":
+                                    timers.SetTimer(parsedLine.Address, parsedLine.Value);
+                                    break;
+                                case "C":
+                                    counters.SetValue(parsedLine.Address,parsedLine.Value);
+                                    break;
+                            }
+                            break;
+                        case "INC":
+                            opd_A = stack.Pop();
+                            if (opd_A)
+                            {
+                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) + 1);
+                            }
+                            break;
+                        case "DEC":
+                            opd_A = stack.Pop();
+                            if (opd_A)
+                            {
+                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) - 1);
+                            }
+                            break;
+                        case "CMP":
+                            var value = counters.GetValue(parsedLine.Address);
+
+                            stack.Push(value == parsedLine.Value);
+                            break;
+                        default:
+                            throw new Exception($"Unknown instruction: {parsedLine.Instruction}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                running = false;
+                HasExecutionError = true;
+                ExecutionErrorMessage = ex.Message;
+                throw;
+            }
         }
         #endregion methods
     }
