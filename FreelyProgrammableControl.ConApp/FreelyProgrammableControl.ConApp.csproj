@@ -15,4 +15,13 @@
     <ProjectReference Include="..\FreelyProgrammableControl.Logic\FreelyProgrammableControl.Logic.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="And.fpc">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Test.fpc">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

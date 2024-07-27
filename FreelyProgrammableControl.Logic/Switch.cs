@@ -20,6 +20,10 @@
             _value = !_value;
             Notify();
         }
+        public override string ToString()
+        {
+            return $"Switch [{Value}]";
+        }
         #endregion methods
     }
 }

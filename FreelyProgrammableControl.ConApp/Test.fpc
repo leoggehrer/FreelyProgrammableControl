@@ -1,0 +1,15 @@
+# Test AND
+G I 0
+G I 1
+AND
+M O 0
+# Test OR
+G I 2
+G I 3
+OR
+M O 1
+# Test XOR
+G I 4
+G I 5
+XOR
+M O 2

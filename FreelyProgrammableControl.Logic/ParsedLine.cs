@@ -27,7 +27,7 @@ namespace FreelyProgrammableControl.Logic
         private void AnalyzeInstruction()
         {
             IsComment = Instruction.StartsWith('#');
-            if (IsComment)
+            if (IsComment == false)
             {
                 var items = Instruction.Split(' ');
 
@@ -52,6 +52,14 @@ namespace FreelyProgrammableControl.Logic
                         Instruction = "GET";
                         Subject = items[1];  // I || O || M || T
                         Address = Convert.ToInt32(items[2]);
+                        Value = 0;
+                    }
+                    // e.g.: DUP => stack.push(stack.top())
+                    else if (items.Length == 1 && (items[0] == "D" || items[0] == "DUP"))
+                    {
+                        Instruction = "DUP";
+                        Subject = "OP";  // OP = Operator
+                        Address = 0;
                         Value = 0;
                     }
                     // e.g.: NOT => stack.push(!stack.pop())

@@ -10,5 +10,10 @@
             get => _value; 
             set => _value = value; 
         }
+        public override string ToString()
+        {
+            return $"Output [{Value}]";
+        }
+
     }
 }

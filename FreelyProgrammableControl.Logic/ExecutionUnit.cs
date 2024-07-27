@@ -76,6 +76,7 @@
                 timers.Reset();
                 outputs.Reset();
                 
+                running = true;
                 thread.Start();
             }
         }
@@ -129,6 +130,9 @@
                                     stack.Push(timers.GetValue(parsedLine.Address));
                                     break;
                             }
+                            break;
+                        case "DUP":
+                            stack.Push(stack.Top());
                             break;
                         case "NOT":
                             stack.Push(!stack.Pop());
