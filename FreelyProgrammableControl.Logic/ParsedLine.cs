@@ -18,12 +18,32 @@ namespace FreelyProgrammableControl.Logic
         {
             LineNumber = lineNumber;
             Source = source;
-            Instruction = source.Trim()
-                                .RemoveLeftAndRight(' ')
-                                .ToUpper();
+            Instruction = ToInstruction(source);
             AnalyzeInstruction();
         }
+        private string ToInstruction(string source)
+        {
+            var result = new List<string>();
+            var items = source.RemoveLeftAndRight(' ')
+                               .ToUpper()
+                               .Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (i == 1 
+                    && (items[i].StartsWith('I') || items[i].StartsWith('O') || items[i].StartsWith('M') || items[i].StartsWith('T') || items[i].StartsWith('C'))
+                    && items[i].ContainsDigit())
+                {
+                    result.Add(items[i].Substring(0, 1));
+                    result.Add(items[i].ToInt().ToString());
+                }
+                else
+                {
+                    result.Add(items[i]);
+                }
+            }
+            return string.Join(' ', result);
+        }
         private void AnalyzeInstruction()
         {
             IsComment = Instruction.StartsWith('#');
@@ -60,7 +80,15 @@ namespace FreelyProgrammableControl.Logic
                         Instruction = "DUP";
                         Subject = "OP";  // OP = Operator
                         Address = 0;
-                        Value = 0;
+                        Value = 2;
+                    }
+                    // e.g.: DUP => stack.push(stack.top())
+                    else if (items.Length == 2 && (items[0] == "D" || items[0] == "DUP"))
+                    {
+                        Instruction = "DUP";
+                        Subject = "OP";  // OP = Operator
+                        Address = 0;
+                        Value = Convert.ToInt32(items[1]);
                     }
                     // e.g.: NOT => stack.push(!stack.pop())
                     else if (items.Length == 1 && (items[0] == "N" || items[0] == "NOT"))
@@ -104,12 +132,32 @@ namespace FreelyProgrammableControl.Logic
                         Address = Convert.ToInt32(items[2]);
                         Value = 0;
                     }
+                    // e.g.: CMOV O 10 = stack.pop() == true => outputs.SetValue(10, stack.pop())
+                    // e.g.: CMOV M 10 = stack.pop() == true => memory.SetValue(10, stack.pop())
+                    else if (items.Length == 4 && (items[0] == "CM" || items[0] == "CMOV")
+                             && (items[1] == "O" || items[1] == "M"))
+                    {
+                        Instruction = "CMOV";
+                        Subject = items[1];  // O || M
+                        Address = Convert.ToInt32(items[2]);
+                        Value = items[3] == "1" ? 1 : 0;
+                    }
                     // e.g.: SET T 10 1500 => timers.SetValue(10, 1500)
                     // e.g.: SET C 10 100 => counters.SetValue(10, 100)
                     else if (items.Length == 4 && (items[0] == "S" || items[0] == "SET")
                              && (items[1] == "T" || items[1] == "C"))
                     {
                         Instruction = "SET";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = Convert.ToInt32(items[3]);
+                    }
+                    // e.g.: CSET T 10 1500 = stack.pop() == true => timers.SetValue(10, 1500)
+                    // e.g.: CSET C 10 100 = stack.pop() == true => counters.SetValue(10, 100)
+                    else if (items.Length == 4 && (items[0] == "CS" || items[0] == "CSET")
+                             && (items[1] == "T" || items[1] == "C"))
+                    {
+                        Instruction = "CSET";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);

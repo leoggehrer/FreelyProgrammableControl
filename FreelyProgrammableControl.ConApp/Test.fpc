@@ -2,14 +2,33 @@
 G I 0
 G I 1
 AND
-M O 0
+M O0
 # Test OR
-G I 2
+G I2
 G I 3
 OR
 M O 1
 # Test XOR
-G I 4
+G I4
 G I 5
 XOR
 M O 2
+# Test Blinker 1 sec.
+G M 0
+NOT
+G M 1
+NOT
+AND
+DUP 4
+CSET T 0 1000
+CMOV M 0 1
+CSET T 1 2000
+CMOV M 1 1
+G T 0
+NOT
+CMOV M0 0
+G T 1
+NOT
+CMOV M1 0
+G M 0
+MOV O 3

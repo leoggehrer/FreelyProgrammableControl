@@ -1,11 +1,36 @@
 ﻿using CommonTool;
+using FreelyProgrammableControl.Logic;
 using System.Diagnostics;
 
 namespace FreelyProgrammableControl.ConApp
 {
     internal class FPCApp : ConsoleApplication
     {
-        Logic.ExecutionUnit executionUnit = new Logic.ExecutionUnit(16, 16);
+        Logic.ExecutionUnit executionUnit = new ExecutionUnit(16, 16);
+
+        public FPCApp()
+        {
+            executionUnit.Outputs.Attach((s, e) =>
+            {
+                var cursor = GetCursorPosition();
+                var saveColor = ForegroundColor;
+
+                ForegroundColor = ConsoleColor.Yellow;
+                SetCursorPosition(0, cursor.Top + 2);
+                for (int i = 0; i < executionUnit.Outputs.Length; i++)
+                {
+                    Print($"{i, 6}");
+                }
+                PrintLine();
+                for (int i = 0; i < executionUnit.Outputs.Length; i++)
+                {
+                    Print($"{executionUnit.Outputs[i].Value, 6}");
+                }
+                SetCursorPosition(cursor.Left, cursor.Top);
+                ForegroundColor = saveColor;
+            });
+        }
+
         protected override void PrintHeader()
         {
             string solutionNameFromPath = TemplatePath.GetSolutionNameFromPath(Application.GetCurrentSolutionPath());
@@ -20,14 +45,14 @@ namespace FreelyProgrammableControl.ConApp
                 CreateMenuSeparator(),
                 new()
                 {
-                    Key = $"{++mnuIdx}",
+                    Key = $"{mnuIdx}",
                     Text = ToLabelText("Start", "Start the execution unit."),
                     Action = (self) => StartExecutionUnit(),
-                    IsDisplayed = !executionUnit.IsRunning,
+                    IsDisplayed = executionUnit.IsRunning == false,
                 },
                 new()
                 {
-                    Key = $"{++mnuIdx}",
+                    Key = $"{mnuIdx}",
                     Text = ToLabelText("Stop", "Stop the execution unit."),
                     Action = (self) => StopExecutionUnit(),
                     IsDisplayed = executionUnit.IsRunning,
@@ -35,12 +60,12 @@ namespace FreelyProgrammableControl.ConApp
                 CreateMenuSeparator(),
             };
 
-            for (int i = 0;i < executionUnit.Outputs.Length;i++)
+            for (int i = 0;i < executionUnit.Inputs.Length; i++)
             {
                 menuItems.Add(new()
                 {
                     Key = $"{++mnuIdx}",
-                    Text = ToLabelText($"{executionUnit.Outputs[i]}", $"{executionUnit.Inputs[i]}"),
+                    Text = ToLabelText($"{executionUnit.Inputs[i].Label}", $"{executionUnit.Inputs[i].Value}"),
                     Action = (self) =>
                     {
                         var idx = Convert.ToInt32(self.Params["idx"]);
@@ -54,8 +79,7 @@ namespace FreelyProgrammableControl.ConApp
                     Params = new() { { "idx", i } },
                 });
             }
-
-            return [..menuItems];
+            return [.. menuItems.Union(CreateExitMenuItems())];
         }
 
         private void StartExecutionUnit()

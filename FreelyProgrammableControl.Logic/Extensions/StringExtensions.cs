@@ -33,6 +33,38 @@ namespace FreelyProgrammableControl.Logic.Extensions
             }
             return result.ToString();
         }
+        ///<summary>
+        /// Converts a string to an integer.
+        ///</summary>
+        ///<param name="text">The string to be converted.</param>
+        ///<returns>An integer representation of the input string.</returns>
+        public static int ToInt(this string text)
+        {
+            int result = 0;
+
+            foreach (var item in text)
+            {
+                if (char.IsDigit(item))
+                {
+                    result *= 10;
+                    result = result + item - '0';
+                }
+            }
+            return result;
+        }
+
+        public static bool ContainsDigit(this string text)
+        {
+            var result = false;
+            var idx = 0;
+
+            while (idx < text.Length && result == false)
+            {
+                result = char.IsDigit(text[idx++]);
+            }
+
+            return result;
+        }
 
     }
 }

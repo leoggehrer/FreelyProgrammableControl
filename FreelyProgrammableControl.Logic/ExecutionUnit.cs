@@ -45,7 +45,7 @@
             var result = new List<ParsedLine>();
             var lineNumber = 0;
 
-            foreach (var item in source)
+            foreach (var item in source.Where(l => string.IsNullOrEmpty(l) ==false))
             {
                 result.Add(new ParsedLine(lineNumber++, item));
             }
@@ -98,7 +98,7 @@
 
                 if (running)
                 {
-                    Thread.Sleep(200);
+                    Thread.Sleep(100);
                 }
             }
         }
@@ -132,7 +132,10 @@
                             }
                             break;
                         case "DUP":
-                            stack.Push(stack.Top());
+                            for (int i = 1; i < parsedLine.Value; i++)
+                            {
+                                stack.Push(stack.Top());
+                            }
                             break;
                         case "NOT":
                             stack.Push(!stack.Pop());
@@ -166,6 +169,21 @@
                                     break;
                             }
                             break;
+                        case "CMOV":
+                            opd_A = stack.Pop();
+                            if (opd_A)
+                            {
+                                switch (parsedLine.Subject)
+                                {
+                                    case "O":
+                                        outputs.SetValue(parsedLine.Address, parsedLine.Value >0 ? true : false);
+                                        break;
+                                    case "M":
+                                        memory.SetValue(parsedLine.Address, parsedLine.Value > 0 ? true : false);
+                                        break;
+                                }
+                            }
+                            break;
                         case "SET":
                             switch (parsedLine.Subject)
                             {
@@ -175,6 +193,21 @@
                                 case "C":
                                     counters.SetValue(parsedLine.Address,parsedLine.Value);
                                     break;
+                            }
+                            break;
+                        case "CSET":
+                            opd_A = stack.Pop();
+                            if (opd_A)
+                            {
+                                switch (parsedLine.Subject)
+                                {
+                                    case "T":
+                                        timers.SetTimer(parsedLine.Address, parsedLine.Value);
+                                        break;
+                                    case "C":
+                                        counters.SetValue(parsedLine.Address, parsedLine.Value);
+                                        break;
+                                }
                             }
                             break;
                         case "INC":

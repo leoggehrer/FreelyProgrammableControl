@@ -11,14 +11,16 @@
             {
                 get
                 {
-                    return (DateTime.Now - DateTime).TotalMilliseconds <= DurationInMs;
+                    var totalInMs = (DateTime.Now - DateTime).TotalMilliseconds;
+                    
+                    return totalInMs <= DurationInMs;
                 }
             }
         }
         #endregion  nested class
 
         #region fields
-        private readonly Timer[] timers = new Timer[Math.Max(length, 0)];
+        private readonly Timer?[] timers = new Timer[Math.Max(length, 0)];
         #endregion fields
 
         #region  properties
@@ -33,7 +35,7 @@
         {
             for (int i = 0; i < timers.Length; i++)
             {
-                timers[i] = null!;
+                timers[i] = null;
             }
         }
 
@@ -44,7 +46,7 @@
 
         public bool GetValue(int position)
         {
-            return timers[position] == default ? false : timers[position].Value;
+            return timers[position] == default ? false : timers[position]!.Value;
         }
         #endregion methods
     }

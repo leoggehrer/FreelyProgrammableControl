@@ -37,8 +37,11 @@
         }
         public void SetValue(int position, bool value)
         {
+            var save = devices[position].Value;
+
             devices[position].Value = value;
-            Notify();
+            if (save != value)
+                Notify();
         }
         public bool GetValue(int position)
         {

@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public interface IOutputs
+    public interface IOutputs : ISubject
     {
         IOutputDevice this[int index] { get; set; }
         int Length { get; }
