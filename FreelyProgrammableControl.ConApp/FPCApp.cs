@@ -1,36 +1,56 @@
 ﻿using CommonTool;
 using FreelyProgrammableControl.Logic;
-using System.Diagnostics;
 
 namespace FreelyProgrammableControl.ConApp
 {
     internal class FPCApp : ConsoleApplication
     {
-        Logic.ExecutionUnit executionUnit = new ExecutionUnit(16, 16);
-
+        private ExecutionUnit executionUnit = new ExecutionUnit(16, 16);
+        private int outputsHashCode = -1;
+        private int countersHashCode = 0;
         public FPCApp()
         {
-            executionUnit.Outputs.Attach((s, e) =>
+            executionUnit.Attach((s, e) =>
             {
-                var cursor = GetCursorPosition();
-                var saveColor = ForegroundColor;
+                Task.Run(() =>
+                {
+                    if (outputsHashCode != executionUnit.Outputs.GetHashCode()
+                        || countersHashCode != executionUnit.Counters.GetHashCode())
+                    {
+                        outputsHashCode = executionUnit.Outputs.GetHashCode();
+                        countersHashCode = executionUnit.Counters.GetHashCode();
+                        try
+                        {
+                            var cursor = GetCursorPosition();
+                            var saveColor = ForegroundColor;
 
-                ForegroundColor = ConsoleColor.Yellow;
-                SetCursorPosition(0, cursor.Top + 2);
-                for (int i = 0; i < executionUnit.Outputs.Length; i++)
-                {
-                    Print($"{i, 6}");
-                }
-                PrintLine();
-                for (int i = 0; i < executionUnit.Outputs.Length; i++)
-                {
-                    Print($"{executionUnit.Outputs[i].Value, 6}");
-                }
-                SetCursorPosition(cursor.Left, cursor.Top);
-                ForegroundColor = saveColor;
+                            ForegroundColor = ConsoleColor.Yellow;
+                            SetCursorPosition(0, cursor.Top + 2);
+                            for (int i = 0; i < executionUnit.Outputs.Length; i++)
+                            {
+                                Print($"{i,6}");
+                            }
+                            PrintLine();
+                            for (int i = 0; i < executionUnit.Outputs.Length; i++)
+                            {
+                                Print($"{executionUnit.Outputs[i].Value,6}");
+                            }
+                            PrintLine();
+                            for (int i = 0; i < Math.Min(executionUnit.Outputs.Length, executionUnit.Counters.Length); i++)
+                            {
+                                Print($"{executionUnit.Counters.GetValue(i),6}");
+                            }
+                            SetCursorPosition(cursor.Left, cursor.Top);
+                            ForegroundColor = saveColor;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error in Attach: {ex.Message}");
+                        }
+                    }
+                });
             });
         }
-
         protected override void PrintHeader()
         {
             string solutionNameFromPath = TemplatePath.GetSolutionNameFromPath(Application.GetCurrentSolutionPath());
@@ -60,7 +80,7 @@ namespace FreelyProgrammableControl.ConApp
                 CreateMenuSeparator(),
             };
 
-            for (int i = 0;i < executionUnit.Inputs.Length; i++)
+            for (int i = 0; i < executionUnit.Inputs.Length; i++)
             {
                 menuItems.Add(new()
                 {
@@ -92,6 +112,7 @@ namespace FreelyProgrammableControl.ConApp
         private void StopExecutionUnit()
         {
             executionUnit.Stop();
+            Thread.Sleep(500);
         }
     }
 }

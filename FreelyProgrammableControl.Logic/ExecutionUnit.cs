@@ -23,13 +23,11 @@
         public bool IsRunning => running;
         public int MemoryLength => memory.Length;
         public int TimerLength => timers.Length;
-        public int CounterLength => counters.Length;
-        public int InputLength => inputs.Length;
-        public int OutputLength => outputs.Length;
         public string[] Source => parsedLines.Select(e => e.Source).ToArray();
 
         public IInputs Inputs => inputs;
         public IOutputs Outputs => outputs;
+        public ICounters Counters => counters;
         #endregion properties
 
         #region constructors
@@ -75,6 +73,7 @@
                 memory.Reset();
                 timers.Reset();
                 outputs.Reset();
+                counters.Reset();
                 
                 running = true;
                 thread.Start();
@@ -90,11 +89,11 @@
             running = true;
             while (running)
             {
-                Notify();
                 foreach (var parsedLine in parsedLines)
                 {
                     Execute(parsedLine);
                 }
+                Notify();
 
                 if (running)
                 {
@@ -104,7 +103,9 @@
         }
         private void Execute(ParsedLine parsedLine)
         {
+            int value;
             bool opd_A, opd_B;
+
             try
             {
                 if (parsedLine.IsComment == false)
@@ -225,9 +226,19 @@
                             }
                             break;
                         case "CMP":
-                            var value = counters.GetValue(parsedLine.Address);
+                            value = counters.GetValue(parsedLine.Address);
 
-                            stack.Push(value == parsedLine.Value);
+                            stack.Push(parsedLine.Value == value);
+                            break;
+                        case "GT":
+                            value = counters.GetValue(parsedLine.Address);
+
+                            stack.Push(value > parsedLine.Value);
+                            break;
+                        case "LE":
+                            value = counters.GetValue(parsedLine.Address);
+
+                            stack.Push(value < parsedLine.Value);
                             break;
                         default:
                             throw new Exception($"Unknown instruction: {parsedLine.Instruction}");

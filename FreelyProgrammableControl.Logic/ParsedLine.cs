@@ -163,13 +163,13 @@ namespace FreelyProgrammableControl.Logic
                         Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: INC C 10 1 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
-                    else if (items.Length == 4 && (items[0] == "I" || items[0] == "INC")
+                    else if (items.Length == 3 && (items[0] == "I" || items[0] == "INC")
                              && (items[1] == "C"))
                     {
                         Instruction = "INC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
-                        Value = items[1] == "1" ? 1 : 0;
+                        Value = 1;
                     }
                     // e.g.: DEC C 10 0 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
                     else if (items.Length == 4 && (items[0] == "D" || items[0] == "DEC")
@@ -180,14 +180,32 @@ namespace FreelyProgrammableControl.Logic
                         Address = Convert.ToInt32(items[2]);
                         Value = items[1] == "1" ? 1 : 0;
                     }
-                    // e.g.: CMP C 10 17 => stack.pop(17 == counters.GetValue(10))
+                    // e.g.: CMP C 10 17 => stack.pop(counters.GetValue(10) == 17)
                     else if (items.Length == 4 && (items[0] == "C" || items[0] == "CMP")
                              && (items[1] == "C"))
                     {
                         Instruction = "CMP";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
-                        Value = 0;
+                        Value = Convert.ToInt32(items[3]);
+                    }
+                    // e.g.: GT C 10 17 => stack.pop(counters.GetValue(10) > 17)
+                    else if (items.Length == 4 && (items[0] == "GT")
+                             && (items[1] == "C"))
+                    {
+                        Instruction = "GT";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = Convert.ToInt32(items[3]);
+                    }
+                    // e.g.: LE C 10 17 => stack.pop(counters.GetValue(10) < 17)
+                    else if (items.Length == 4 && (items[0] == "LE")
+                             && (items[1] == "C"))
+                    {
+                        Instruction = "LE";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = Convert.ToInt32(items[3]);
                     }
                     else
                     {

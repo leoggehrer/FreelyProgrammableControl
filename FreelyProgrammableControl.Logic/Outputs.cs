@@ -47,6 +47,17 @@
         {
             return devices[position].Value;
         }
+        public override int GetHashCode()
+        {
+            int result = 0;
+
+            for (int i = 0; i < devices.Length; i++)
+            {
+                result *= 2;
+                result += devices[i].Value ? 1 : 0;
+            }
+            return result;
+        }
         #endregion methods
     }
 }

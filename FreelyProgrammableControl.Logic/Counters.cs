@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    internal class Counters(int length) : Subject
+    internal class Counters(int length) : Subject, ICounters
     {
         #region  fields
         private readonly int[] values = new int[Math.Max(length, 0)];
@@ -30,6 +30,16 @@
         public int GetValue(int position)
         {
             return values[position];
+        }
+        public override int GetHashCode()
+        {
+            int result = 0;
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                result += values[i];
+            }
+            return result;
         }
         #endregion methods
     }
