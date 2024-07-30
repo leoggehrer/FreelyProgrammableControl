@@ -32,7 +32,7 @@ NOT
 CMOV M1 0
 G M 0
 MOV O 3
-# Test Zähler
+# Test ZÃ¤hler
 GET M 3
 NOT
 GET M 0
@@ -54,3 +54,4 @@ CMP C 3 10
 CMOV O 10 1
 GT C 3 10
 CMOV O 11 1
+#Test Speichern

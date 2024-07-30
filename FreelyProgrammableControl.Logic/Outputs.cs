@@ -22,6 +22,7 @@
             for (int i = 0; i < devices.Length; i++)
             {
                 devices[i] = new DefaultOutputDevice() { Label = $"Output {i,2}" };
+                devices[i].Attach((sender, e) => Notify());
             }
         }
         #endregion constructors

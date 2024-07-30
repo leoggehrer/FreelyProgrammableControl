@@ -1,6 +1,6 @@
 ﻿namespace FreelyProgrammableControl.Logic
 {
-    public class DefaultOutputDevice : IOutputDevice
+    public class DefaultOutputDevice : Subject, IOutputDevice
     {
         private bool _value;
 

@@ -5,7 +5,7 @@ namespace FreelyProgrammableControl.ConApp
 {
     internal class FPCApp : ConsoleApplication
     {
-        private ExecutionUnit executionUnit = new ExecutionUnit(16, 16);
+        private readonly ExecutionUnit executionUnit = new(16, 16);
         private int outputsHashCode = -1;
         private int countersHashCode = 0;
         public FPCApp()
@@ -21,11 +21,11 @@ namespace FreelyProgrammableControl.ConApp
                         countersHashCode = executionUnit.Counters.GetHashCode();
                         try
                         {
-                            var cursor = GetCursorPosition();
+                            var (Left, Top) = GetCursorPosition();
                             var saveColor = ForegroundColor;
 
                             ForegroundColor = ConsoleColor.Yellow;
-                            SetCursorPosition(0, cursor.Top + 2);
+                            SetCursorPosition(0, Top + 2);
                             for (int i = 0; i < executionUnit.Outputs.Length; i++)
                             {
                                 Print($"{i,6}");
@@ -40,7 +40,7 @@ namespace FreelyProgrammableControl.ConApp
                             {
                                 Print($"{executionUnit.Counters.GetValue(i),6}");
                             }
-                            SetCursorPosition(cursor.Left, cursor.Top);
+                            SetCursorPosition(Left, Top);
                             ForegroundColor = saveColor;
                         }
                         catch (Exception ex)
