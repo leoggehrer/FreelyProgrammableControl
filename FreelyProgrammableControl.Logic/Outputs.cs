@@ -34,7 +34,7 @@
             {
                 devices[i].Value = false;
             }
-            Notify();
+            NotifyAsync();
         }
         public void SetValue(int position, bool value)
         {
@@ -42,7 +42,7 @@
 
             devices[position].Value = value;
             if (save != value)
-                Notify();
+                NotifyAsync();
         }
         public bool GetValue(int position)
         {

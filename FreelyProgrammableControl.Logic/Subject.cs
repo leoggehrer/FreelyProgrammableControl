@@ -31,6 +31,10 @@
                 observer.Invoke(this, EventArgs.Empty);
             }
         }
+        protected Task NotifyAsync()
+        {
+            return Task.Run(() => Notify());
+        }
         #endregion methods
     }
 }

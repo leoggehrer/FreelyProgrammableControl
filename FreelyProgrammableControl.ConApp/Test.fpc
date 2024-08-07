@@ -16,23 +16,25 @@ M O 2
 # Test Blinker 1 sec.
 G M 0
 NOT
-G M 1
+G M1
 NOT
 AND
 DUP 4
 CSET T 0 1000
-CMOV M 0 1
-CSET T 1 2000
-CMOV M 1 1
-G T 0
+CMOV M0  1
+CSET T1 2000
+CMOV M1 1
+G T0
 NOT
 CMOV M0 0
-G T 1
+G T1
 NOT
 CMOV M1 0
 G M 0
 MOV O 3
+#
 # Test Zähler
+#
 GET M 3
 NOT
 GET M 0

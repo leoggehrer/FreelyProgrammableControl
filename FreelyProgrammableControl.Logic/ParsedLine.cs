@@ -21,7 +21,7 @@ namespace FreelyProgrammableControl.Logic
             Instruction = ToInstruction(source);
             AnalyzeInstruction();
         }
-        private string ToInstruction(string source)
+        private static string ToInstruction(string source)
         {
             var result = new List<string>();
             var items = source.RemoveLeftAndRight(' ')
@@ -34,7 +34,7 @@ namespace FreelyProgrammableControl.Logic
                     && (items[i].StartsWith('I') || items[i].StartsWith('O') || items[i].StartsWith('M') || items[i].StartsWith('T') || items[i].StartsWith('C'))
                     && items[i].ContainsDigit())
                 {
-                    result.Add(items[i].Substring(0, 1));
+                    result.Add(items[i][..1]);
                     result.Add(items[i].ToInt().ToString());
                 }
                 else
@@ -70,6 +70,18 @@ namespace FreelyProgrammableControl.Logic
                              && (items[1] == "I" || items[1] == "O" || items[1] == "M" || items[1] == "T"))
                     {
                         Instruction = "GET";
+                        Subject = items[1];  // I || O || M || T
+                        Address = Convert.ToInt32(items[2]);
+                        Value = 0;
+                    }
+                    // e.g.: GETNOT I 10 => stack.push(!inputs.GetValue(10))
+                    // e.g.: GETNOT O 10 => stack.push(!outputs.GetValue(10))
+                    // e.g.: GETNOT M 10 => stack.push(!memory.GetValue(10))
+                    // e.g.: GETNOT T 10 => stack.push(!timers.GetValue(10))
+                    else if (items.Length == 3 && (items[0] == "GN" || items[0] == "GETNOT")
+                             && (items[1] == "I" || items[1] == "O" || items[1] == "M" || items[1] == "T"))
+                    {
+                        Instruction = "GETNOT";
                         Subject = items[1];  // I || O || M || T
                         Address = Convert.ToInt32(items[2]);
                         Value = 0;

@@ -38,7 +38,7 @@
         #endregion constructors
 
         #region  methods
-        public ParsedLine[] Parse(IEnumerable<string> source)
+        public static ParsedLine[] Parse(IEnumerable<string> source)
         {
             var result = new List<ParsedLine>();
             var lineNumber = 0;
@@ -70,10 +70,7 @@
                 HasExecutionError = false;
                 ExecutionErrorMessage = null;
 
-                memory.Reset();
-                timers.Reset();
-                outputs.Reset();
-                counters.Reset();
+                Reset();
                 
                 running = true;
                 thread.Start();
@@ -82,7 +79,8 @@
         public void Stop()
         {
             running = false;
-            Notify();
+            Reset();
+            NotifyAsync();
         }
         private void Run()
         {
@@ -93,13 +91,20 @@
                 {
                     Execute(parsedLine);
                 }
-                Notify();
+                NotifyAsync();
 
                 if (running)
                 {
                     Thread.Sleep(100);
                 }
             }
+        }
+        private void Reset()
+        {
+            memory.Reset();
+            timers.Reset();
+            outputs.Reset();
+            counters.Reset();
         }
         private void Execute(ParsedLine parsedLine)
         {
@@ -129,6 +134,23 @@
                                     break;
                                 case "T":
                                     stack.Push(timers.GetValue(parsedLine.Address));
+                                    break;
+                            }
+                            break;
+                        case "GETNOT":
+                            switch (parsedLine.Subject)
+                            {
+                                case "I":
+                                    stack.Push(!inputs.GetValue(parsedLine.Address));
+                                    break;
+                                case "O":
+                                    stack.Push(!outputs.GetValue(parsedLine.Address));
+                                    break;
+                                case "M":
+                                    stack.Push(!memory.GetValue(parsedLine.Address));
+                                    break;
+                                case "T":
+                                    stack.Push(!timers.GetValue(parsedLine.Address));
                                     break;
                             }
                             break;
@@ -177,10 +199,10 @@
                                 switch (parsedLine.Subject)
                                 {
                                     case "O":
-                                        outputs.SetValue(parsedLine.Address, parsedLine.Value >0 ? true : false);
+                                        outputs.SetValue(parsedLine.Address, parsedLine.Value > 0);
                                         break;
                                     case "M":
-                                        memory.SetValue(parsedLine.Address, parsedLine.Value > 0 ? true : false);
+                                        memory.SetValue(parsedLine.Address, parsedLine.Value > 0);
                                         break;
                                 }
                             }
