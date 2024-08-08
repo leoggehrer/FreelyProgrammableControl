@@ -58,12 +58,16 @@
 
       <StackPanel x:Name="Outputs" Grid.Row="1" Grid.Column="0" Margin="10"></StackPanel>
       <!-- Mittlerer Bereich mit mehrzeiligem Textfeld -->
-      <StackPanel x:Name="Buttons" Grid.Row="0"
+      <StackPanel x:Name="Buttons"
+                  Grid.Row="0"
                   Grid.Column="1"
                   Orientation="Horizontal">
-        <Button x:Name="Start" Click="OnStartClick">Start</Button>
-        <Button x:Name="Stop" Click="OnStopClick">Stop</Button>
-        <Button x:Name="Parse" Click="OnParseClick">Parse</Button>
+        <Button x:Name="Start"
+                Click="OnStartClick">Start</Button>
+        <Button x:Name="Stop"
+                Click="OnStopClick">Stop</Button>
+        <Button x:Name="Parse"
+                Click="OnParseClick">Parse</Button>
       </StackPanel>
       <StackPanel Grid.Column="1">
       </StackPanel>
@@ -74,6 +78,7 @@
                HorizontalAlignment="Stretch"
                AcceptsReturn="True"
                TextWrapping="Wrap"
+               FontFamily="Consolas"
                Margin="5" />
       <TextBox x:Name="Output"
                Grid.Row="2"
@@ -83,15 +88,26 @@
                HorizontalAlignment="Stretch"
                AcceptsReturn="True"
                TextWrapping="Wrap"
-               Background="WhiteSmoke"
+               FontFamily="Consolas"
                Margin="5" />
       <StackPanel x:Name="Inputs" Grid.Row="1" Grid.Column="2" Margin="10"></StackPanel>
 
       <!-- Statusleiste -->
+      <TextBlock x:Name="StatusLeft"
+                 Grid.Row="3"
+                 Grid.Column="0"
+                 Text=""
+                 Margin="10"/>
       <TextBlock x:Name="Status"
                  Grid.Row="3"
                  Grid.Column="1"
-                 Text="Bereit" Margin="10"/>
+                 Text="Bereit"
+                 Margin="10"/>
+      <TextBlock x:Name="StatusRight"
+                 Grid.Row="3"
+                 Grid.Column="2"
+                 Text=""
+                 Margin="10"/>
     </Grid>
   </DockPanel>
 

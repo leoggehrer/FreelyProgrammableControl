@@ -276,6 +276,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             {
                 var lines = Source.Text!.Split(Environment.NewLine);
 
+                ParseAndView(lines);
                 executionUnit.LoadSource(lines);
                 executionUnit.Start();
             }
@@ -314,21 +315,25 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         private void OnParseClick(object sender, RoutedEventArgs e)
         {
             // Code fuer "Parse" Aktion
-            var lines = Source.Text!.Split(Environment.NewLine);
+            ParseAndView(Source.Text!.Split(Environment.NewLine));
+        }
+
+        private void ParseAndView(string[] lines)
+        {
             var parsedLines = ExecutionUnit.Parse(lines);
-            var parseText = parsedLines.Select(pl =>
+            var parsedText = parsedLines.Select(pl =>
             {
-                var result = $"{pl.LineNumber,-4}: {pl.Source,-100} {(pl.HasError ? pl.HasError : ""),-8} {pl.ErrorMessage}";
+                var result = $"{pl.LineNumber:d4}: {pl.Source,-50} {(pl.HasError ? pl.HasError : ""),-8} {pl.ErrorMessage}";
 
                 return result;
             }).ToList();
             var errorCount = parsedLines.Count(pl => pl.HasError);
 
-            parseText.Insert(0, $"Text has {errorCount} Error(s)");
-            parseText.Insert(1, string.Empty);
+            parsedText.Insert(0, $"Text has {errorCount} Error(s)");
+            parsedText.Insert(1, string.Empty);
 
             Output.Clear();
-            Output.Text = string.Join(Environment.NewLine, parseText);
+            Output.Text = string.Join(Environment.NewLine, parsedText);
         }
 
         /// <summary>

@@ -109,7 +109,7 @@ namespace FreelyProgrammableControl.Logic
         /// This constructor sets the width and height to 64.
         /// </remarks>
         public ExecutionUnit()
-                    : this(64, 64)
+            : this(64, 64)
         {
         }
         #endregion constructors
