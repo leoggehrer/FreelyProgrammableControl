@@ -10,11 +10,29 @@ using System.Linq;
 
 namespace FreelyProgrammableControl.DesktopApp.Views
 {
+    /// <summary>
+    /// Represents the main window of the application, providing a user interface for
+    /// loading, saving, and executing programs, as well as managing inputs and outputs.
+    /// </summary>
+    /// <remarks>
+    /// This class is responsible for initializing the application, handling user
+    /// interactions, and managing the execution unit that processes the loaded program.
+    /// </remarks>
     public partial class MainWindow : Window
     {
         private string? selectedFile;
         private readonly ExecutionUnit executionUnit = new(16, 16);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainWindow"/> class.
+        /// </summary>
+        /// <remarks>
+        /// This constructor sets up the initial state of the MainWindow, enabling the Start button
+        /// and disabling the Stop button. It also initializes the path for the selected file
+        /// and updates the status text accordingly. Furthermore, it attaches event handlers
+        /// for input and output updates and creates the necessary UI elements for input checkboxes
+        /// and output radio buttons.
+        /// </remarks>
         public MainWindow()
         {
             InitializeComponent();
@@ -31,16 +49,33 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             CreateInputCheckBoxes();
             CreateOutputRadioButtons();
         }
+        /// <summary>
+        /// Handles the click event for the "New" action.
+        /// This method clears the current source and sets the path for a new program file.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The RoutedEventArgs that contains the event data.</param>
         private void OnNewClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Neu" Aktion
+            // Code fuer "Neu" Aktion
             Source.Clear();
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             Status.Text = selectedFile;
         }
+        /// <summary>
+        /// Handles the click event for the "Open" action.
+        /// This method allows the user to pick a file from the storage provider.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the control that was clicked.</param>
+        /// <param name="e">The event data associated with the click event.</param>
+        /// <remarks>
+        /// This method uses an asynchronous file picker to allow the user to select a single file.
+        /// It supports filtering for all files and program files with specific extensions.
+        /// If a file is selected, it reads the contents of the file and updates the relevant UI elements.
+        /// </remarks>
         private async void OnOpenClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Öffnen" Aktion
+            // Code fuer "Open" Aktion
             var storageProvider = StorageProvider;
 
             if (storageProvider != null)
@@ -66,18 +101,38 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             }
         }
 
+        /// <summary>
+        /// Handles the click event for the save button.
+        /// Saves the contents of the Source text box to the selected file.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data.</param>
+        /// <remarks>
+        /// If no file is selected, the method does nothing.
+        /// </remarks>
         private void OnSaveClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Speichern" Aktion
+            // Code fuer "Speichern" Aktion
             if (selectedFile != null)
             {
                 File.WriteAllText(selectedFile, Source.Text);
             }
         }
 
+        /// <summary>
+        /// Handles the "Save As" action when the corresponding UI element is clicked.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the UI element that was clicked.</param>
+        /// <param name="e">The event data associated with the click event.</param>
+        /// <remarks>
+        /// This method initiates a file save dialog, allowing the user to specify the location and name for saving a file.
+        /// It supports saving files with specific extensions and handles potential errors during the file writing process.
+        /// If the save operation is not supported on the current platform, an error dialog is displayed.
+        /// </remarks>
+        /// <exception cref="IOException">Thrown when there is an error during the file writing process.</exception>
         private async void OnSaveAsClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Speichern unter" Aktion
+            // Code fuer "Speichern unter" Aktion
             var storageProvider = StorageProvider;
 
             if (storageProvider.CanSave)
@@ -129,7 +184,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
                     Height = 200,
                     Content = new TextBlock
                     {
-                        Text = "Der Speicherdienst wird auf dieser Plattform nicht unterstützt.",
+                        Text = "Der Speicherdienst wird auf dieser Plattform nicht unterstuetzt.",
                         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
                     }
@@ -138,40 +193,85 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             }
         }
 
+        /// <summary>
+        /// Handles the click event for the exit button.
+        /// Closes the application when the exit button is clicked.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the exit button.</param>
+        /// <param name="e">The event data associated with the click event.</param>
         private void OnExitClick(object sender, RoutedEventArgs e)
         {
             // Anwendung beenden
             Close();
         }
 
+        /// <summary>
+        /// Handles the click event for the "Undo" action.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data.</param>
         private void OnUndoClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Rückgängig" Aktion
+            // Code fuer "Rueckguengig" Aktion
         }
 
+        /// <summary>
+        /// Handles the click event for the "Redo" action.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data containing the event information.</param>
         private void OnRedoClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Wiederholen" Aktion
+            // Code fuer "Wiederholen" Aktion
         }
 
+        /// <summary>
+        /// Handles the click event for the copy action.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data.</param>
         private void OnCopyClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Kopieren" Aktion
+            // Code fuer "Kopieren" Aktion
         }
 
+        /// <summary>
+        /// Handles the click event for the paste action.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data.</param>
         private void OnPasteClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Einfügen" Aktion
+            // Code fuer "Einfuegen" Aktion
         }
 
+        /// <summary>
+        /// Handles the click event for the cut action.
+        /// This method is triggered when the user selects the cut option.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data containing the event information.</param>
         private void OnCutClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Ausschneiden" Aktion
+            // Code fuer "Ausschneiden" Aktion
         }
 
+        /// <summary>
+        /// Handles the click event for the "Start" button.
+        /// Initiates the execution process if the execution unit is not currently running
+        /// and the source text is provided.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data associated with the click event.</param>
+        /// <remarks>
+        /// This method checks if the execution unit is not running and that the source text is not empty.
+        /// If both conditions are met, it splits the source text into lines, loads them into the execution unit,
+        /// and starts the execution. It then updates the enabled state of the Start and Stop buttons
+        /// based on the execution unit's running status.
+        /// </remarks>
         private void OnStartClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Start" Aktion
+            // Code fuer "Start" Aktion
             if (executionUnit.IsRunning == false && Source.Text != default)
             {
                 var lines = Source.Text!.Split(Environment.NewLine);
@@ -182,9 +282,18 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = executionUnit.IsRunning == false;
             Stop.IsEnabled = executionUnit.IsRunning;
         }
+        /// <summary>
+        /// Handles the click event for the "Stop" button.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the "Stop" button.</param>
+        /// <param name="e">The event data associated with the click event.</param>
+        /// <remarks>
+        /// This method checks if the execution unit is currently running. If it is, the method stops the execution unit.
+        /// It then updates the enabled state of the "Start" and "Stop" buttons based on whether the execution unit is running.
+        /// </remarks>
         private void OnStopClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Stop" Aktion
+            // Code fuer "Stop" Aktion
             if (executionUnit.IsRunning)
             {
                 executionUnit.Stop();
@@ -192,14 +301,24 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = executionUnit.IsRunning == false;
             Stop.IsEnabled = executionUnit.IsRunning;
         }
+        /// <summary>
+        /// Handles the click event for the "Parse" action.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the UI element that was clicked.</param>
+        /// <param name="e">The event data associated with the click event.</param>
+        /// <remarks>
+        /// This method retrieves text from a source control, splits it into lines, and parses each line.
+        /// It generates a formatted output that includes line numbers, the original text, error status,
+        /// and error messages if any. The output is then displayed in an output control.
+        /// </remarks>
         private void OnParseClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Parse" Aktion
+            // Code fuer "Parse" Aktion
             var lines = Source.Text!.Split(Environment.NewLine);
             var parsedLines = ExecutionUnit.Parse(lines);
             var parseText = parsedLines.Select(pl =>
             {
-                var result = $"{pl.LineNumber, -4}: {pl.Source, -100} {(pl.HasError ? pl.HasError : ""), -8} {pl.ErrorMessage}";
+                var result = $"{pl.LineNumber,-4}: {pl.Source,-100} {(pl.HasError ? pl.HasError : ""),-8} {pl.ErrorMessage}";
 
                 return result;
             }).ToList();
@@ -207,16 +326,28 @@ namespace FreelyProgrammableControl.DesktopApp.Views
 
             parseText.Insert(0, $"Text has {errorCount} Error(s)");
             parseText.Insert(1, string.Empty);
-           
+
             Output.Clear();
             Output.Text = string.Join(Environment.NewLine, parseText);
         }
 
+        /// <summary>
+        /// Handles the click event for the "About" action.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The event data.</param>
         private void OnAboutClick(object sender, RoutedEventArgs e)
         {
-            // Code für "Über" Aktion
+            // Code fuer "ueber" Aktion
         }
 
+        /// <summary>
+        /// Handles the update of input values when an event is triggered.
+        /// This method is invoked asynchronously on the UI thread to update the state of checkboxes
+        /// based on the values provided by the <see cref="IInputs"/> interface.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the object that raised the event.</param>
+        /// <param name="e">An <see cref="EventArgs"/> instance containing the event data.</param>
         private void OnUpdateInputs(object sender, EventArgs e)
         {
             Dispatcher.UIThread.InvokeAsync(() =>
@@ -233,6 +364,18 @@ namespace FreelyProgrammableControl.DesktopApp.Views
                 }
             });
         }
+        /// <summary>
+        /// Handles the update of output values from the specified sender.
+        /// This method is invoked asynchronously on the UI thread and updates the state
+        /// of radio buttons based on the provided outputs.
+        /// </summary>
+        /// <param name="sender">The source of the event that triggered this method.</param>
+        /// <param name="e">The event data associated with the event.</param>
+        /// <remarks>
+        /// This method checks if the sender is of type <see cref="IOutputs"/> and updates
+        /// the corresponding <see cref="RadioButton"/> controls in the UI based on the values
+        /// provided by the <see cref="IOutputs"/> instance.
+        /// </remarks>
         private void OnUpdateOutputs(object sender, EventArgs e)
         {
             Dispatcher.UIThread.InvokeAsync(() =>
@@ -249,6 +392,16 @@ namespace FreelyProgrammableControl.DesktopApp.Views
                 }
             });
         }
+        /// <summary>
+        /// Creates and adds checkbox controls for each input in the execution unit.
+        /// </summary>
+        /// <remarks>
+        /// This method iterates through the inputs of the execution unit,
+        /// creating a checkbox for each input. Each checkbox is configured
+        /// with its label, enabled state, margin, and a tag corresponding to
+        /// its index. The method also subscribes to the <see cref="CheckBox_Checked"/>
+        /// event for handling changes in the checkbox state.
+        /// </remarks>
         private void CreateInputCheckBoxes()
         {
             for (int i = 0; i < executionUnit.Inputs.Length; i++)
@@ -266,6 +419,15 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             }
         }
 
+        /// <summary>
+        /// Creates and adds radio buttons to the output container for each output defined in the execution unit.
+        /// Each radio button is disabled and is grouped by its index.
+        /// </summary>
+        /// <remarks>
+        /// The method iterates through the outputs of the execution unit, creating a radio button for each output.
+        /// The content of the radio button is set to the label of the corresponding output.
+        /// The radio buttons are added to the <see cref="Outputs"/> container.
+        /// </remarks>
         private void CreateOutputRadioButtons()
         {
             for (int i = 0; i < executionUnit.Outputs.Length; i++)
@@ -279,12 +441,21 @@ namespace FreelyProgrammableControl.DesktopApp.Views
                     Tag = i,
                 };
 
-                // Optional: Event-Handler für Checked-Ereignis
-
+                // Optional: Event-Handler fuer Checked-Ereignis
                 Outputs.Children.Add(radioButton);
             }
         }
 
+        /// <summary>
+        /// Handles the Checked event for a CheckBox control.
+        /// </summary>
+        /// <param name="sender">The source of the event, typically the CheckBox that was checked or unchecked.</param>
+        /// <param name="e">The RoutedEventArgs that contains the event data.</param>
+        /// <remarks>
+        /// This method checks if the sender is a CheckBox and retrieves its index from the Tag property.
+        /// It then checks if the corresponding input in the execution unit is a Switch.
+        /// If the CheckBox's checked state does not match the Switch's value, it toggles the Switch.
+        /// </remarks>
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
             if (sender is CheckBox checkBox)

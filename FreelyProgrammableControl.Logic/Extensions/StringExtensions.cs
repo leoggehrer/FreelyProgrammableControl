@@ -1,7 +1,15 @@
-﻿using System.Text;
+using System.Text;
 
 namespace FreelyProgrammableControl.Logic.Extensions
 {
+    /// <summary>
+    /// Provides extension methods for manipulating strings.
+    /// </summary>
+    /// <remarks>
+    /// This static class contains methods to remove specified characters from the
+    /// beginning and end of a string, convert a string to an integer, and check
+    /// if a string contains any digits.
+    /// </remarks>
     public static class StringExtensions
     {
         /// <summary>
@@ -53,6 +61,17 @@ namespace FreelyProgrammableControl.Logic.Extensions
             return result;
         }
 
+        /// <summary>
+        /// Determines whether the specified string contains at least one digit.
+        /// </summary>
+        /// <param name="text">The string to be examined.</param>
+        /// <returns>
+        /// <c>true</c> if the string contains at least one digit; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method is an extension method for the <see cref="string"/> class.
+        /// It iterates through the characters of the string until it finds a digit or reaches the end of the string.
+        /// </remarks>
         public static bool ContainsDigit(this string text)
         {
             var result = false;

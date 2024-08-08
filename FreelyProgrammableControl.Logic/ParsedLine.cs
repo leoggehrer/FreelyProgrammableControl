@@ -1,19 +1,94 @@
-﻿
+
 using FreelyProgrammableControl.Logic.Extensions;
 
 namespace FreelyProgrammableControl.Logic
 {
+    /// <summary>
+    /// Represents a parsed line of instruction from a source input.
+    /// </summary>
     public class ParsedLine
     {
+        /// <summary>
+        /// Gets the line number associated with the current instance.
+        /// </summary>
+        /// <value>
+        /// An integer representing the line number.
+        /// </value>
         public int LineNumber { get; }
+        /// <summary>
+        /// Gets or sets a value indicating whether the item is a comment.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if the item is a comment; otherwise, <c>false</c>.
+        /// </value>
+        /// <remarks>
+        /// This property can only be set within the same assembly.
+        /// </remarks>
         public bool IsComment { get; internal set; }
+        /// <summary>
+        /// Gets a value indicating whether there is an error.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if there is an error; otherwise, <c>false</c>.
+        /// </value>
+        /// <remarks>
+        /// This property is set internally and cannot be modified from outside the class.
+        /// </remarks>
         public bool HasError { get; internal set; }
+        /// <summary>
+        /// Gets or sets the error message associated with the property.
+        /// </summary>
+        /// <value>
+        /// A string that contains the error message. This property can be null.
+        /// </value>
+        /// <remarks>
+        /// This property is set internally and can be accessed only within the same assembly.
+        /// </remarks>
         public string? ErrorMessage { get; internal set; }
+        /// <summary>
+        /// Gets the source of the data.
+        /// </summary>
+        /// <value>
+        /// A string representing the source.
+        /// </value>
         public string Source { get; }
+        /// <summary>
+        /// Gets or sets the instruction text.
+        /// </summary>
+        /// <value>
+        /// A string that represents the instruction. The default value is an empty string.
+        /// </value>
         internal string Instruction { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the subject.
+        /// </summary>
+        /// <value>
+        /// A string representing the subject. The default value is an empty string.
+        /// </value>
         internal string Subject { get; set; } = string.Empty;
+        /// <summary>
+        /// Gets or sets the address value.
+        /// </summary>
+        /// <value>
+        /// An integer representing the address. The default value is 0.
+        /// </value>
         internal int Address { get; set; } = 0;
+        /// <summary>
+        /// Gets or sets the value.
+        /// </summary>
+        /// <value>
+        /// An integer representing the current value. The default is 0.
+        /// </value>
         internal int Value { get; set; } = 0;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ParsedLine"/> class.
+        /// </summary>
+        /// <param name="lineNumber">The line number of the source code.</param>
+        /// <param name="source">The source code line as a string.</param>
+        /// <remarks>
+        /// This constructor parses the provided source code line into an instruction
+        /// and performs analysis on that instruction.
+        /// </remarks>
         public ParsedLine(int lineNumber, string source)
         {
             LineNumber = lineNumber;
@@ -21,6 +96,16 @@ namespace FreelyProgrammableControl.Logic
             Instruction = ToInstruction(source);
             AnalyzeInstruction();
         }
+        /// <summary>
+        /// Converts a given instruction string into a standardized format.
+        /// </summary>
+        /// <param name="source">The source string to be converted, which may contain leading or trailing spaces and can have mixed case letters.</param>
+        /// <returns>A standardized string representation of the instruction, with specific formatting applied to certain items.</returns>
+        /// <remarks>
+        /// The method processes the input string by removing extra spaces, converting it to uppercase,
+        /// and splitting it into individual items. If the second item in the list starts with specific
+        /// letters ('I', 'O', 'M', 'T', or 'C') and contains a digit, it is further processed to separate
+        /// the letter and the number. All other items are added
         private static string ToInstruction(string source)
         {
             var result = new List<string>();
@@ -30,7 +115,7 @@ namespace FreelyProgrammableControl.Logic
 
             for (int i = 0; i < items.Length; i++)
             {
-                if (i == 1 
+                if (i == 1
                     && (items[i].StartsWith('I') || items[i].StartsWith('O') || items[i].StartsWith('M') || items[i].StartsWith('T') || items[i].StartsWith('C'))
                     && items[i].ContainsDigit())
                 {
@@ -44,6 +129,15 @@ namespace FreelyProgrammableControl.Logic
             }
             return string.Join(' ', result);
         }
+        /// <summary>
+        /// Analyzes the current instruction and updates the state of the object based on the instruction's content.
+        /// </summary>
+        /// <remarks>
+        /// The method checks if the instruction is a comment (starts with '#'). If it is not a comment, it parses the instruction
+        /// to determine the operation to be performed, which can include various commands such as GET, GETNOT, DUP, MOV,
+        /// SET, INC, DEC, CMP, GT, and LE. The method updates the properties <see cref="Instruction"/>, <see cref="Subject"/>,
+        /// <see cref="Address"/>, and <see cref="Value"/> based on the parsed instruction. It also handles errors and sets
+        /// <see cref
         private void AnalyzeInstruction()
         {
             IsComment = Instruction.StartsWith('#');
