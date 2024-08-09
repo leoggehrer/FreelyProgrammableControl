@@ -318,6 +318,15 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             ParseAndView(Source.Text!.Split(Environment.NewLine));
         }
 
+        /// <summary>
+        /// Parses the provided lines and updates the view with the parsed results.
+        /// </summary>
+        /// <param name="lines">An array of strings representing the lines to be parsed.</param>
+        /// <remarks>
+        /// This method uses the <see cref="ExecutionUnit.Parse"/> method to parse the provided lines.
+        /// It then formats the parsed results, including line numbers, original text, error status,
+        /// and error messages if any. The formatted output is displayed in the output control.
+        /// </remarks>
         private void ParseAndView(string[] lines)
         {
             var parsedLines = ExecutionUnit.Parse(lines);
