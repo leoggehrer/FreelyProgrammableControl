@@ -21,7 +21,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
     public partial class MainWindow : Window
     {
         private string? selectedFile;
-        private readonly ExecutionUnit executionUnit = new(16, 16);
+        private readonly ExecutionUnit executionUnit = new(20, 20);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -40,6 +40,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = true;
             Stop.IsEnabled = false;
 
+            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 500)) { Label = "Blinker" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             Status.Text = selectedFile;
 
