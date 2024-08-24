@@ -40,7 +40,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = true;
             Stop.IsEnabled = false;
 
-            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 500)) { Label = "Blinker" };
+            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             Status.Text = selectedFile;
 

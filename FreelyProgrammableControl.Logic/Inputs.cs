@@ -24,7 +24,11 @@ namespace FreelyProgrammableControl.Logic
         public IInputDevice this[int index]
         {
             get => devices[index];
-            set => devices[index] = value;
+            set
+            {
+                devices[index] = value;
+                devices[index].Attach((sender, e) => Notify());
+            }
         }
         #endregion properties
 
