@@ -27,7 +27,7 @@ namespace FreelyProgrammableControl.Logic
             set
             {
                 devices[index] = value;
-                devices[index].Attach((sender, e) => Notify());
+                devices[index].Attach((sender, e) => NotifyAsync());
             }
         }
         #endregion properties
@@ -47,7 +47,7 @@ namespace FreelyProgrammableControl.Logic
             for (int i = 0; i < devices.Length; i++)
             {
                 devices[i] = new Switch() { Label = $"Switch {i,2}" };
-                devices[i].Attach((sender, e) => Notify());
+                devices[i].Attach((sender, e) => NotifyAsync());
             }
         }
         #endregion constructors

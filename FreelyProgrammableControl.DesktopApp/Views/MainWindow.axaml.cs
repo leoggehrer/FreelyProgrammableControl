@@ -40,8 +40,9 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = true;
             Stop.IsEnabled = false;
 
-            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker" };
+            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
+            Source.IsReadOnly = false;
             Status.Text = selectedFile;
 
             executionUnit.Inputs.Attach(OnUpdateInputs!);
@@ -273,16 +274,24 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         private void OnStartClick(object sender, RoutedEventArgs e)
         {
             // Code fuer "Start" Aktion
+
             if (executionUnit.IsRunning == false && Source.Text != default)
             {
+                int errors = 0;
                 var lines = Source.Text!.Split(Environment.NewLine);
 
-                ParseAndView(lines);
-                executionUnit.LoadSource(lines);
-                executionUnit.Start();
+                errors = ParseAndView(lines);
+
+                if (errors == 0)
+                {
+                    executionUnit.LoadSource(lines);
+                    executionUnit.Start();
+
+                    Start.IsEnabled = executionUnit.IsRunning == false;
+                    Stop.IsEnabled = executionUnit.IsRunning;
+                    Source.IsReadOnly = true;
+                }
             }
-            Start.IsEnabled = executionUnit.IsRunning == false;
-            Stop.IsEnabled = executionUnit.IsRunning;
         }
         /// <summary>
         /// Handles the click event for the "Stop" button.
@@ -302,6 +311,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             }
             Start.IsEnabled = executionUnit.IsRunning == false;
             Stop.IsEnabled = executionUnit.IsRunning;
+            Source.IsReadOnly = false;
         }
         /// <summary>
         /// Handles the click event for the "Parse" action.
@@ -316,24 +326,29 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         private void OnParseClick(object sender, RoutedEventArgs e)
         {
             // Code fuer "Parse" Aktion
-            ParseAndView(Source.Text!.Split(Environment.NewLine));
+            if (Source.Text != default)
+            {
+                // Split the text into lines and parse them
+                ParseAndView(Source.Text!.Split(Environment.NewLine));
+            }
         }
 
         /// <summary>
         /// Parses the provided lines and updates the view with the parsed results.
         /// </summary>
         /// <param name="lines">An array of strings representing the lines to be parsed.</param>
+        /// <returns>The number of errors.</returns>
         /// <remarks>
         /// This method uses the <see cref="ExecutionUnit.Parse"/> method to parse the provided lines.
         /// It then formats the parsed results, including line numbers, original text, error status,
         /// and error messages if any. The formatted output is displayed in the output control.
         /// </remarks>
-        private void ParseAndView(string[] lines)
+        private int ParseAndView(string[] lines)
         {
             var parsedLines = ExecutionUnit.Parse(lines);
             var parsedText = parsedLines.Select(pl =>
             {
-                var result = $"{pl.LineNumber:d4}: {pl.Source,-50} {(pl.HasError ? pl.HasError : ""),-8} {pl.ErrorMessage}";
+                var result = $"{pl.LineNumber:d4}: {pl.Source,-50} {(pl.HasError ? "Error" : ""),-8} {pl.ErrorMessage}";
 
                 return result;
             }).ToList();
@@ -344,6 +359,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
 
             Output.Clear();
             Output.Text = string.Join(Environment.NewLine, parsedText);
+            return errorCount;
         }
 
         /// <summary>
@@ -423,7 +439,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             {
                 var checkBox = new CheckBox
                 {
-                    IsEnabled = true,
+                    IsEnabled = executionUnit.Inputs[i].Modifiable,
                     Content = $"{executionUnit.Inputs[i].Label}",
                     Margin = new Thickness(0),
                     Tag = i,

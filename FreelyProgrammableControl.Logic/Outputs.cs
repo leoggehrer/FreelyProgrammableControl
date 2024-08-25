@@ -22,7 +22,11 @@ namespace FreelyProgrammableControl.Logic
         public IOutputDevice this[int index]
         {
             get => devices[index];
-            set => devices[index] = value;
+            set
+            {
+                devices[index] = value;
+                devices[index].Attach((sender, e) => NotifyAsync());
+            }
         }
         #endregion properties
 
@@ -41,7 +45,7 @@ namespace FreelyProgrammableControl.Logic
             for (int i = 0; i < devices.Length; i++)
             {
                 devices[i] = new DefaultOutputDevice() { Label = $"Output {i,2}" };
-                devices[i].Attach((sender, e) => Notify());
+                devices[i].Attach((sender, e) => NotifyAsync());
             }
         }
         #endregion constructors

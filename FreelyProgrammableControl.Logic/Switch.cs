@@ -10,7 +10,8 @@ namespace FreelyProgrammableControl.Logic
     public class Switch : Subject, IInputDevice
     {
         #region fields
-        private bool _value = false;
+        protected bool _value = false;
+        protected bool _modifable = true;
         #endregion fields
 
         #region  properties
@@ -31,6 +32,10 @@ namespace FreelyProgrammableControl.Logic
         {
             get => _value;
         }
+        public bool Modifiable
+        {
+            get => _modifable;
+        }
         #endregion  properties
 
         #region methods
@@ -43,8 +48,11 @@ namespace FreelyProgrammableControl.Logic
         /// </remarks>
         public void Toggle()
         {
-            _value = !_value;
-            Notify();
+            if (_modifable)
+            {
+                _value = !_value;
+                NotifyAsync();
+            }
         }
         /// <summary>
         /// Returns a string that represents the current object.

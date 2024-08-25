@@ -9,5 +9,6 @@ namespace FreelyProgrammableControl.Logic
     /// </remarks>
     public interface IInputDevice : IDevice, ISubject
     {
+        bool Modifiable { get; }
     }
 }

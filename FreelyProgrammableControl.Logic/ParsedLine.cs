@@ -188,7 +188,8 @@ namespace FreelyProgrammableControl.Logic
                         Address = 0;
                         Value = 2;
                     }
-                    // e.g.: DUP => stack.push(stack.top())
+                    // e.g.: DUP 3 => stack.push(stack.top())
+                    //                stack.push(stack.top()) 
                     else if (items.Length == 2 && (items[0] == "D" || items[0] == "DUP"))
                     {
                         Instruction = "DUP";
