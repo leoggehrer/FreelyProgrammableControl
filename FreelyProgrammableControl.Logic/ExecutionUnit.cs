@@ -369,14 +369,14 @@ namespace FreelyProgrammableControl.Logic
                                 }
                             }
                             break;
-                        case "INC":
+                        case "CINC":
                             opd_A = stack.Pop();
                             if (opd_A)
                             {
                                 counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) + 1);
                             }
                             break;
-                        case "DEC":
+                        case "CDEC":
                             opd_A = stack.Pop();
                             if (opd_A)
                             {

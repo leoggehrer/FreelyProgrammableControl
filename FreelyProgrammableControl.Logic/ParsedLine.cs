@@ -239,8 +239,8 @@ namespace FreelyProgrammableControl.Logic
                         Address = Convert.ToInt32(items[2]);
                         Value = 0;
                     }
-                    // e.g.: CMOV O 10 = stack.pop() == true => outputs.SetValue(10, stack.pop())
-                    // e.g.: CMOV M 10 = stack.pop() == true => memory.SetValue(10, stack.pop())
+                    // e.g.: CMOV O 10 1 = stack.pop() == true => outputs.SetValue(10, true)
+                    // e.g.: CMOV M 10 0 = stack.pop() == true => memory.SetValue(10, false)
                     else if (items.Length == 4 && (items[0] == "CM" || items[0] == "CMOV")
                              && (items[1] == "O" || items[1] == "M"))
                     {
@@ -270,19 +270,19 @@ namespace FreelyProgrammableControl.Logic
                         Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: INC C 10 1 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
-                    else if (items.Length == 3 && (items[0] == "I" || items[0] == "INC")
+                    else if (items.Length == 3 && (items[0] == "CI" || items[0] == "CINC")
                              && (items[1] == "C"))
                     {
-                        Instruction = "INC";
+                        Instruction = "CINC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
                         Value = 1;
                     }
                     // e.g.: DEC C 10 0 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
-                    else if (items.Length == 4 && (items[0] == "D" || items[0] == "DEC")
+                    else if (items.Length == 4 && (items[0] == "CD" || items[0] == "CDEC")
                              && (items[1] == "C"))
                     {
-                        Instruction = "DEC";
+                        Instruction = "CDEC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
                         Value = items[1] == "1" ? 1 : 0;
