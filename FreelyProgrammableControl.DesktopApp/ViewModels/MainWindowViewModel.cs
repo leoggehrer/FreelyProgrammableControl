@@ -18,7 +18,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <value>
         /// A string that contains the greeting message "Welcome to Avalonia!".
         /// </value>
-        public string Greeting => "Welcome to Avalonia!";
+        public string Greeting => "Welcome to FreelyProgrammableControl!";
 #pragma warning restore CA1822 // Mark members as static
     }
 }

@@ -14,9 +14,31 @@ namespace FreelyProgrammableControl.ConApp
         /// <param name="args">An array of command-line arguments passed to the application.</param>
         static void Main(string[] args)
         {
-            FPCApp app = new FPCApp();
+            var (programPath, cycleTime) = ParseArgs(args);
+            var app = new FPCApp(programPath, cycleTime);
 
             app.Run(args);
+        }
+
+        private static (string? programPath, int? cycleTimeMs) ParseArgs(string[] args)
+        {
+            string? programPath = null;
+            int? cycleTimeMs = null;
+
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--program=", StringComparison.OrdinalIgnoreCase))
+                {
+                    programPath = arg["--program=".Length..];
+                }
+                else if (arg.StartsWith("--cycle=", StringComparison.OrdinalIgnoreCase)
+                         && int.TryParse(arg["--cycle=".Length..], out var parsed))
+                {
+                    cycleTimeMs = parsed;
+                }
+            }
+
+            return (programPath, cycleTimeMs);
         }
     }
 }

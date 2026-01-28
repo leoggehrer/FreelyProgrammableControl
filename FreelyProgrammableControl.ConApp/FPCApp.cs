@@ -13,6 +13,8 @@ namespace FreelyProgrammableControl.ConApp
     internal class FPCApp : ConsoleApplication
     {
         private readonly ExecutionUnit executionUnit = new(16, 16);
+        private readonly string programPath;
+        private readonly int cycleTimeMs;
         private int outputsHashCode = -1;
         private int countersHashCode = 0;
         /// <summary>
@@ -25,8 +27,12 @@ namespace FreelyProgrammableControl.ConApp
         /// and prints the outputs and counters to the console.
         /// If an error occurs during this process, it logs the error message to the debug output.
         /// </remarks>
-        public FPCApp()
+        public FPCApp(string? programPath = null, int? cycleTimeMs = null)
         {
+            this.programPath = string.IsNullOrWhiteSpace(programPath) ? "Test.fpc" : programPath;
+            this.cycleTimeMs = Math.Max(1, cycleTimeMs ?? 100);
+            executionUnit.CycleTimeMs = this.cycleTimeMs;
+
             executionUnit.Attach((s, e) =>
             {
                 Task.Run(() =>
@@ -152,10 +158,36 @@ namespace FreelyProgrammableControl.ConApp
         /// </remarks>
         private void StartExecutionUnit()
         {
-            var lines = File.ReadAllLines("Test.fpc");
+            try
+            {
+                var fullPath = programPath;
+                if (Path.IsPathRooted(fullPath) == false)
+                {
+                    fullPath = Path.Combine(Environment.CurrentDirectory, fullPath);
+                }
 
-            executionUnit.LoadSource(lines);
-            executionUnit.Start();
+                if (File.Exists(fullPath) == false)
+                {
+                    PrintLine($"Program file not found: {fullPath}");
+                    return;
+                }
+
+                var lines = File.ReadAllLines(fullPath);
+
+                executionUnit.LoadSource(lines);
+                if (executionUnit.HasParseError)
+                {
+                    PrintLine($"Parse error: {executionUnit.ParseErrorMessage}");
+                    return;
+                }
+
+                executionUnit.Start();
+                PrintLine($"Started '{programPath}' with cycle {cycleTimeMs} ms.");
+            }
+            catch (Exception ex)
+            {
+                PrintLine($"Error starting execution: {ex.Message}");
+            }
         }
         /// <summary>
         /// Stops the execution unit and pauses the current thread for a short duration.

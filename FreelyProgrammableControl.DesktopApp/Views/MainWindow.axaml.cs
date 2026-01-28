@@ -22,6 +22,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
     {
         private string? selectedFile;
         private readonly ExecutionUnit executionUnit = new(20, 20);
+        private const int DefaultCycleMs = 100;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -44,12 +45,15 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             Source.IsReadOnly = false;
             Status.Text = selectedFile;
+            CycleInput.Value = DefaultCycleMs;
 
             executionUnit.Inputs.Attach(OnUpdateInputs!);
             executionUnit.Outputs.Attach(OnUpdateOutputs!);
+            executionUnit.Counters.Attach(OnUpdateCounters!);
 
             CreateInputCheckBoxes();
             CreateOutputRadioButtons();
+            CreateCounterLabels();
         }
         /// <summary>
         /// Handles the click event for the "New" action.
@@ -277,19 +281,30 @@ namespace FreelyProgrammableControl.DesktopApp.Views
 
             if (executionUnit.IsRunning == false && Source.Text != default)
             {
-                int errors = 0;
+                executionUnit.CycleTimeMs = (int)(CycleInput.Value ?? DefaultCycleMs);
                 var lines = Source.Text!.Split(Environment.NewLine);
 
-                errors = ParseAndView(lines);
+                int errors = ParseAndView(lines);
 
                 if (errors == 0)
                 {
                     executionUnit.LoadSource(lines);
+                    if (executionUnit.HasParseError)
+                    {
+                        Status.Text = $"Parse error: {executionUnit.ParseErrorMessage}";
+                        return;
+                    }
+
                     executionUnit.Start();
 
                     Start.IsEnabled = executionUnit.IsRunning == false;
                     Stop.IsEnabled = executionUnit.IsRunning;
                     Source.IsReadOnly = true;
+                    Status.Text = $"Running | Cycle {executionUnit.CycleTimeMs} ms";
+                }
+                else
+                {
+                    Status.Text = $"{errors} Parse-Fehler";
                 }
             }
         }
@@ -312,6 +327,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
             Start.IsEnabled = executionUnit.IsRunning == false;
             Stop.IsEnabled = executionUnit.IsRunning;
             Source.IsReadOnly = false;
+            Status.Text = "Gestoppt";
         }
         /// <summary>
         /// Handles the click event for the "Parse" action.
@@ -359,6 +375,7 @@ namespace FreelyProgrammableControl.DesktopApp.Views
 
             Output.Clear();
             Output.Text = string.Join(Environment.NewLine, parsedText);
+            Status.Text = errorCount == 0 ? "Parse OK" : $"{errorCount} Parse-Fehler";
             return errorCount;
         }
 
@@ -451,6 +468,26 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         }
 
         /// <summary>
+        /// Handles counter updates and refreshes the counter list in the UI.
+        /// </summary>
+        private void OnUpdateCounters(object sender, EventArgs e)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (sender is ICounters counters)
+                {
+                    for (int i = 0; i < counters.Length && i < Counters.Children.Count; i++)
+                    {
+                        if (Counters.Children[i] is TextBlock tb)
+                        {
+                            tb.Text = $"C{i:00}: {counters.GetValue(i)}";
+                        }
+                    }
+                }
+            });
+        }
+
+        /// <summary>
         /// Creates and adds radio buttons to the output container for each output defined in the execution unit.
         /// Each radio button is disabled and is grouped by its index.
         /// </summary>
@@ -474,6 +511,23 @@ namespace FreelyProgrammableControl.DesktopApp.Views
 
                 // Optional: Event-Handler fuer Checked-Ereignis
                 Outputs.Children.Add(radioButton);
+            }
+        }
+
+        /// <summary>
+        /// Creates labels for counters to display their current values.
+        /// </summary>
+        private void CreateCounterLabels()
+        {
+            for (int i = 0; i < executionUnit.Counters.Length; i++)
+            {
+                var textBlock = new TextBlock
+                {
+                    Text = $"C{i:00}: 0",
+                    Margin = new Thickness(0, 0, 0, 2),
+                };
+
+                Counters.Children.Add(textBlock);
             }
         }
 
