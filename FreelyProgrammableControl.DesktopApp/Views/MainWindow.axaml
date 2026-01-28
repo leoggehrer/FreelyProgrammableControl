@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:dock="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
+        xmlns:conv="using:FreelyProgrammableControl.DesktopApp.Converters"
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="750"
         x:Class="FreelyProgrammableControl.DesktopApp.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -11,6 +12,10 @@
         Width="1000"
         Height="1000"
         Title="FreelyProgrammableControl">
+
+  <Window.Resources>
+    <conv:BoolToColorConverter x:Key="BoolToColorConverter"/>
+  </Window.Resources>
 
   <Design.DataContext>
     <!-- This only sets the DataContext for the previewer in an IDE,
@@ -22,23 +27,22 @@
     <!-- Menüleiste -->
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="_Datei">
-        <MenuItem Header="_Neu" Click="OnNewClick"/>
-        <MenuItem Header="_Öffnen" Click="OnOpenClick"/>
-        <MenuItem Header="_Speichern" Click="OnSaveClick"/>
-        <MenuItem Header="Speichern _unter..." Click="OnSaveAsClick"/>
+        <MenuItem Header="_Neu" Command="{Binding NewCommand}"/>
+        <MenuItem Header="_Öffnen" Command="{Binding OpenCommand}"/>
+        <MenuItem Header="_Speichern" Command="{Binding SaveCommand}"/>
         <Separator/>
-        <MenuItem Header="_Beenden" Click="OnExitClick"/>
+        <MenuItem Header="_Beenden" Command="{Binding ExitCommand}"/>
       </MenuItem>
       <MenuItem Header="_Bearbeiten">
-        <MenuItem Header="_Rückgängig" Click="OnUndoClick"/>
-        <MenuItem Header="_Wiederholen" Click="OnRedoClick"/>
+        <MenuItem Header="_Rückgängig" IsEnabled="False"/>
+        <MenuItem Header="_Wiederholen" IsEnabled="False"/>
         <Separator/>
-        <MenuItem Header="_Kopieren" Click="OnCopyClick"/>
-        <MenuItem Header="_Einfügen" Click="OnPasteClick"/>
-        <MenuItem Header="_Ausschneiden" Click="OnCutClick"/>
+        <MenuItem Header="_Kopieren" IsEnabled="False"/>
+        <MenuItem Header="_Einfügen" IsEnabled="False"/>
+        <MenuItem Header="_Ausschneiden" IsEnabled="False"/>
       </MenuItem>
       <MenuItem Header="_Hilfe">
-        <MenuItem Header="_Über" Click="OnAboutClick"/>
+        <MenuItem Header="_Über" IsEnabled="False"/>
       </MenuItem>
     </Menu>
 
@@ -56,31 +60,41 @@
         <RowDefinition Height="30" />
       </Grid.RowDefinitions>
 
-      <StackPanel x:Name="Inputs" Grid.Row="1" Grid.Column="0" Margin="10"></StackPanel>
+      <StackPanel x:Name="Inputs" Grid.Row="1" Grid.Column="0" Margin="10">
+        <TextBlock Text="Inputs" FontWeight="Bold"/>
+        <ItemsControl ItemsSource="{Binding Inputs}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <CheckBox IsEnabled="{Binding IsModifiable}" 
+                        IsChecked="{Binding Value}"
+                        Content="{Binding Label}"
+                        Margin="0,2,0,2"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
       <!-- Mittlerer Bereich mit mehrzeiligem Textfeld -->
-            <StackPanel x:Name="Buttons"
+      <StackPanel x:Name="Buttons"
             Grid.Row="0"
             Grid.Column="1"
             Orientation="Horizontal"
             Spacing="8"
             Margin="5">
-        <Button x:Name="Start"
-          Width="90"
-          Click="OnStartClick">Start</Button>
-        <Button x:Name="Stop"
-          Width="90"
-          Click="OnStopClick">Stop</Button>
-        <Button x:Name="Parse"
-          Width="90"
-          Click="OnParseClick">Parse</Button>
+        <Button Width="90"
+                Command="{Binding StartCommand}">Start</Button>
+        <Button Width="90"
+                Command="{Binding StopCommand}"
+                IsEnabled="{Binding IsRunning}">Stop</Button>
+        <Button Width="90"
+                Command="{Binding ParseCommand}">Parse</Button>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
           <TextBlock Text="Cycle (ms)" VerticalAlignment="Center" />
-          <NumericUpDown x:Name="CycleInput" Width="80" Minimum="1" Maximum="5000" Increment="10" Value="100"/>
+          <NumericUpDown Width="80" Minimum="1" Maximum="5000" Increment="10" Value="{Binding CycleTime}"/>
         </StackPanel>
-            </StackPanel>
+      </StackPanel>
       <StackPanel Grid.Column="1">
       </StackPanel>
-      <TextBox x:Name="Source"
+      <TextBox Text="{Binding SourceCode}"
                Grid.Row="1"
                Grid.Column="1"
                VerticalAlignment="Stretch"
@@ -89,7 +103,7 @@
                TextWrapping="Wrap"
                FontFamily="Consolas"
                Margin="5" />
-      <TextBox x:Name="Output"
+      <TextBox Text="{Binding ParseOutput}"
                Grid.Row="2"
                Grid.Column="1"
                IsReadOnly="True"
@@ -101,9 +115,30 @@
                Margin="5" />
       <StackPanel Grid.Row="1" Grid.Column="2" Margin="10" Spacing="6">
         <TextBlock Text="Outputs" FontWeight="Bold"/>
-        <StackPanel x:Name="Outputs" Spacing="2"/>
+        <ItemsControl ItemsSource="{Binding Outputs}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Background="{Binding Value, Converter={StaticResource BoolToColorConverter}}" 
+                      CornerRadius="4" 
+                      Padding="8" 
+                      Margin="0,2,0,2">
+                <TextBlock Text="{Binding Label}" Foreground="White"/>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <TextBlock Text="Counters" FontWeight="Bold" Margin="0,8,0,0"/>
-        <StackPanel x:Name="Counters" Spacing="2"/>
+        <ItemsControl ItemsSource="{Binding Counters}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Index, StringFormat='C{0:00}: '}" Margin="0,2,0,2">
+                <TextBlock.Inlines>
+                  <Run Text="{Binding Value}"/>
+                </TextBlock.Inlines>
+              </TextBlock>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
 
       <!-- Statusleiste -->
@@ -115,7 +150,7 @@
       <TextBlock x:Name="Status"
                  Grid.Row="3"
                  Grid.Column="1"
-                 Text="Bereit"
+                 Text="{Binding StatusText}"
                  Margin="10"/>
       <TextBlock x:Name="StatusRight"
                  Grid.Row="3"
