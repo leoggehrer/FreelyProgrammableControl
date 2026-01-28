@@ -62,7 +62,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             executionUnit.Counters.Attach((s, e) => UpdateCounters());
 
             // Beispiel: Blinker auf Input 0
-            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
+//            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
         }
 
         private void UpdateInputOutputCounterViews()

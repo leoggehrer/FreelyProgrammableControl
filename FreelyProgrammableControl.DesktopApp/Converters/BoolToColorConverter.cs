@@ -14,7 +14,7 @@ namespace FreelyProgrammableControl.DesktopApp.Converters
         {
             if (value is bool boolValue)
             {
-                return boolValue ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Red);
+                return boolValue ? new SolidColorBrush(Colors.Green) : new SolidColorBrush(Colors.Transparent);
             }
             return new SolidColorBrush(Colors.Gray);
         }

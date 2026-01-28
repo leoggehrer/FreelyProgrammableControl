@@ -1,6 +1,6 @@
 namespace FreelyProgrammableControl.Logic
 {
-    public class Blinker : Logic.Switch
+    public class Blinker : Switch
     {
         public Blinker(TimeSpan interval)
         {
