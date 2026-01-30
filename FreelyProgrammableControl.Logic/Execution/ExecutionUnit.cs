@@ -16,6 +16,7 @@ namespace FreelyProgrammableControl.Logic.Execution
     {
         #region  fields
         private volatile bool running = false;
+        private int cycleTimeMs = 100;
         private readonly List<ParsedLine> parsedLines = [];
 
         private readonly Common.Stack<bool> stack = new();
@@ -86,6 +87,18 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// An array of strings representing the source values from each parsed line.
         /// </returns>
         public string[] Source => parsedLines.Select(e => e.Source).ToArray();
+
+        /// <summary>
+        /// Gets or sets the cycle time (in milliseconds) for the execution loop.
+        /// </summary>
+        /// <remarks>
+        /// Values &lt;= 0 werden auf 1 ms begrenzt, um einen Busy-Loop zu vermeiden.
+        /// </remarks>
+        public int CycleTimeMs
+        {
+            get => cycleTimeMs;
+            set => cycleTimeMs = Math.Max(1, value);
+        }
 
         /// <summary>
         /// Gets the inputs associated with this instance.
@@ -226,7 +239,7 @@ namespace FreelyProgrammableControl.Logic.Execution
 
                 if (running)
                 {
-                    Thread.Sleep(100);
+                    Thread.Sleep(cycleTimeMs);
                 }
             }
         }
