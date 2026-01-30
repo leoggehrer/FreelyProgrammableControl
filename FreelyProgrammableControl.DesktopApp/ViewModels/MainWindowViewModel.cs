@@ -45,7 +45,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         public MainWindowViewModel()
         {
-            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
+            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             StatusText = selectedFile;
 
@@ -97,8 +97,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Alle Dateien") { Patterns = ["*"] },
-                    new FilePickerFileType("Programmdateien") { Patterns = ["*.fpc"] }
+                    new FilePickerFileType("All files") { Patterns = ["*"] },
+                    new FilePickerFileType("Program files") { Patterns = ["*.fpc"] }
                 ]
             });
 
@@ -131,11 +131,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 var saveOptions = new FilePickerSaveOptions
                 {
-                    Title = "Speichern unter...",
+                    Title = "Save As...",
                     FileTypeChoices =
                     [
-                        new FilePickerFileType("Alle Dateien") { Patterns = ["*"] },
-                        new FilePickerFileType("Programmdateien") { Patterns = ["*.fpc"] }
+                        new FilePickerFileType("All files") { Patterns = ["*"] },
+                        new FilePickerFileType("Program files") { Patterns = ["*.fpc"] }
                     ],
                     SuggestedFileName = Path.GetFileName(selectedFile),
                     SuggestedStartLocation = selectedFile is null ? null : await storageProvider.TryGetFolderFromPathAsync(selectedFile)
@@ -160,7 +160,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                                 Height = 200,
                                 Content = new TextBlock
                                 {
-                                    Text = $"Fehler beim Speichern der Datei: {ex.Message}",
+                                    Text = $"Error saving file: {ex.Message}",
                                     VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
                                 }
@@ -178,7 +178,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     Height = 200,
                     Content = new TextBlock
                     {
-                        Text = "Der Speicherdienst wird auf dieser Plattform nicht unterstuetzt.",
+                        Text = "Saving is not supported on this platform.",
                         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
                     }
