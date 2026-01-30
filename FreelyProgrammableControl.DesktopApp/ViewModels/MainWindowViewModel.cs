@@ -18,35 +18,35 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
     /// </remarks>
     public partial class MainWindowViewModel : ViewModelBase
     {
-        private readonly ExecutionUnit executionUnit = new(20, 20);
+        private readonly ExecutionUnit _executionUnit = new(20, 20);
         private const int DefaultCycleMs = 100;
 
         [ObservableProperty]
-        private string sourceCode = string.Empty;
+        private string _sourceCode = string.Empty;
 
         [ObservableProperty]
-        private string parseOutput = string.Empty;
+        private string _parseOutput = string.Empty;
 
         [ObservableProperty]
-        private string statusText = "Bereit";
+        private string _statusText = "Bereit";
 
         [ObservableProperty]
-        private string selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
+        private string _selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
 
         [ObservableProperty]
-        private double cycleTime = DefaultCycleMs;
+        private double _cycleTime = DefaultCycleMs;
 
         [ObservableProperty]
-        private bool isRunning = false;
+        private bool _isRunning = false;
 
         [ObservableProperty]
-        private ObservableCollection<InputItemViewModel> inputs = new();
+        private ObservableCollection<InputItemViewModel> _inputs = new();
 
         [ObservableProperty]
-        private ObservableCollection<OutputItemViewModel> outputs = new();
+        private ObservableCollection<OutputItemViewModel> _outputs = new();
 
         [ObservableProperty]
-        private ObservableCollection<CounterItemViewModel> counters = new();
+        private ObservableCollection<CounterItemViewModel> _counters = new();
 
         public MainWindowViewModel()
         {
@@ -56,47 +56,49 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private void InitializeExecutionUnit()
         {
-            executionUnit.CycleTimeMs = (int)CycleTime;
-            executionUnit.Inputs.Attach((s, e) => UpdateInputs());
-            executionUnit.Outputs.Attach((s, e) => UpdateOutputs());
-            executionUnit.Counters.Attach((s, e) => UpdateCounters());
+            _executionUnit.CycleTimeMs = (int)CycleTime;
+            _executionUnit.Inputs.Attach((s, e) => UpdateInputs());
+            _executionUnit.Outputs.Attach((s, e) => UpdateOutputs());
+            _executionUnit.Counters.Attach((s, e) => UpdateCounters());
 
             // Beispiel: Blinker auf Input 0
-//            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
+            _executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Blinker 0" };
         }
 
         private void UpdateInputOutputCounterViews()
         {
             Inputs.Clear();
-            for (int i = 0; i < executionUnit.Inputs.Length; i++)
+            for (int i = 0; i < _executionUnit.Inputs.Length; i++)
             {
-                Inputs.Add(new InputItemViewModel
+                var inputVM = new InputItemViewModel
                 {
                     Index = i,
-                    Label = executionUnit.Inputs[i].Label,
-                    Value = executionUnit.Inputs[i].Value,
-                    IsModifiable = executionUnit.Inputs[i].Modifiable,
-                });
+                    Label = _executionUnit.Inputs[i].Label,
+                    Value = _executionUnit.Inputs[i].Value,
+                    IsModifiable = _executionUnit.Inputs[i].Modifiable,
+                };
+                inputVM.SetValueChangedCallback((idx, val) => OnInputValueChanged(idx, val));
+                Inputs.Add(inputVM);
             }
 
             Outputs.Clear();
-            for (int i = 0; i < executionUnit.Outputs.Length; i++)
+            for (int i = 0; i < _executionUnit.Outputs.Length; i++)
             {
                 Outputs.Add(new OutputItemViewModel
                 {
                     Index = i,
-                    Label = executionUnit.Outputs[i].Label,
-                    Value = executionUnit.Outputs[i].Value,
+                    Label = _executionUnit.Outputs[i].Label,
+                    Value = _executionUnit.Outputs[i].Value,
                 });
             }
 
             Counters.Clear();
-            for (int i = 0; i < executionUnit.Counters.Length; i++)
+            for (int i = 0; i < _executionUnit.Counters.Length; i++)
             {
                 Counters.Add(new CounterItemViewModel
                 {
                     Index = i,
-                    Value = executionUnit.Counters.GetValue(i),
+                    Value = _executionUnit.Counters.GetValue(i),
                 });
             }
         }
@@ -105,7 +107,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             foreach (var input in Inputs)
             {
-                input.Value = executionUnit.Inputs[input.Index].Value;
+                input.Value = _executionUnit.Inputs[input.Index].Value;
             }
         }
 
@@ -113,7 +115,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             foreach (var output in Outputs)
             {
-                output.Value = executionUnit.Outputs[output.Index].Value;
+                output.Value = _executionUnit.Outputs[output.Index].Value;
             }
         }
 
@@ -121,7 +123,22 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             foreach (var counter in Counters)
             {
-                counter.Value = executionUnit.Counters.GetValue(counter.Index);
+                counter.Value = _executionUnit.Counters.GetValue(counter.Index);
+            }
+        }
+
+        private void OnInputValueChanged(int index, bool newValue)
+        {
+            if (index >= 0 && index < _executionUnit.Inputs.Length)
+            {
+                if (_executionUnit.Inputs[index] is Switch sw)
+                {
+                    // Toggle den Switch basierend auf dem gewünschten Wert
+                    if (sw.Value != newValue)
+                    {
+                        sw.Toggle();
+                    }
+                }
             }
         }
 
@@ -201,19 +218,19 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 return;
             }
 
-            executionUnit.CycleTimeMs = (int)CycleTime;
+            _executionUnit.CycleTimeMs = (int)CycleTime;
             var lines = SourceCode.Split(Environment.NewLine);
 
-            executionUnit.LoadSource(lines);
-            if (executionUnit.HasParseError)
+            _executionUnit.LoadSource(lines);
+            if (_executionUnit.HasParseError)
             {
-                StatusText = $"Parse-Fehler: {executionUnit.ParseErrorMessage}";
+                StatusText = $"Parse-Fehler: {_executionUnit.ParseErrorMessage}";
                 return;
             }
 
-            executionUnit.Start();
+            _executionUnit.Start();
             IsRunning = true;
-            StatusText = $"Läuft | Zyklus {executionUnit.CycleTimeMs} ms";
+            StatusText = $"Läuft | Zyklus {_executionUnit.CycleTimeMs} ms";
         }
 
         [RelayCommand]
@@ -221,7 +238,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             if (IsRunning)
             {
-                executionUnit.Stop();
+                _executionUnit.Stop();
                 IsRunning = false;
                 StatusText = "Gestoppt";
             }
@@ -230,9 +247,9 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [RelayCommand]
         private void ToggleInput(int index)
         {
-            if (index >= 0 && index < executionUnit.Inputs.Length)
+            if (index >= 0 && index < _executionUnit.Inputs.Length)
             {
-                if (executionUnit.Inputs[index] is Switch sw)
+                if (_executionUnit.Inputs[index] is Switch sw)
                 {
                     sw.Toggle();
                     if (index < Inputs.Count)
@@ -248,49 +265,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             if (IsRunning)
             {
-                executionUnit.Stop();
+                _executionUnit.Stop();
             }
         }
 
         partial void OnCycleTimeChanged(double oldValue, double newValue)
         {
-            executionUnit.CycleTimeMs = (int)Math.Max(1, newValue);
+            _executionUnit.CycleTimeMs = (int)Math.Max(1, newValue);
         }
-    }
-
-    public partial class InputItemViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        public int index;
-
-        [ObservableProperty]
-        public string label = string.Empty;
-
-        [ObservableProperty]
-        public bool value;
-
-        [ObservableProperty]
-        public bool isModifiable;
-    }
-
-    public partial class OutputItemViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        public int index;
-
-        [ObservableProperty]
-        public string label = string.Empty;
-
-        [ObservableProperty]
-        public bool value;
-    }
-
-    public partial class CounterItemViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        public int index;
-
-        [ObservableProperty]
-        public int value;
     }
 }

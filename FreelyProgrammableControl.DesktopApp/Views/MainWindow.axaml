@@ -123,7 +123,7 @@
                       CornerRadius="4" 
                       Padding="8" 
                       Margin="0,2,0,2">
-                <TextBlock Text="{Binding Label}" Foreground="Black"/>
+                <TextBlock Text="{Binding Label}" />
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

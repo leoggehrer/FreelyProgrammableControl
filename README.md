@@ -36,31 +36,65 @@ dotnet run --project FreelyProgrammableControl.DesktopApp
 ```
 Aktuell zeigt die App nur ein "Welcome to Avalonia!"-Gerüst und bindet noch keine `ExecutionUnit`. Sie kann als Basis für eine Visualisierung genutzt werden.
 
-## .fpc-Befehlssatz (Kurzreferenz)
+## .fpc-Befehlssatz - Vollständige Befehlsübersicht
+
 Jede Zeile wird zu einer `ParsedLine` verarbeitet. Kommentare beginnen mit `#`.
 
-### Operanden laden
-- `GET 1` / `GET 0`: Konstante auf den Stack
-- `GET I|O|M|T n`: Wert von Input/Output/Memory/Timer `n` auf den Stack
-- `GETNOT I|O|M|T n`: Negierten Wert auf den Stack
+### Befehlstabelle
 
-### Stack/Logik
-- `DUP` oder `DUP n`: Obersten Stackwert duplizieren (n-mal)
-- `NOT`, `AND`, `OR`, `XOR`: Logische Verknüpfungen auf den obersten Stackwerten
+| Kategorie | Befehl | Operanden | Beschreibung | Stack-Effekt |
+|-----------|--------|-----------|--------------|--------------|
+| **Konstanten** | `GET 0` | - | Lädt die Konstante `false` (0) auf den Stack | Push(0) |
+| | `GET 1` | - | Lädt die Konstante `true` (1) auf den Stack | Push(1) |
+| **Lesen** | `GET I n` | n = Index | Lädt den Wert von Input `n` auf den Stack | Push(I[n]) |
+| | `GET O n` | n = Index | Lädt den Wert von Output `n` auf den Stack | Push(O[n]) |
+| | `GET M n` | n = Index | Lädt den Wert von Memory `n` auf den Stack | Push(M[n]) |
+| | `GET T n` | n = Index | Lädt den Wert von Timer `n` auf den Stack | Push(T[n]) |
+| **Negiertes Lesen** | `GETNOT I n` | n = Index | Lädt den negierten Wert von Input `n` auf den Stack | Push(!I[n]) |
+| | `GETNOT O n` | n = Index | Lädt den negierten Wert von Output `n` auf den Stack | Push(!O[n]) |
+| | `GETNOT M n` | n = Index | Lädt den negierten Wert von Memory `n` auf den Stack | Push(!M[n]) |
+| | `GETNOT T n` | n = Index | Lädt den negierten Wert von Timer `n` auf den Stack | Push(!T[n]) |
+| **Stack-Operationen** | `DUP` | - | Dupliziert den obersten Stack-Wert einmal | Push(Top) |
+| | `DUP n` | n = Anzahl | Dupliziert den obersten Stack-Wert n-mal | Push(Top) × n |
+| **Logische Operationen** | `NOT` | - | Negiert den obersten Stack-Wert | A → !A |
+| | `AND` | - | Logisches UND der obersten zwei Stack-Werte | A, B → A && B |
+| | `OR` | - | Logisches ODER der obersten zwei Stack-Werte | A, B → A \|\| B |
+| | `XOR` | - | Logisches XOR der obersten zwei Stack-Werte | A, B → A ^ B |
+| **Schreiben** | `MOV O n` | n = Index | Pop vom Stack und schreibt in Output `n` | Pop() → O[n] |
+| | `MOV M n` | n = Index | Pop vom Stack und schreibt in Memory `n` | Pop() → M[n] |
+| **Bedingtes Schreiben** | `CMOV O n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Output `n` = v (0/1) | Pop(), wenn true: O[n] = v |
+| | `CMOV M n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Memory `n` = v (0/1) | Pop(), wenn true: M[n] = v |
+| **Timer/Counter setzen** | `SET T n v` | n = Index, v = Wert | Setzt Timer `n` auf v (ms) | - |
+| | `SET C n v` | n = Index, v = Wert | Setzt Counter `n` auf Wert v | - |
+| **Bedingtes Setzen** | `CSET T n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Timer `n` = v (ms) | Pop(), wenn true: T[n] = v |
+| | `CSET C n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Counter `n` = v | Pop(), wenn true: C[n] = v |
+| **Counter-Operationen** | `CINC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` inkrementieren | Pop(), wenn true: C[n]++ |
+| | `CDEC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` dekrementieren | Pop(), wenn true: C[n]-- |
+| **Vergleiche** | `CMP C n v` | n = Index, v = Wert | Vergleich: Counter `n` == v auf den Stack | Push(C[n] == v) |
+| | `GT C n v` | n = Index, v = Wert | Vergleich: Counter `n` > v auf den Stack | Push(C[n] > v) |
+| | `LE C n v` | n = Index, v = Wert | Vergleich: Counter `n` < v auf den Stack | Push(C[n] < v) |
+| **Kommentare** | `# Text` | - | Kommentar, wird ignoriert | - |
 
-### Schreiben
-- `MOV O|M n`: Pop und in Output/Memory `n` schreiben
-- `CMOV O|M n v`: Pop, wenn true: Output/Memory `n` auf `v` (0/1) setzen
+### Operanden-Typen
 
-### Timer/Counter
-- `SET T|C n v`: Timer/Counter setzen
-- `CSET T|C n v`: Pop, wenn true: Timer/Counter setzen
-- `CINC C n` / `CDEC C n`: Pop, wenn true: Counter inkrementieren/dekrementieren
+| Typ | Bedeutung | Beispiel |
+|-----|-----------|----------|
+| `I` | Input (Eingang) | `GET I 0` - Liest Input 0 |
+| `O` | Output (Ausgang) | `MOV O 5` - Schreibt in Output 5 |
+| `M` | Memory (Speicher) | `GET M 10` - Liest Memory 10 |
+| `T` | Timer | `SET T 2 1000` - Setzt Timer 2 auf 1000 ms |
+| `C` | Counter (Zähler) | `CINC C 3` - Inkrementiert Counter 3 |
 
-### Vergleiche
-- `CMP C n v`: Counter `n` == `v` auf den Stack
-- `GT C n v`: Counter `n` > `v` auf den Stack
-- `LE C n v`: Counter `n` < `v` auf den Stack
+### Ressourcen-Limits
+
+| Ressource | Standard-Größe | Beschreibung |
+|-----------|----------------|--------------|
+| Memory | 1024 | Boolean-Speicherzellen |
+| Timers | 264 | Timer (in Millisekunden) |
+| Counters | 264 | Integer-Zähler |
+| Inputs | Konfigurierbar | Input-Geräte (default: 20/64) |
+| Outputs | Konfigurierbar | Output-Geräte (default: 20/64) |
+| Stack | Dynamisch | Boolean-Stack für Operationen |
 
 ## Beispielprogramme
 ### AND-Beispiel

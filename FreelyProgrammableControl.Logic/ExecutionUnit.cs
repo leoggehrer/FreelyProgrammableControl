@@ -223,6 +223,7 @@ namespace FreelyProgrammableControl.Logic
             running = true;
             while (running)
             {
+                stack.Clear();
                 foreach (var parsedLine in parsedLines)
                 {
                     Execute(parsedLine);
