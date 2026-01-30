@@ -1,4 +1,4 @@
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Execution
 {
     /// <summary>
     /// Represents a collection of timers, each with a specific duration and start time.

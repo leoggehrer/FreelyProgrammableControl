@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Input
 {
     /// <summary>
     /// Represents a collection of input devices that can be accessed by index.

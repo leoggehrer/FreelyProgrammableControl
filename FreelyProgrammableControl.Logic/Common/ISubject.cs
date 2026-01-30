@@ -1,5 +1,4 @@
-
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>
     /// Represents a subject that can have observers attached to it.

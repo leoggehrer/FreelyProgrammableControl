@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Input
 {
     /// <summary>
     /// Represents an input device that can receive input from users or other sources.

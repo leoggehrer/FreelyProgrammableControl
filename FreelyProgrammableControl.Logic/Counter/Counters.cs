@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Counter
 {
     /// <summary>
     /// Represents a collection of counters that can be reset and updated.

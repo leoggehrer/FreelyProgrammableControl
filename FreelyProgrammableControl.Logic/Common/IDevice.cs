@@ -1,9 +1,9 @@
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>
     /// Represents a device with a label and a boolean value.
     /// </summary>
-    public interface IDevice
+    public partial interface IDevice
     {
         /// <summary>
         /// Gets the label associated with the property.

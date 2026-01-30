@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Output
 {
     /// <summary>
     /// Represents an output device that can hold a boolean value.

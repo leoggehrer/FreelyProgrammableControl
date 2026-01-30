@@ -1,4 +1,4 @@
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>
     /// Represents an abstract subject class that maintains a list of observers and provides methods to manage them.

@@ -1,5 +1,6 @@
 using CommonTool;
-using FreelyProgrammableControl.Logic;
+using FreelyProgrammableControl.Logic.Execution;
+using FreelyProgrammableControl.Logic.Input;
 
 namespace FreelyProgrammableControl.ConApp
 {
@@ -130,7 +131,7 @@ namespace FreelyProgrammableControl.ConApp
                     {
                         var idx = Convert.ToInt32(self.Params["idx"]);
 
-                        if (executionUnit.Inputs[idx] is Logic.Switch sw)
+                        if (executionUnit.Inputs[idx] is Switch sw)
                         {
                             sw.Toggle();
                         }

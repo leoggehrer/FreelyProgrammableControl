@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Output
 {
     /// <summary>
     /// Represents a default output device that implements the <see cref="IOutputDevice"/> interface.

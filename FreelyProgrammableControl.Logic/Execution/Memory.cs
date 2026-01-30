@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Execution
 {
     /// <summary>
     /// Represents a memory structure that holds a fixed number of values of type <typeparamref name="T"/>.
@@ -6,7 +8,7 @@ namespace FreelyProgrammableControl.Logic
     /// </summary>
     /// <typeparam name="T">The type of values stored in the memory.</typeparam>
     /// <param name="length">The length of the memory, which determines the number of values it can hold.</param>
-    internal class Memory<T>(int length) : Subject
+    internal class Memory<T>(int length) : Subject, IMemory<T>
     {
         #region  fields
         private readonly T[] values = new T[Math.Max(length, 0)];

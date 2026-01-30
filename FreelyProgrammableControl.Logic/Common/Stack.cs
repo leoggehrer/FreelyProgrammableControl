@@ -1,4 +1,4 @@
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>
     /// Represents a generic stack data structure that allows

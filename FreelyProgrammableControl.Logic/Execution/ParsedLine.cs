@@ -1,7 +1,6 @@
-
 using FreelyProgrammableControl.Logic.Extensions;
 
-namespace FreelyProgrammableControl.Logic
+namespace FreelyProgrammableControl.Logic.Execution
 {
     /// <summary>
     /// Represents a parsed line of instruction from a source input.

@@ -1,93 +1,76 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
-  <Class Name="FreelyProgrammableControl.Logic.ExecutionUnit">
-    <Position X="5.5" Y="4.5" Width="1.5" />
-    <AssociationLine Name="counters" Type="FreelyProgrammableControl.Logic.Counters">
-      <MemberNameLabel ManuallyPlaced="true">
-        <Position X="1.118" Y="0.102" />
-      </MemberNameLabel>
-    </AssociationLine>
+  <Class Name="FreelyProgrammableControl.Logic.Execution.ExecutionUnit">
+    <Position X="5.75" Y="2.5" Width="2" />
     <TypeIdentifier>
       <HashCode>JAQgAAABAiQABAQACAAQQAAAUAgAAJAAIAAABC4AAAI=</HashCode>
-      <FileName>ExecutionUnit.cs</FileName>
+      <FileName>Execution\ExecutionUnit.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
-      <Field Name="stack" />
-      <Field Name="memory" />
       <Field Name="timers" />
-      <Field Name="counters" />
-      <Field Name="inputs" />
-      <Field Name="outputs" />
+      <Field Name="memory" />
+      <Field Name="stack" />
+      <Property Name="Counters" />
+      <Property Name="Outputs" />
+      <Property Name="Inputs" />
     </ShowAsAssociation>
-    <ShowAsCollectionAssociation>
-      <Field Name="parsedLines" />
-    </ShowAsCollectionAssociation>
   </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Inputs">
-    <Position X="10.25" Y="4.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAIAAAAAAACAAAAABAAAAAAEAAAAAAAAAAAAA=</HashCode>
-      <FileName>Inputs.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Outputs">
-    <Position X="0.5" Y="4.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAIAAABgAACAAAAABAAAAAAMAAAAAAAAAAAAA=</HashCode>
-      <FileName>Outputs.cs</FileName>
-    </TypeIdentifier>
-    <Lollipop Position="0.2" />
-  </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Stack&lt;T&gt;">
-    <Position X="5.5" Y="0.5" Width="1.5" />
+  <Class Name="FreelyProgrammableControl.Logic.Execution.Timers">
+    <Position X="3.25" Y="6" Width="1.5" />
     <NestedTypes>
-      <Class Name="FreelyProgrammableControl.Logic.Stack&lt;T&gt;.Element" Collapsed="true">
+      <Class Name="FreelyProgrammableControl.Logic.Execution.Timers.Timer" Collapsed="true">
         <TypeIdentifier>
-          <NewMemberFileName>Stack.cs</NewMemberFileName>
-        </TypeIdentifier>
-      </Class>
-    </NestedTypes>
-    <TypeIdentifier>
-      <HashCode>AABAAAAAgAAAAAAAAAAAAAAAAACIAAAAAAAAAABACAA=</HashCode>
-      <FileName>Stack.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Memory&lt;T&gt;">
-    <Position X="2.25" Y="0.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>AAAAAAAAIAAABgAAAAAAAABAAAAAACAAAAAAAAAAAAA=</HashCode>
-      <FileName>Memory.cs</FileName>
-    </TypeIdentifier>
-  </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Timers">
-    <Position X="8.5" Y="0.5" Width="1.5" />
-    <NestedTypes>
-      <Class Name="FreelyProgrammableControl.Logic.Timers.Timer" Collapsed="true">
-        <TypeIdentifier>
-          <NewMemberFileName>Timers.cs</NewMemberFileName>
+          <NewMemberFileName>Execution\Timers.cs</NewMemberFileName>
         </TypeIdentifier>
       </Class>
     </NestedTypes>
     <TypeIdentifier>
       <HashCode>AAQAAAAAIAAABAAAAAAAAABAAAAAAAAAAAAAAAAABAA=</HashCode>
-      <FileName>Timers.cs</FileName>
+      <FileName>Execution\Timers.cs</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="FreelyProgrammableControl.Logic.Counters">
-    <Position X="2" Y="8" Width="1.5" />
+  <Class Name="FreelyProgrammableControl.Logic.Execution.Memory&lt;T&gt;">
+    <Position X="10.5" Y="6.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAIAAABgAAAAAAAABAAAAAAKAAAAAAAAAAAAA=</HashCode>
-      <FileName>Counters.cs</FileName>
+      <HashCode>AAAAAAAAIAAABgAAAAAAAABAAAAAACAAAAAAAAAAAAA=</HashCode>
+      <FileName>Execution\Memory.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
   </Class>
-  <Class Name="FreelyProgrammableControl.Logic.ParsedLine">
-    <Position X="10.25" Y="7.5" Width="1.5" />
+  <Class Name="FreelyProgrammableControl.Logic.Common.Stack&lt;T&gt;">
+    <Position X="8.5" Y="3.75" Width="1.5" />
+    <NestedTypes>
+      <Class Name="FreelyProgrammableControl.Logic.Common.Stack&lt;T&gt;.Element" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Common\Stack.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
     <TypeIdentifier>
-      <HashCode>AQACAAAAAgAAAAAAAIAIAAAAAAAIAAEKAAAgAACAAAA=</HashCode>
-      <FileName>ParsedLine.cs</FileName>
+      <HashCode>AABAAAAAgAAAAAAAAAAAAAAAAACIAAAAAAAAAABACAA=</HashCode>
+      <FileName>Common\Stack.cs</FileName>
     </TypeIdentifier>
   </Class>
+  <Interface Name="FreelyProgrammableControl.Logic.Counter.ICounters">
+    <Position X="1.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Counter\ICounters.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="FreelyProgrammableControl.Logic.Output.IOutputs">
+    <Position X="10.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAACAAAAABAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Output\IOutputs.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="FreelyProgrammableControl.Logic.Input.IInputs">
+    <Position X="1.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAACAAAAABAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Input\IInputs.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
   <Font Name="Segoe UI" Size="9" />
 </ClassDiagram>

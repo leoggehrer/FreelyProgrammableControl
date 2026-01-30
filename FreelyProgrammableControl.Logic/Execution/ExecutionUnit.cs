@@ -1,4 +1,9 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+using FreelyProgrammableControl.Logic.Counter;
+using FreelyProgrammableControl.Logic.Input;
+using FreelyProgrammableControl.Logic.Output;
+
+namespace FreelyProgrammableControl.Logic.Execution
 {
     /// <summary>
     /// Represents an execution unit that processes parsed lines of instructions.
@@ -13,13 +18,15 @@ namespace FreelyProgrammableControl.Logic
         private volatile bool running = false;
         private readonly List<ParsedLine> parsedLines = [];
 
-        private readonly Stack<bool> stack = new();
+        private readonly Common.Stack<bool> stack = new();
 
         private readonly Memory<bool> memory = new(1024);
-        private readonly Timers timers = new(264);
-        private readonly Counters counters = new(264);
+
         private readonly Inputs inputs = new(inputs);
         private readonly Outputs outputs = new(outputs);
+
+        private readonly Timers timers = new(264);
+        private readonly Counters counters = new(264);
         #endregion fields
 
         #region  properties
@@ -210,6 +217,7 @@ namespace FreelyProgrammableControl.Logic
             running = true;
             while (running)
             {
+                stack.Clear();
                 foreach (var parsedLine in parsedLines)
                 {
                     Execute(parsedLine);

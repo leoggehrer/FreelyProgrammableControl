@@ -22,23 +22,23 @@
     <!-- Menüleiste -->
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="_Datei">
-        <MenuItem Header="_Neu" Click="OnNewClick"/>
-        <MenuItem Header="_Öffnen" Click="OnOpenClick"/>
-        <MenuItem Header="_Speichern" Click="OnSaveClick"/>
-        <MenuItem Header="Speichern _unter..." Click="OnSaveAsClick"/>
+        <MenuItem Header="_Neu" Command="{Binding NewCommand}"/>
+        <MenuItem Header="_Öffnen" Command="{Binding OpenCommand}"/>
+        <MenuItem Header="_Speichern" Command="{Binding SaveCommand}"/>
+        <MenuItem Header="Speichern _unter..." Command="{Binding SaveAsCommand}"/>
         <Separator/>
-        <MenuItem Header="_Beenden" Click="OnExitClick"/>
+        <MenuItem Header="_Beenden" Command="{Binding ExitCommand}"/>
       </MenuItem>
       <MenuItem Header="_Bearbeiten">
-        <MenuItem Header="_Rückgängig" Click="OnUndoClick"/>
-        <MenuItem Header="_Wiederholen" Click="OnRedoClick"/>
+        <MenuItem Header="_Rückgängig" Command="{Binding UndoCommand}"/>
+        <MenuItem Header="_Wiederholen" Command="{Binding RedoCommand}"/>
         <Separator/>
-        <MenuItem Header="_Kopieren" Click="OnCopyClick"/>
-        <MenuItem Header="_Einfügen" Click="OnPasteClick"/>
-        <MenuItem Header="_Ausschneiden" Click="OnCutClick"/>
+        <MenuItem Header="_Kopieren" Command="{Binding CopyCommand}"/>
+        <MenuItem Header="_Einfügen" Command="{Binding PasteCommand}"/>
+        <MenuItem Header="_Ausschneiden" Command="{Binding CutCommand}"/>
       </MenuItem>
       <MenuItem Header="_Hilfe">
-        <MenuItem Header="_Über" Click="OnAboutClick"/>
+        <MenuItem Header="_Über" Command="{Binding AboutCommand}"/>
       </MenuItem>
     </Menu>
 
@@ -52,59 +52,92 @@
       <Grid.RowDefinitions>
         <RowDefinition Height="30" />
         <RowDefinition Height="*" />
-        <RowDefinition Height="100" />
         <RowDefinition Height="30" />
       </Grid.RowDefinitions>
 
-      <StackPanel x:Name="Inputs" Grid.Row="1" Grid.Column="0" Margin="10"></StackPanel>
+      <ItemsControl Grid.Row="1" Grid.Column="0" Margin="10" ItemsSource="{Binding Inputs}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:InputDeviceViewModel">
+            <CheckBox IsEnabled="{Binding IsEnabled}"
+                      IsChecked="{Binding IsChecked}"
+                      Content="{Binding Label}"
+                      Margin="0" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <!-- Mittlerer Bereich mit mehrzeiligem Textfeld -->
       <StackPanel x:Name="Buttons"
                   Grid.Row="0"
                   Grid.Column="1"
                   Orientation="Horizontal">
-        <Button x:Name="Start"
-                Click="OnStartClick">Start</Button>
-        <Button x:Name="Stop"
-                Click="OnStopClick">Stop</Button>
-        <Button x:Name="Parse"
-                Click="OnParseClick">Parse</Button>
+        <Button Width="100"
+                HorizontalContentAlignment="Center"
+                Command="{Binding StartCommand}">Start</Button>
+        <Button Width="100"
+                HorizontalContentAlignment="Center"
+                Command="{Binding StopCommand}">Stop</Button>
+        <Button Width="100"
+                HorizontalContentAlignment="Center"
+                Command="{Binding ParseCommand}">Parse</Button>
       </StackPanel>
-      <StackPanel Grid.Column="1">
-      </StackPanel>
-      <TextBox x:Name="Source"
-               Grid.Row="1"
-               Grid.Column="1"
-               VerticalAlignment="Stretch"
-               HorizontalAlignment="Stretch"
-               AcceptsReturn="True"
-               TextWrapping="Wrap"
-               FontFamily="Consolas"
-               Margin="5" />
-      <TextBox x:Name="Output"
-               Grid.Row="2"
-               Grid.Column="1"
-               IsReadOnly="True"
-               VerticalAlignment="Stretch"
-               HorizontalAlignment="Stretch"
-               AcceptsReturn="True"
-               TextWrapping="Wrap"
-               FontFamily="Consolas"
-               Margin="5" />
-      <StackPanel x:Name="Outputs" Grid.Row="1" Grid.Column="2" Margin="10"></StackPanel>
+
+      <Grid Grid.Row="1" Grid.Column="1">
+		  <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="3" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <TextBox Grid.Row="0"
+                   Grid.Column="0"
+                   VerticalAlignment="Stretch"
+                   HorizontalAlignment="Stretch"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   FontFamily="Consolas"
+                   Margin="5"
+                   IsReadOnly="{Binding IsSourceReadOnly}"
+                   Text="{Binding SourceText, Mode=TwoWay}" />
+          <GridSplitter Grid.Row="1" Grid.Column="0" Background="LightGray" ResizeDirection="Rows" />
+          <TextBox Grid.Row="2"
+                   Grid.Column="0"
+                   IsReadOnly="True"
+                   VerticalAlignment="Stretch"
+                   HorizontalAlignment="Stretch"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   FontFamily="Consolas"
+                   Margin="5"
+                   Text="{Binding OutputText}" />
+      </Grid>
+
+      <ItemsControl Grid.Row="1" Grid.Column="2" Margin="10" ItemsSource="{Binding Outputs}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:OutputDeviceViewModel">
+            <RadioButton GroupName="{Binding GroupName}"
+                         IsEnabled="False"
+                         IsChecked="{Binding IsChecked}"
+                         Content="{Binding Label}"
+                         Margin="0" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
 
       <!-- Statusleiste -->
       <TextBlock x:Name="StatusLeft"
-                 Grid.Row="3"
+                 Grid.Row="4"
                  Grid.Column="0"
                  Text=""
                  Margin="10"/>
-      <TextBlock x:Name="Status"
-                 Grid.Row="3"
+      <TextBlock Grid.Row="4"
                  Grid.Column="1"
-                 Text="Bereit"
+                 Text="{Binding StatusText}"
                  Margin="10"/>
       <TextBlock x:Name="StatusRight"
-                 Grid.Row="3"
+                 Grid.Row="4"
                  Grid.Column="2"
                  Text=""
                  Margin="10"/>

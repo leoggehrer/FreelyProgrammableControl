@@ -1,4 +1,6 @@
-namespace FreelyProgrammableControl.Logic
+using FreelyProgrammableControl.Logic.Common;
+
+namespace FreelyProgrammableControl.Logic.Output
 {
     /// <summary>
     /// Represents a collection of output devices and provides methods to access their values.
