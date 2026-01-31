@@ -25,7 +25,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             /// <value>
             /// An integer representing the duration in milliseconds.
             /// </value>
-            public int DurationInMs { get; set; } = durationInMs;
+            public long DurationInMs { get; set; } = durationInMs;
             /// <summary>
             /// Gets a value indicating whether the specified duration has not yet elapsed
             /// since the specified <see cref="DateTime"/>.
@@ -38,7 +38,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 get
                 {
-                    var totalInMs = (DateTime.Now - DateTime).TotalMilliseconds;
+                    var totalInMs = (long)(DateTime.Now - DateTime).TotalMilliseconds;
 
                     return totalInMs <= DurationInMs;
                 }

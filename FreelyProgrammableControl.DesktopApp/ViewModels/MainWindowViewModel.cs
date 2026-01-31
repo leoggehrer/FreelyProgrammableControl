@@ -45,7 +45,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         public MainWindowViewModel()
         {
-            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
+//            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             StatusText = selectedFile;
 

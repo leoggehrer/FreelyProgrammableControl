@@ -326,5 +326,13 @@ namespace FreelyProgrammableControl.Logic.Execution
                 }
             }
         }
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>String representation of the current object.</returns>
+        public override string ToString()
+        {
+            return $"{LineNumber}: {Source.ToLower()}";
+        }
     }
 }
