@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>
@@ -105,6 +107,23 @@ namespace FreelyProgrammableControl.Logic.Common
         public void Push(T data)
         {
             head = new Element(data, head);
+        }
+
+        /// <summary>
+        /// Returns a string that represents the current stack.
+        /// </summary>
+        /// <returns>A string representation of the stack's contents.</returns>
+        public override string ToString()
+        {
+            var result = new StringBuilder(head == null ? "Stack is empty." : "Stack contents:\n");
+            var current = head;
+
+            while (current != null)
+            {
+                result.AppendLine(current.Data!.ToString()!);
+                current = current.Next;
+            }
+            return result.ToString();
         }
         #endregion methods
     }

@@ -59,6 +59,13 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </value>
         internal string Instruction { get; set; } = string.Empty;
         /// <summary>
+        /// Gets or sets the comment.
+        /// <value>
+        /// A string representing the comment. The default value is an empty string.
+        /// </value>
+        /// </summary>
+        internal string Comment { get; set; } = string.Empty;
+        /// <summary>
         /// Gets or sets the subject.
         /// </summary>
         /// <value>
@@ -92,9 +99,45 @@ namespace FreelyProgrammableControl.Logic.Execution
         {
             LineNumber = lineNumber;
             Source = source;
+            IsComment = IsCommentLine(source);
+            Comment = ToComment(source);
             Instruction = ToInstruction(source);
             AnalyzeInstruction();
         }
+        /// <summary>
+        /// Determines whether the given source string is a comment line.
+        /// </summary>
+        /// <param name="source">The source string to be checked.</param>
+        /// <returns><c>true</c> if the source string is a comment line; otherwise, <c>false</c>.</returns>
+        private static bool IsCommentLine(string source)
+        {
+            return source.Trim().StartsWith('#');
+        }
+        /// <summary>
+        /// Converts a given source string into a comment string.
+        /// </summary>
+        /// <param name="source">The source string to be converted.</param>
+        /// <returns>A string representing the comment extracted from the source.</returns>
+        private static string ToComment(string source)
+        {
+            var result = string.Empty;
+
+            if (IsCommentLine(source))
+            {
+                result = source.Trim();
+            }
+            else
+            {
+                var commentIndex = source.IndexOf('#');
+
+                if (commentIndex >= 0)
+                {
+                    result = source.GetAtFirst('#').Trim();
+                }
+            }
+            return result;
+        }
+
         /// <summary>
         /// Converts a given instruction string into a standardized format.
         /// </summary>
@@ -108,7 +151,8 @@ namespace FreelyProgrammableControl.Logic.Execution
         private static string ToInstruction(string source)
         {
             var result = new List<string>();
-            var items = source.RemoveLeftAndRight(' ')
+            var command = source.CutAtFirst('#').Trim(); // Remove comments
+            var items = command.RemoveLeftAndRight(' ')
                                .ToUpper()
                                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
@@ -139,21 +183,31 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <see cref
         private void AnalyzeInstruction()
         {
-            IsComment = Instruction.StartsWith('#');
             if (IsComment == false)
             {
                 var items = Instruction.Split(' ');
 
                 try
                 {
+                    // e.g.: (empty line) => NOP
+                    if (Instruction == string.Empty)
+                    {
+                        Instruction = "NOP";
+                        Subject = string.Empty;
+                    }
+                    // e.g.: NOP => do nothing
+                    else if (Instruction == "NOP")
+                    {
+                        Subject = string.Empty;
+                    }
                     // e.g.: GET 1 => stack.push(true)
                     // e.g.: GET 0 => stack.push(false)
-                    if (items.Length == 2 && (items[0] == "G" || items[0] == "GET"))
+                    else if (items.Length == 2 && (items[0] == "G" || items[0] == "GET"))
                     {
                         Instruction = "GET";
                         Subject = "C_OPD";  // C_OPD = Constant Operand
                         Address = 0;
-                        Value = items[1] == "1" ? 1 : 0;
+                        Value = Convert.ToInt32(items[1]) == 1 ? 1 : 0;
                     }
                     // e.g.: GET I 10 => stack.push(inputs.GetValue(10))
                     // e.g.: GET O 10 => stack.push(outputs.GetValue(10))
@@ -332,7 +386,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <returns>String representation of the current object.</returns>
         public override string ToString()
         {
-            return $"{LineNumber}: {Source.ToLower()}";
+            return $"{LineNumber}: {(IsComment ? Comment : Instruction + " " + Comment)}";
         }
     }
 }

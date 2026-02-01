@@ -1,3 +1,4 @@
+using System.Text;
 using FreelyProgrammableControl.Logic.Common;
 using FreelyProgrammableControl.Logic.Counter;
 using FreelyProgrammableControl.Logic.Input;
@@ -31,6 +32,30 @@ namespace FreelyProgrammableControl.Logic.Execution
         #endregion fields
 
         #region  properties
+        /// <summary>
+        /// Gets a string representation of the current state of the execution unit.
+        /// </summary>
+        public string State
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Running: {running}");
+                result.AppendLine($"Parse Error: {HasParseError} {(HasParseError ? "- " + ParseErrorMessage : string.Empty)}");
+                result.AppendLine($"Execution Error: {HasExecutionError} {(HasExecutionError ? "- " + ExecutionErrorMessage : string.Empty)}");
+                result.AppendLine("Stack:");
+                result.AppendLine(stack.ToString());
+                result.AppendLine("Memory:");
+                result.AppendLine(memory.ToString());
+                result.AppendLine("Timers:");
+                result.AppendLine(timers.ToString());
+                result.AppendLine("Counters:");
+                result.AppendLine(counters.ToString());
+
+                return result.ToString();
+            }
+        }
         /// <summary>
         /// Gets a value indicating whether there was a parse error.
         /// </summary>
@@ -149,7 +174,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             var result = new List<ParsedLine>();
             var lineNumber = 0;
 
-            foreach (var item in source.Where(l => string.IsNullOrEmpty(l) == false))
+            foreach (var item in source)//.Where(l => string.IsNullOrEmpty(l) == false))
             {
                 result.Add(new ParsedLine(lineNumber++, item));
             }
@@ -274,6 +299,9 @@ namespace FreelyProgrammableControl.Logic.Execution
                 {
                     switch (parsedLine.Instruction)
                     {
+                        case "NOP":
+                            // Do nothing
+                            break;
                         case "GET":
                             switch (parsedLine.Subject)
                             {

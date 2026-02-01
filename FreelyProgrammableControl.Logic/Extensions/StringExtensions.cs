@@ -13,6 +13,40 @@ namespace FreelyProgrammableControl.Logic.Extensions
     public static class StringExtensions
     {
         /// <summary>
+        /// Cuts the string at the first occurrence of the specified character.
+        /// </summary>
+        /// <param name="source">The input string to be processed.</param>
+        /// <param name="cutChar">The character at which to cut the string.</param>
+        /// <returns>A substring of the input string up to (but not including) the first occurrence of the specified character.</returns>
+        public static string CutAtFirst(this string source, char cutChar)
+        {
+            var result = source;
+            var idx = source.IndexOf(cutChar);
+
+            if (idx >= 0)
+            {
+                result = source.Substring(0, idx);
+            }
+            return result;
+        }
+        /// <summary>
+        /// Gets the substring after the first occurrence of the specified character. 
+        /// </summary>
+        /// <param name="source">The input string to be processed.</param>
+        /// <param name="cutChar">The character after which to get the substring.</param>
+        /// <returns>A substring of the input string starting immediately after the first occurrence of the specified character.</returns>
+        public static string GetAtFirst(this string source, char cutChar)
+        {
+            var result = string.Empty;
+            var idx = source.IndexOf(cutChar);
+
+            if (idx >= 0 && idx + 1 < source.Length)
+            {
+                result = source.Substring(idx + 1);
+            }
+            return result;
+        }
+        /// <summary>
         /// Removes the specified characters from the left and right sides of a string.
         /// </summary>
         /// <param name="source">The string to remove characters from.</param>
