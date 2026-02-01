@@ -1,3 +1,4 @@
+using System.Text;
 using FreelyProgrammableControl.Logic.Common;
 
 namespace FreelyProgrammableControl.Logic.Counter
@@ -89,6 +90,24 @@ namespace FreelyProgrammableControl.Logic.Counter
                 result += values[i];
             }
             return result;
+        }
+        /// <summary>
+        /// Returns a string representation of the counters contents.
+        /// </summary>
+        /// <returns>A string that represents the contents of the counters.</returns>
+        override public string ToString()
+        {
+            var result = new StringBuilder(values.Length == 0 ? "Counters are empty." : "Counters contents: ");
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (i > 0)
+                {
+                    result.Append(" - ");
+                }
+                result.Append($"{values[i]}");
+            }
+            return result.ToString();
         }
         #endregion methods
     }

@@ -17,7 +17,10 @@ namespace FreelyProgrammableControl.Logic.Execution
     {
         #region  fields
         private volatile bool running = false;
+        private bool debugEnabled = false;
         private int cycleTimeMs = 100;
+        private int currentLineNumber = -1;
+        private ParsedLine? executionLine = null;
         private readonly List<ParsedLine> parsedLines = [];
 
         private readonly Common.Stack<bool> stack = new();
@@ -42,18 +45,39 @@ namespace FreelyProgrammableControl.Logic.Execution
                 var result = new StringBuilder();
 
                 result.AppendLine($"Running: {running}");
-                result.AppendLine($"Parse Error: {HasParseError} {(HasParseError ? "- " + ParseErrorMessage : string.Empty)}");
-                result.AppendLine($"Execution Error: {HasExecutionError} {(HasExecutionError ? "- " + ExecutionErrorMessage : string.Empty)}");
-                result.AppendLine("Stack:");
-                result.AppendLine(stack.ToString());
-                result.AppendLine("Memory:");
-                result.AppendLine(memory.ToString());
-                result.AppendLine("Timers:");
-                result.AppendLine(timers.ToString());
-                result.AppendLine("Counters:");
-                result.AppendLine(counters.ToString());
+                result.AppendLine($"Debug Enabled: {debugEnabled}");
+                if (debugEnabled)
+                {
+                    if (executionLine != null)
+                    {
+                        result.AppendLine($"Execution Line: {executionLine.LineNumber} - {executionLine.Source}");
+                    }
+                    result.AppendLine(stack.ToString());
+                }
+                else
+                {
+                    result.AppendLine($"Cycle Time (ms): {cycleTimeMs}");
+                }
+                //                result.AppendLine(timers.ToString());
+                //                result.AppendLine(counters.ToString());
+                //                result.AppendLine(memory.ToString());
 
                 return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets or sets a value indicating whether debug mode is enabled.
+        /// </summary>
+        public bool DebugEnabled 
+        { 
+            get => debugEnabled; 
+            set
+            {
+                if (IsRunning == false)
+                {
+                    debugEnabled = value;
+                    NotifyAsync();
+                }
             }
         }
         /// <summary>
@@ -181,6 +205,27 @@ namespace FreelyProgrammableControl.Logic.Execution
             return [.. result];
         }
         /// <summary>
+        /// Executes a single step of the execution unit in debug mode.
+        /// </summary>
+        public void Step()
+        {
+            if (running
+                && DebugEnabled)
+            {
+                if (currentLineNumber == -1
+                    || currentLineNumber >= parsedLines.Count)
+                {
+                    stack.Clear();
+                    currentLineNumber = 0;
+                }
+
+                executionLine = parsedLines[currentLineNumber];
+                Execute(executionLine);
+                currentLineNumber++;
+                NotifyAsync();
+            }
+        }
+        /// <summary>
         /// Loads a source of strings for processing.
         /// </summary>
         /// <param name="source">An enumerable collection of strings representing the source data to be loaded.</param>
@@ -201,6 +246,7 @@ namespace FreelyProgrammableControl.Logic.Execution
 
             HasParseError = parsedLines.Any(e => e.HasError);
             ParseErrorMessage = parsedLines.FirstOrDefault(e => e.HasError)?.ErrorMessage;
+            NotifyAsync();
         }
         /// <summary>
         /// Initiates the execution process if the current state allows it.
@@ -215,17 +261,21 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </exception>
         public void Start()
         {
-            if (running == false && HasParseError == false && parsedLines.Any(e => e.IsComment == false))
+            if (running == false
+                && HasParseError == false
+                && parsedLines.Count > 0
+                && parsedLines.Any(e => e.IsComment == false))
             {
                 var thread = new Thread(Run) { IsBackground = true };
 
-                HasExecutionError = false;
-                ExecutionErrorMessage = null;
-
                 Reset();
+
+                currentLineNumber = 0;
+                executionLine = parsedLines[currentLineNumber];
 
                 running = true;
                 thread.Start();
+                NotifyAsync();
             }
         }
         /// <summary>
@@ -255,12 +305,22 @@ namespace FreelyProgrammableControl.Logic.Execution
             running = true;
             while (running)
             {
-                stack.Clear();
-                foreach (var parsedLine in parsedLines)
+                if (DebugEnabled == false)
                 {
-                    Execute(parsedLine);
+                    if (currentLineNumber == -1
+                        || currentLineNumber >= parsedLines.Count)
+                    {
+                        stack.Clear();
+                        currentLineNumber = 0;
+                    }
+                    while (currentLineNumber < parsedLines.Count && running)
+                    {
+                        executionLine = parsedLines[currentLineNumber];
+                        Execute(executionLine);
+                        currentLineNumber++;
+                    }
+                    NotifyAsync();
                 }
-                NotifyAsync();
 
                 if (running)
                 {
@@ -274,6 +334,12 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         private void Reset()
         {
+            executionLine = null;
+            currentLineNumber = -1;
+            HasExecutionError = false;
+            ExecutionErrorMessage = null;
+
+            stack.Clear();
             memory.Reset();
             timers.Reset();
             outputs.Reset();

@@ -1,3 +1,4 @@
+using System.Text;
 using FreelyProgrammableControl.Logic.Common;
 
 namespace FreelyProgrammableControl.Logic.Execution
@@ -68,6 +69,24 @@ namespace FreelyProgrammableControl.Logic.Execution
         public T GetValue(int position)
         {
             return values[position];
+        }
+
+        /// <summary>
+        /// Returns a string representation of the memory contents.
+        /// </summary>
+        /// <returns>A string that represents the contents of the memory.</returns>
+        public override string ToString()
+        {
+            var result = new StringBuilder(values.Length == 0 ? "Memory is empty." : "Memory contents: ");
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (i > 0)
+                {   
+                    result.Append(" - ");
+                }
+                result.Append($"{values[i]}");
+            }
+            return result.ToString();
         }
         #endregion methods
     }

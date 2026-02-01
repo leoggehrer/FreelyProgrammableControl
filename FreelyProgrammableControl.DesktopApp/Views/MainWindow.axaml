@@ -80,6 +80,13 @@
         <Button Width="100"
                 HorizontalContentAlignment="Center"
                 Command="{Binding ParseCommand}">Parse</Button>
+        <ToggleButton Width="100"
+                HorizontalContentAlignment="Center"
+                IsEnabled="False"
+                IsChecked="{Binding DebugEnabled}">Debug</ToggleButton>
+        <Button Width="100"
+                HorizontalContentAlignment="Center"
+                Command="{Binding StepCommand}">Step</Button>
       </StackPanel>
 
       <!-- Editor area (source/output) with splitter -->
@@ -107,16 +114,28 @@
           <!-- Splitter between source and output -->
           <GridSplitter Grid.Row="1" Grid.Column="0" Background="LightGray" ResizeDirection="Rows" />
           <!-- Output -->
-          <TextBox Grid.Row="2"
-                   Grid.Column="0"
-                   IsReadOnly="True"
-                   VerticalAlignment="Stretch"
-                   HorizontalAlignment="Stretch"
-                   AcceptsReturn="True"
-                   TextWrapping="Wrap"
-                   FontFamily="Consolas"
-                   Margin="5"
-                   Text="{Binding OutputText}" />
+          <TabControl Grid.Row="2" Grid.Column="0">
+            <TabItem Header="Output" FontSize="12">
+              <TextBox IsReadOnly="True"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       FontFamily="Consolas"
+                       Margin="5"
+                       Text="{Binding OutputText}" />
+            </TabItem>
+            <TabItem Header="Execution State" FontSize="12">
+              <TextBox IsReadOnly="True"
+                       VerticalAlignment="Stretch"
+                       HorizontalAlignment="Stretch"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       FontFamily="Consolas"
+                       Margin="5"
+                       Text="{Binding ExecutionState}" />
+            </TabItem>
+          </TabControl>
       </Grid>
 
       <!-- Outputs -->

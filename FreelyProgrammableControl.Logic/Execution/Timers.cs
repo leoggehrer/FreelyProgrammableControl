@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace FreelyProgrammableControl.Logic.Execution
 {
     /// <summary>
@@ -108,6 +110,25 @@ namespace FreelyProgrammableControl.Logic.Execution
         public bool GetValue(int position)
         {
             return timers[position] == default ? false : timers[position]!.Value;
+        }
+
+        /// <summary>
+        /// Returns a string representation of the timers collection.
+        /// </summary>
+        /// <returns>A string that represents the contents of the timers collection.</returns>
+        public override string ToString()
+        {
+            var result = new StringBuilder(timers.Length == 0 ? "Timers are empty." : "Timers contents: ");
+
+            for (int i = 0; i < timers.Length; i++)
+            {
+                if (i > 0)
+                {
+                    result.Append(" - ");
+                }
+                result.Append($"{timers.GetValue(i)}");
+            }
+            return result.ToString();
         }
         #endregion methods
     }

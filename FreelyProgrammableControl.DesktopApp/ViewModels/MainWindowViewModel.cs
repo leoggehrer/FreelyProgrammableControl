@@ -25,8 +25,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private Window? ownerWindow;
         private bool isInitialized;
         private string? selectedFile;
-        private readonly ExecutionUnit executionUnit = new(20, 20);
 
+        private readonly ExecutionUnit executionUnit = new(20, 20);
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
         public ObservableCollection<OutputDeviceViewModel> Outputs { get; } = new();
 
@@ -37,10 +37,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private string outputText = string.Empty;
 
         [ObservableProperty]
+        private string executionState = string.Empty;
+
+        [ObservableProperty]
         private string statusText = string.Empty;
 
         [ObservableProperty]
         private bool isSourceReadOnly;
+
+        [ObservableProperty]
+        private bool debugEnabled;
 
         public MainWindowViewModel()
         {
@@ -56,6 +62,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 executionUnit.LoadSource(lines);
             }
 
+            executionUnit.Attach(UpdateExecutionState!);
             executionUnit.Inputs.Attach(OnUpdateInputs!);
             executionUnit.Outputs.Attach(OnUpdateOutputs!);
 
@@ -246,7 +253,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 executionUnit.Stop();
             }
-
             UpdateRunState();
         }
 
@@ -262,6 +268,21 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 ParseAndView(SourceText.Split(Environment.NewLine));
             }
+        }
+
+        [RelayCommand(CanExecute = nameof(CanStep))]
+        private void Step()
+        {
+            if (executionUnit.IsRunning)
+            {
+                executionUnit.Step();
+            }
+            UpdateRunState();
+        }
+
+        private bool CanStep()
+        {
+            return executionUnit.IsRunning && executionUnit.DebugEnabled;
         }
 
         [RelayCommand]
@@ -292,6 +313,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             IsSourceReadOnly = executionUnit.IsRunning;
             StartCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
+            StepCommand.NotifyCanExecuteChanged();
         }
 
         private void OnUpdateInputs(object sender, EventArgs e)
@@ -314,6 +336,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     Outputs[i].UpdateFromDevice();
                 }
             });
+        }
+
+        private void UpdateExecutionState(object sender, EventArgs e)
+        {
+            ExecutionState = executionUnit.State;
+        }
+
+        partial void OnDebugEnabledChanged(bool value)
+        {
+            executionUnit.DebugEnabled = value;
         }
 
         private void CreateInputItems()
