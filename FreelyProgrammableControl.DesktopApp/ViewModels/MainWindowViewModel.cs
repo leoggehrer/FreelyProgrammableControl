@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FreelyProgrammableControl.Logic.Execution;
+using FreelyProgrammableControl.DesktopApp.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -28,6 +29,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private string saveUserinput = string.Empty;
 
         private readonly ExecutionUnit executionUnit = new(20, 20);
+        
+        /// <summary>
+        /// Gets the execution unit for external access (e.g., API)
+        /// </summary>
+        public ExecutionUnit ExecutionUnit => executionUnit;
+        
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
         public ObservableCollection<OutputDeviceViewModel> Outputs { get; } = new();
 
@@ -55,6 +62,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [ObservableProperty]
         private string debugButtonText = "Debug: OFF";
 
+        private ApiService? apiService;
+
         public MainWindowViewModel()
         {
 //            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
@@ -75,6 +84,23 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             CreateInputItems();
             CreateOutputItems();
+            
+            // Start API Service
+            StartApiService();
+        }
+        
+        private async void StartApiService()
+        {
+            try
+            {
+                apiService = new ApiService(this, 5555);
+                await apiService.StartAsync();
+                StatusText = $"{selectedFile} - API läuft auf Port {apiService.Port}";
+            }
+            catch (Exception ex)
+            {
+                StatusText = $"API-Server konnte nicht gestartet werden: {ex.Message}";
+            }
         }
 
         public void Initialize(IStorageProvider? provider, Window owner)
