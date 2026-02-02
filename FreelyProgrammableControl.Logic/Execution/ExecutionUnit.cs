@@ -50,18 +50,15 @@ namespace FreelyProgrammableControl.Logic.Execution
                 {
                     if (executionLine != null)
                     {
-                        result.AppendLine($"Execution Line: {executionLine.LineNumber} - {executionLine.Source}");
+                        result.AppendLine($"Executed Line: {executionLine.LineNumber:d4} - {executionLine.Source}");
                     }
                     result.AppendLine(stack.ToString());
+                    result.AppendLine(timers.ToString());
                 }
                 else
                 {
                     result.AppendLine($"Cycle Time (ms): {cycleTimeMs}");
                 }
-                //                result.AppendLine(timers.ToString());
-                //                result.AppendLine(counters.ToString());
-                //                result.AppendLine(memory.ToString());
-
                 return result.ToString();
             }
         }
@@ -185,6 +182,21 @@ namespace FreelyProgrammableControl.Logic.Execution
 
         #region  methods
         /// <summary>
+        /// Prepares the source by removing leading empty lines.
+        /// </summary>
+        /// <param name="source">The source lines to prepare.</param>
+        /// <returns>A collection of strings with leading empty lines removed.</returns>
+        public static IEnumerable<string> PrepareSource(IEnumerable<string> source)
+        {
+            source = source.SkipWhile(i => string.IsNullOrWhiteSpace(i)); // skip leading empty lines
+            source = source.Reverse(); // to avoid multiple enumerations
+            source = source.SkipWhile(i => string.IsNullOrWhiteSpace(i)); // skip leading empty lines
+            source = source.Reverse(); // restore original order
+
+            return source;
+        }
+
+        /// <summary>
         /// Parses a collection of strings and converts each non-empty string into a <see cref="ParsedLine"/>.
         /// </summary>
         /// <param name="source">An <see cref="IEnumerable{String}"/> containing the lines to be parsed.</param>
@@ -198,7 +210,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             var result = new List<ParsedLine>();
             var lineNumber = 0;
 
-            foreach (var item in source)//.Where(l => string.IsNullOrEmpty(l) == false))
+            foreach (var item in PrepareSource(source))
             {
                 result.Add(new ParsedLine(lineNumber++, item));
             }
@@ -209,8 +221,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         public void Step()
         {
-            if (running
-                && DebugEnabled)
+            if (running && DebugEnabled)
             {
                 if (currentLineNumber == -1
                     || currentLineNumber >= parsedLines.Count)
@@ -242,7 +253,8 @@ namespace FreelyProgrammableControl.Logic.Execution
             HasParseError = false;
             ParseErrorMessage = null;
             parsedLines.Clear();
-            parsedLines.AddRange(Parse(source));
+
+            parsedLines.AddRange(Parse(PrepareSource(source)));
 
             HasParseError = parsedLines.Any(e => e.HasError);
             ParseErrorMessage = parsedLines.FirstOrDefault(e => e.HasError)?.ErrorMessage;
@@ -266,15 +278,15 @@ namespace FreelyProgrammableControl.Logic.Execution
                 && parsedLines.Count > 0
                 && parsedLines.Any(e => e.IsComment == false))
             {
-                var thread = new Thread(Run) { IsBackground = true };
-
                 Reset();
 
-                currentLineNumber = 0;
-                executionLine = parsedLines[currentLineNumber];
-
                 running = true;
-                thread.Start();
+                if (DebugEnabled == false)
+                {
+                    var thread = new Thread(Run) { IsBackground = true };
+                    
+                    thread.Start();
+                }
                 NotifyAsync();
             }
         }
@@ -307,17 +319,11 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 if (DebugEnabled == false)
                 {
-                    if (currentLineNumber == -1
-                        || currentLineNumber >= parsedLines.Count)
+                    foreach (var line in parsedLines)
                     {
-                        stack.Clear();
-                        currentLineNumber = 0;
-                    }
-                    while (currentLineNumber < parsedLines.Count && running)
-                    {
-                        executionLine = parsedLines[currentLineNumber];
+                        var executionLine = line;
+
                         Execute(executionLine);
-                        currentLineNumber++;
                     }
                     NotifyAsync();
                 }

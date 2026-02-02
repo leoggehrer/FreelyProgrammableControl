@@ -25,6 +25,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private Window? ownerWindow;
         private bool isInitialized;
         private string? selectedFile;
+        private string saveUserinput = string.Empty;
 
         private readonly ExecutionUnit executionUnit = new(20, 20);
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
@@ -46,7 +47,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private bool isSourceReadOnly;
 
         [ObservableProperty]
+        private bool isDebugEnabled = true;
+
+        [ObservableProperty]
         private bool debugEnabled;
+
+        [ObservableProperty]
+        private string debugButtonText = "Debug: OFF";
 
         public MainWindowViewModel()
         {
@@ -229,13 +236,19 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             if (executionUnit.IsRunning == false && string.IsNullOrWhiteSpace(SourceText) == false)
             {
-                var lines = SourceText.Split(Environment.NewLine);
-                var errors = ParseAndView(lines);
+                var source = SourceText.Split(Environment.NewLine);
+                var errors = ParseAndView(source);
 
                 if (errors == 0)
                 {
-                    executionUnit.LoadSource(lines);
+                    executionUnit.LoadSource(source);
                     executionUnit.Start();
+
+                    saveUserinput = SourceText;
+                    SourceText = ExecutionUnit.PrepareSource(source)
+                                              .Select((i, l) => $"{l:d4}: {i}")
+                                              .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+
                     UpdateRunState();
                 }
             }
@@ -252,6 +265,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             if (executionUnit.IsRunning)
             {
                 executionUnit.Stop();
+                SourceText = saveUserinput;
+                saveUserinput = string.Empty;
             }
             UpdateRunState();
         }
@@ -261,13 +276,18 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning;
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanParse))]
         private void Parse()
         {
             if (string.IsNullOrWhiteSpace(SourceText) == false)
             {
                 ParseAndView(SourceText.Split(Environment.NewLine));
             }
+        }
+
+        private bool CanParse()
+        {
+            return executionUnit.IsRunning == false;
         }
 
         [RelayCommand(CanExecute = nameof(CanStep))]
@@ -311,6 +331,9 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private void UpdateRunState()
         {
             IsSourceReadOnly = executionUnit.IsRunning;
+            IsDebugEnabled = !executionUnit.IsRunning;
+
+            ParseCommand.NotifyCanExecuteChanged();
             StartCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
             StepCommand.NotifyCanExecuteChanged();
@@ -346,6 +369,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         partial void OnDebugEnabledChanged(bool value)
         {
             executionUnit.DebugEnabled = value;
+            DebugButtonText = value ? "Debug: ON" : "Debug: OFF";
         }
 
         private void CreateInputItems()

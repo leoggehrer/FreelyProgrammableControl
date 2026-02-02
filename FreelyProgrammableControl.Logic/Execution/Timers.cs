@@ -119,14 +119,18 @@ namespace FreelyProgrammableControl.Logic.Execution
         public override string ToString()
         {
             var result = new StringBuilder(timers.Length == 0 ? "Timers are empty." : "Timers contents: ");
+            var hasTimer = false;
 
             for (int i = 0; i < timers.Length; i++)
             {
-                if (i > 0)
+                if (timers[i] != null)
                 {
-                    result.Append(" - ");
+                    if (hasTimer)
+                        result.Append(" - ");
+
+                    result.Append($"{i:d2} {timers.GetValue(i)}");
+                    hasTimer = true;
                 }
-                result.Append($"{timers.GetValue(i)}");
             }
             return result.ToString();
         }

@@ -81,9 +81,10 @@
                 HorizontalContentAlignment="Center"
                 Command="{Binding ParseCommand}">Parse</Button>
         <ToggleButton Width="100"
-                HorizontalContentAlignment="Center"
-                IsEnabled="False"
-                IsChecked="{Binding DebugEnabled}">Debug</ToggleButton>
+                      HorizontalContentAlignment="Center"
+                      IsEnabled="{Binding IsDebugEnabled}"
+                      IsChecked="{Binding DebugEnabled}"
+                      Content="{Binding DebugButtonText}" />
         <Button Width="100"
                 HorizontalContentAlignment="Center"
                 Command="{Binding StepCommand}">Step</Button>
