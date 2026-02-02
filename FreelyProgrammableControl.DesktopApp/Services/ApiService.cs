@@ -76,6 +76,14 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         // Program laden
                         endpoints.MapPost("/api/program", async context =>
                         {
+                            // Prüfe ob Steuerung läuft
+                            if (_viewModel.ExecutionUnit?.IsRunning ?? false)
+                            {
+                                context.Response.StatusCode = 409; // Conflict
+                                await context.Response.WriteAsJsonAsync(new { error = "Die Steuerung muss zuerst gestoppt werden, bevor ein neues Programm geladen werden kann" });
+                                return;
+                            }
+
                             using var reader = new StreamReader(context.Request.Body);
                             var programCode = await reader.ReadToEndAsync();
 

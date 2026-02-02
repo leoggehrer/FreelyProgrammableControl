@@ -55,6 +55,8 @@ namespace FreelyProgrammableControl.Logic.Execution
                     }
                     result.AppendLine(stack.ToString());
                     result.AppendLine(timers.ToString());
+                    result.AppendLine(counters.ToString());
+                    result.AppendLine(memory.ToString());
                 }
                 else
                 {

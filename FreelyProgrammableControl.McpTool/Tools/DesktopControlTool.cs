@@ -82,6 +82,17 @@ namespace FreelyProgrammableControl.McpTool.Tools
                     };
                 }
 
+                // Prüfe ob Steuerung läuft
+                var status = await _client.GetStatusAsync();
+                if (status?.isRunning == true)
+                {
+                    return new ProgramLoadResult
+                    {
+                        Success = false,
+                        Message = "Die Steuerung läuft noch. Bitte stoppe die Steuerung zuerst mit 'stop_program_execution', bevor ein neues Programm geladen wird."
+                    };
+                }
+
                 var result = await _client.LoadProgramAsync(programCode);
                 
                 return new ProgramLoadResult

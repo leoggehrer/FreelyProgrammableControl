@@ -78,13 +78,13 @@ namespace FreelyProgrammableControl.Logic.Execution
         public override string ToString()
         {
             var result = new StringBuilder(values.Length == 0 ? "Memory is empty." : "Memory contents: ");
+
             for (int i = 0; i < values.Length; i++)
             {
                 if (i > 0)
-                {   
                     result.Append(" - ");
-                }
-                result.Append($"{values[i]}");
+
+                result.Append($"{i:d2} {values[i]:d3}");
             }
             return result.ToString();
         }

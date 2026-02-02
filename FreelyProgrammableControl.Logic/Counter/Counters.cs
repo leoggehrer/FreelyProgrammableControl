@@ -102,10 +102,9 @@ namespace FreelyProgrammableControl.Logic.Counter
             for (int i = 0; i < values.Length; i++)
             {
                 if (i > 0)
-                {
                     result.Append(" - ");
-                }
-                result.Append($"{values[i]}");
+
+                result.Append($"{i:d2} {values[i]:d3}");
             }
             return result.ToString();
         }
