@@ -128,7 +128,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                     if (hasTimer)
                         result.Append(" - ");
 
-                    result.Append($"{i:d2} {timers.GetValue(i)}");
+                    result.Append($"{i:d2} {timers[i]?.Value}");
                     hasTimer = true;
                 }
             }

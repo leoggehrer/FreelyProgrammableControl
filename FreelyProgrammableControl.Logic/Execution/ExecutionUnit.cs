@@ -1,6 +1,7 @@
 using System.Text;
 using FreelyProgrammableControl.Logic.Common;
 using FreelyProgrammableControl.Logic.Counter;
+using FreelyProgrammableControl.Logic.Extensions;
 using FreelyProgrammableControl.Logic.Input;
 using FreelyProgrammableControl.Logic.Output;
 
@@ -50,7 +51,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                 {
                     if (executionLine != null)
                     {
-                        result.AppendLine($"Executed Line: {executionLine.LineNumber:d4} - {executionLine.Source}");
+                        result.AppendLine($"Executed Line: {executionLine.LineNumber:d4} - {(executionLine.Source.HasContent() ? executionLine.Source : executionLine.Instruction)}");
                     }
                     result.AppendLine(stack.ToString());
                     result.AppendLine(timers.ToString());

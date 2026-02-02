@@ -97,7 +97,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             StatusText = selectedFile;
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanOpen))]
         private async Task OpenAsync()
         {
             if (storageProvider is null)
@@ -122,8 +122,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 StatusText = selectedFile;
             }
         }
+        private bool CanOpen()
+        {
+            return executionUnit.IsRunning == false;
+        }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanSave))]
         private void Save()
         {
             if (selectedFile != null)
@@ -132,7 +136,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
-        [RelayCommand]
+        private bool CanSave()
+        {
+            return executionUnit.IsRunning == false;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanSave))]
         private async Task SaveAsAsync()
         {
             if (storageProvider is null)

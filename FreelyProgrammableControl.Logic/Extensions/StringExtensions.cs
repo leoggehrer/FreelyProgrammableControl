@@ -13,6 +13,24 @@ namespace FreelyProgrammableControl.Logic.Extensions
     public static class StringExtensions
     {
         /// <summary>
+        /// Determines whether the specified string is null or empty.
+        /// </summary>
+        /// <param name="source">The string to check.</param>
+        /// <returns><c>true</c> if the string is null or empty; otherwise, <c>false</c>.</returns>
+        public static bool IsNullOrEmpty(this string source)
+        {
+            return string.IsNullOrEmpty(source);
+        }
+        /// <summary>
+        /// Determines whether the specified string has content (is not null or empty).
+        /// </summary>
+        /// <param name="source">The string to check.</param>
+        /// <returns><c>true</c> if the string has content; otherwise, <c>false</c>.</returns>
+        public static bool HasContent(this string source)
+        {
+            return string.IsNullOrEmpty(source) == false;
+        }
+        /// <summary>
         /// Cuts the string at the first occurrence of the specified character.
         /// </summary>
         /// <param name="source">The input string to be processed.</param>
