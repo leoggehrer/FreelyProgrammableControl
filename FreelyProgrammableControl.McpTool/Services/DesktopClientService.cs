@@ -1,7 +1,5 @@
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
+using FreelyProgrammableControl.McpTool.Models;
 
 namespace FreelyProgrammableControl.McpTool.Services
 {
@@ -135,39 +133,57 @@ namespace FreelyProgrammableControl.McpTool.Services
                 throw new Exception($"Fehler beim Stoppen der Ausführung: {ex.Message}", ex);
             }
         }
+
+        /// <summary>
+        /// Setzt den Debug-Modus
+        /// </summary>
+        public async Task<DebugModeResponse?> SetDebugModeAsync(bool enable)
+        {
+            try
+            {
+                var content = new StringContent(enable.ToString(), Encoding.UTF8, "text/plain");
+                var response = await _httpClient.PostAsync("/api/debug", content);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<DebugModeResponse>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Fehler beim Setzen des Debug-Modus: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Führt einen einzelnen Programmschritt im Debug-Modus aus
+        /// </summary>
+        public async Task<StepResponse?> StepAsync()
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync("/api/step", null);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<StepResponse>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Fehler beim Ausführen des Schritts: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Ruft den detaillierten Ausführungszustand ab
+        /// </summary>
+        public async Task<ExecutionStateResponse?> GetExecutionStateAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync("/api/state");
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadFromJsonAsync<ExecutionStateResponse>();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Fehler beim Abrufen des Zustands: {ex.Message}", ex);
+            }
+        }
     }
-
-    #region Response DTOs
-
-    public class ExecutionStatusResponse
-    {
-        public bool isRunning { get; set; }
-        public bool hasParseError { get; set; }
-        public string? parseErrorMessage { get; set; }
-        public bool debugEnabled { get; set; }
-        public int sourceLines { get; set; }
-        public string? executionState { get; set; }
-    }
-
-    public class ProgramLoadResponse
-    {
-        public bool success { get; set; }
-        public bool hasParseError { get; set; }
-        public string? parseErrorMessage { get; set; }
-        public int sourceLines { get; set; }
-    }
-
-    public class ProgramResponse
-    {
-        public string? programCode { get; set; }
-        public int sourceLines { get; set; }
-    }
-
-    public class ExecutionControlResponse
-    {
-        public bool success { get; set; }
-        public bool isRunning { get; set; }
-    }
-
-    #endregion
 }

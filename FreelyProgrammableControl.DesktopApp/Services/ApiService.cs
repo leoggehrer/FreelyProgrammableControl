@@ -164,6 +164,102 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
+
+                        // Debug-Modus setzen
+                        endpoints.MapPost("/api/debug", async context =>
+                        {
+                            using var reader = new StreamReader(context.Request.Body);
+                            var enableText = await reader.ReadToEndAsync();
+                            
+                            if (!bool.TryParse(enableText, out var enable))
+                            {
+                                context.Response.StatusCode = 400;
+                                await context.Response.WriteAsJsonAsync(new { error = "Ungültiger Wert. Erwartet: true oder false" });
+                                return;
+                            }
+
+                            // Prüfe ob Steuerung läuft
+                            if (_viewModel.ExecutionUnit?.IsRunning ?? false)
+                            {
+                                context.Response.StatusCode = 409; // Conflict
+                                await context.Response.WriteAsJsonAsync(new 
+                                { 
+                                    success = false,
+                                    debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false,
+                                    error = "Debug-Modus kann nur geändert werden, wenn die Steuerung gestoppt ist" 
+                                });
+                                return;
+                            }
+
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                if (_viewModel.ExecutionUnit != null)
+                                {
+                                    _viewModel.ExecutionUnit.DebugEnabled = enable;
+                                }
+                            });
+
+                            var response = new
+                            {
+                                success = true,
+                                debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false
+                            };
+                            await context.Response.WriteAsJsonAsync(response);
+                        });
+
+                        // Programmschritt ausführen
+                        endpoints.MapPost("/api/step", async context =>
+                        {
+                            // Prüfe ob Steuerung läuft und Debug-Modus aktiviert ist
+                            if (!(_viewModel.ExecutionUnit?.IsRunning ?? false))
+                            {
+                                context.Response.StatusCode = 409;
+                                await context.Response.WriteAsJsonAsync(new 
+                                { 
+                                    success = false,
+                                    error = "Die Steuerung muss gestartet sein" 
+                                });
+                                return;
+                            }
+
+                            if (!(_viewModel.ExecutionUnit?.DebugEnabled ?? false))
+                            {
+                                context.Response.StatusCode = 409;
+                                await context.Response.WriteAsJsonAsync(new 
+                                { 
+                                    success = false,
+                                    error = "Debug-Modus ist nicht aktiviert" 
+                                });
+                                return;
+                            }
+
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                _viewModel.ExecutionUnit?.Step();
+                            });
+
+                            // Warte kurz, damit der Step verarbeitet wird
+                            await Task.Delay(50);
+
+                            var response = new
+                            {
+                                success = true,
+                                executionState = _viewModel.ExecutionUnit?.State
+                            };
+                            await context.Response.WriteAsJsonAsync(response);
+                        });
+
+                        // Ausführungszustand abrufen
+                        endpoints.MapGet("/api/state", async context =>
+                        {
+                            var response = new
+                            {
+                                isRunning = _viewModel.ExecutionUnit?.IsRunning ?? false,
+                                debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false,
+                                executionState = _viewModel.ExecutionUnit?.State
+                            };
+                            await context.Response.WriteAsJsonAsync(response);
+                        });
                     });
                 })
                 .Build();

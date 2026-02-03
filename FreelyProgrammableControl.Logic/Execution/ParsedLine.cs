@@ -300,7 +300,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Instruction = "CMOV";
                         Subject = items[1];  // O || M
                         Address = Convert.ToInt32(items[2]);
-                        Value = items[3] == "1" ? 1 : 0;
+                        Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: SET T 10 1500 => timers.SetValue(10, 1500)
                     // e.g.: SET C 10 100 => counters.SetValue(10, 100)
@@ -323,13 +323,13 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: INC C 10 1 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
-                    else if (items.Length == 3 && (items[0] == "CI" || items[0] == "CINC")
+                    else if (items.Length == 4 && (items[0] == "CI" || items[0] == "CINC")
                              && (items[1] == "C"))
                     {
                         Instruction = "CINC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
-                        Value = 1;
+                        Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: DEC C 10 0 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
                     else if (items.Length == 4 && (items[0] == "CD" || items[0] == "CDEC")
@@ -338,7 +338,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Instruction = "CDEC";
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
-                        Value = items[1] == "1" ? 1 : 0;
+                        Value = Convert.ToInt32(items[3]);
                     }
                     // e.g.: CMP C 10 17 => stack.pop(counters.GetValue(10) == 17)
                     else if (items.Length == 4 && (items[0] == "C" || items[0] == "CMP")

@@ -249,6 +249,164 @@ namespace FreelyProgrammableControl.McpTool.Tools
                 };
             }
         }
+
+        /// <summary>
+        /// Aktiviert oder deaktiviert den Debug-Modus der Steuerung.
+        /// </summary>
+        /// <param name="enable">True zum Aktivieren, False zum Deaktivieren.</param>
+        /// <returns>Ergebnis des Debug-Modus-Befehls.</returns>
+        [McpServerTool(Name = "enable_debug_mode")]
+        [Description("Aktiviert oder deaktiviert den Debug-Modus. Im Debug-Modus kann das Programm schrittweise mit 'step_program' ausgeführt werden. Die Steuerung muss gestoppt sein, um den Debug-Modus zu ändern.")]
+        public static async Task<DebugModeResult> EnableDebugMode(
+            [Description("True zum Aktivieren des Debug-Modus, False zum Deaktivieren.")]
+            bool enable)
+        {
+            try
+            {
+                var isConnected = await _client.IsConnectedAsync();
+                if (!isConnected)
+                {
+                    return new DebugModeResult
+                    {
+                        Success = false,
+                        Message = "Desktop-Anwendung ist nicht erreichbar."
+                    };
+                }
+
+                // Prüfe ob Steuerung läuft
+                var status = await _client.GetStatusAsync();
+                if (status?.isRunning == true)
+                {
+                    return new DebugModeResult
+                    {
+                        Success = false,
+                        DebugEnabled = status.debugEnabled,
+                        Message = "Debug-Modus kann nur geändert werden, wenn die Steuerung gestoppt ist. Bitte stoppe die Steuerung zuerst."
+                    };
+                }
+
+                var result = await _client.SetDebugModeAsync(enable);
+                
+                return new DebugModeResult
+                {
+                    Success = result?.success ?? false,
+                    DebugEnabled = result?.debugEnabled ?? false,
+                    Message = result?.success == true
+                        ? $"Debug-Modus wurde {(enable ? "aktiviert" : "deaktiviert")}"
+                        : "Fehler beim Ändern des Debug-Modus"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DebugModeResult
+                {
+                    Success = false,
+                    Message = $"Fehler beim Ändern des Debug-Modus: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Führt einen einzelnen Programmschritt im Debug-Modus aus.
+        /// </summary>
+        /// <returns>Ergebnis des Step-Befehls mit aktuellem Zustand.</returns>
+        [McpServerTool(Name = "step_program")]
+        [Description("Führt einen einzelnen Programmschritt im Debug-Modus aus. Die Steuerung muss gestartet und im Debug-Modus sein. Nach jedem Schritt wird der aktuelle Ausführungszustand zurückgegeben.")]
+        public static async Task<StepResult> StepProgram()
+        {
+            try
+            {
+                var isConnected = await _client.IsConnectedAsync();
+                if (!isConnected)
+                {
+                    return new StepResult
+                    {
+                        Success = false,
+                        Message = "Desktop-Anwendung ist nicht erreichbar."
+                    };
+                }
+
+                // Prüfe Status
+                var status = await _client.GetStatusAsync();
+                if (status?.isRunning == false)
+                {
+                    return new StepResult
+                    {
+                        Success = false,
+                        Message = "Die Steuerung muss gestartet sein. Verwende 'start_program_execution' zuerst."
+                    };
+                }
+
+                if (status?.debugEnabled == false)
+                {
+                    return new StepResult
+                    {
+                        Success = false,
+                        Message = "Debug-Modus ist nicht aktiviert. Verwende 'enable_debug_mode' mit enable=true, bevor du das Programm startest."
+                    };
+                }
+
+                var result = await _client.StepAsync();
+                
+                return new StepResult
+                {
+                    Success = result?.success ?? false,
+                    ExecutionState = result?.executionState,
+                    Message = result?.success == true
+                        ? "Schritt ausgeführt"
+                        : "Fehler beim Ausführen des Schritts"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new StepResult
+                {
+                    Success = false,
+                    Message = $"Fehler beim Ausführen des Schritts: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Ruft den detaillierten Ausführungszustand der Steuerung ab.
+        /// </summary>
+        /// <returns>Der detaillierte Ausführungszustand.</returns>
+        [McpServerTool(Name = "get_execution_state")]
+        [Description("Ruft den detaillierten Ausführungszustand der Steuerung ab. Im Debug-Modus enthält dies Informationen über Stack, Speicher, Timer, Zähler und die aktuell ausgeführte Zeile.")]
+        public static async Task<ExecutionStateResult> GetExecutionState()
+        {
+            try
+            {
+                var isConnected = await _client.IsConnectedAsync();
+                if (!isConnected)
+                {
+                    return new ExecutionStateResult
+                    {
+                        Success = false,
+                        Message = "Desktop-Anwendung ist nicht erreichbar."
+                    };
+                }
+
+                var result = await _client.GetExecutionStateAsync();
+                
+                return new ExecutionStateResult
+                {
+                    Success = true,
+                    ExecutionState = result?.executionState,
+                    IsRunning = result?.isRunning ?? false,
+                    DebugEnabled = result?.debugEnabled ?? false,
+                    Message = "Zustand abgerufen"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ExecutionStateResult
+                {
+                    Success = false,
+                    Message = $"Fehler beim Abrufen des Zustands: {ex.Message}"
+                };
+            }
+        }
     }
 
     #region Result Classes
@@ -286,6 +444,29 @@ namespace FreelyProgrammableControl.McpTool.Tools
         public bool Success { get; set; }
         public string ProgramCode { get; set; } = string.Empty;
         public int SourceLines { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class DebugModeResult
+    {
+        public bool Success { get; set; }
+        public bool DebugEnabled { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class StepResult
+    {
+        public bool Success { get; set; }
+        public string? ExecutionState { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ExecutionStateResult
+    {
+        public bool Success { get; set; }
+        public string? ExecutionState { get; set; }
+        public bool IsRunning { get; set; }
+        public bool DebugEnabled { get; set; }
         public string Message { get; set; } = string.Empty;
     }
 

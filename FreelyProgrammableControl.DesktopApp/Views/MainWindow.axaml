@@ -108,7 +108,8 @@
                    HorizontalAlignment="Stretch"
                    AcceptsReturn="True"
                    TextWrapping="Wrap"
-                   FontFamily="Consolas"
+                   FontFamily="Courier New, Consolas, monospace"
+                   FontSize="14"
                    Margin="5"
                    IsReadOnly="{Binding IsSourceReadOnly}"
                    Text="{Binding SourceText, Mode=TwoWay}" />
@@ -122,7 +123,8 @@
                        HorizontalAlignment="Stretch"
                        AcceptsReturn="True"
                        TextWrapping="Wrap"
-                       FontFamily="Consolas"
+                       FontFamily="Courier New, Consolas, monospace"
+                       FontSize="14"
                        Margin="5"
                        Text="{Binding OutputText}" />
             </TabItem>
@@ -132,7 +134,8 @@
                        HorizontalAlignment="Stretch"
                        AcceptsReturn="True"
                        TextWrapping="Wrap"
-                       FontFamily="Consolas"
+                       FontFamily="Courier New, Consolas, monospace"
+                       FontSize="14"
                        Margin="5"
                        Text="{Binding ExecutionState}" />
             </TabItem>

@@ -99,7 +99,7 @@ namespace FreelyProgrammableControl.Logic.Counter
         {
             var result = new StringBuilder(values.Length == 0 ? "Counters are empty." : "Counters contents: ");
 
-            for (int i = 0; i < values.Length; i++)
+            for (int i = 0; i < values.Length && i < 20; i++)
             {
                 if (i > 0)
                     result.Append(" - ");

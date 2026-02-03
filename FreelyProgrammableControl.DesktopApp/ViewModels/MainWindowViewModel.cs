@@ -41,6 +41,15 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [ObservableProperty]
         private string sourceText = string.Empty;
 
+        partial void OnSourceTextChanged(string value)
+        {
+            // Konvertiere Text zu Großbuchstaben wenn sich der Wert ändert
+            if (value != null && value != value.ToUpper())
+            {
+                SourceText = value.ToUpper();
+            }
+        }
+
         [ObservableProperty]
         private string outputText = string.Empty;
 

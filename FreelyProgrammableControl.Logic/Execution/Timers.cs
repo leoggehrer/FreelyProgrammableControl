@@ -40,9 +40,16 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 get
                 {
-                    var totalInMs = (long)(DateTime.Now - DateTime).TotalMilliseconds;
+                    var result = DurationInMs > 0;
 
-                    return totalInMs <= DurationInMs;
+                    if (result)
+                    {
+                        var totalInMs = (long)(DateTime.Now - DateTime).TotalMilliseconds;
+
+                        result = totalInMs / DurationInMs % 2 == 0;
+                    }
+
+                    return result;
                 }
             }
         }
@@ -93,6 +100,10 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </remarks>
         public void SetTimer(int position, int durationInMs)
         {
+            if (position < 0 || position >= timers.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the timers array.");
+            }
             timers[position] = new Timer(DateTime.Now, durationInMs);
         }
 
@@ -121,7 +132,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             var result = new StringBuilder(timers.Length == 0 ? "Timers are empty." : "Timers contents: ");
             var hasTimer = false;
 
-            for (int i = 0; i < timers.Length; i++)
+            for (int i = 0; i < timers.Length && i < 20; i++)
             {
                 if (timers[i] != null)
                 {

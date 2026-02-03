@@ -28,9 +28,9 @@ Die FPC-Programmiersprache ist eine stackbasierte Sprache für frei programmierb
 | | `MOV M n` | n = Index | Pop vom Stack und schreibt in Memory `n` | Pop() → M[n] |
 | **Bedingtes Schreiben** | `CMOV O n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Output `n` = v (0/1) | Pop(), wenn true: O[n] = v |
 | | `CMOV M n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Memory `n` = v (0/1) | Pop(), wenn true: M[n] = v |
-| **Timer/Counter setzen** | `SET T n v` | n = Index, v = Wert | Setzt Timer `n` auf v Millisekunden | - |
+| **Timer/Counter setzen** | `SET T n v` | n = Index, v = Wert | Startet pulsierenden Timer `n` mit v ms Periode. Timer wechselt automatisch zwischen true (v ms) und false (v ms) bis v=0 gesetzt wird | - |
 | | `SET C n v` | n = Index, v = Wert | Setzt Counter `n` auf Wert v | - |
-| **Bedingtes Setzen** | `CSET T n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Timer `n` = v (ms) | Pop(), wenn true: T[n] = v |
+| **Bedingtes Setzen** | `CSET T n v` | n = Index, v = Wert | Pop vom Stack, wenn true: startet pulsierenden Timer `n` mit v ms Periode | Pop(), wenn true: T[n] = v |
 | | `CSET C n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Counter `n` = v | Pop(), wenn true: C[n] = v |
 | **Counter-Operationen** | `CINC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` inkrementieren | Pop(), wenn true: C[n]++ |
 | | `CDEC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` dekrementieren | Pop(), wenn true: C[n]-- |
@@ -46,7 +46,7 @@ Die FPC-Programmiersprache ist eine stackbasierte Sprache für frei programmierb
 | `I` | Input (Eingang) | `GET I 0` - Liest Input 0 |
 | `O` | Output (Ausgang) | `MOV O 5` - Schreibt in Output 5 |
 | `M` | Memory (Speicher) | `GET M 10` - Liest Memory 10 |
-| `T` | Timer | `SET T 2 1000` - Setzt Timer 2 auf 1000 ms |
+| `T` | Timer (pulsierend) | `SET T 2 1000` - Timer 2 pulsiert mit 1000 ms (1s true, 1s false) |
 | `C` | Counter (Zähler) | `CINC C 3` - Inkrementiert Counter 3 |
 
 ### Ressourcen-Limits
@@ -59,6 +59,112 @@ Die FPC-Programmiersprache ist eine stackbasierte Sprache für frei programmierb
 | Inputs | Konfigurierbar | Input-Geräte (default: 20/64) |
 | Outputs | Konfigurierbar | Output-Geräte (default: 20/64) |
 | Stack | Dynamisch | Boolean-Stack für Operationen |
+
+### Timer-Verhalten (KRITISCH!)
+
+Timer in FPC funktionieren als **pulsierende Timer** und NICHT als Einmalverzögerungen:
+
+#### Wie Timer funktionieren:
+
+1. **`SET T n v`** oder **`CSET T n v`** startet einen pulsierenden Timer:
+   - Der Timer ist für `v` Millisekunden `true`
+   - Dann für `v` Millisekunden `false`  
+   - Dann wieder `v` Millisekunden `true`
+   - Dieser Zyklus wiederholt sich automatisch
+
+2. **Timer stoppen**: `SET T n 0` stoppt den Timer
+
+3. **Timer-Wert auslesen**: `GET T n` gibt den aktuellen Zustand (true/false)
+
+#### Beispiele:
+
+**Beispiel 1: Einfacher Blinker**
+```
+# Starte Timer wenn Memory 0 noch nicht gesetzt ist
+GETNOT M 0
+DUP
+CSET T 0 500
+CMOV M 0 1
+
+# Hole den Wert von Timer 0
+GET T 0
+MOV O 0
+```
+
+**Erklärung**:
+- `GETNOT M 0` → Liest Memory 0 negiert (true wenn M0=false, d.h. Timer noch nicht gestartet)
+- `DUP` → Dupliziert den Wert für CSET und CMOV
+- `CSET T 0 500` → Wenn Stack=true: startet Timer 0 mit 500ms Pulsierung
+- `CMOV M 0 1` → Wenn Stack=true: setzt Memory 0 auf 1 (merkt sich, dass Timer gestartet wurde)
+- `GET T 0` → Liest aktuellen Timer-Zustand
+- `MOV O 0` → Schreibt Timer-Zustand in Output 0
+
+**Funktionsweise**:
+- Beim ersten Durchlauf: M0=false → Timer wird gestartet, M0 wird auf 1 gesetzt
+- Timer pulsiert: 500ms true, 500ms false, 500ms true, ...
+- Output 0 folgt dem Timer-Zustand
+- Ergebnis: LED blinkt kontinuierlich mit 1 Hz
+
+**Beispiel 2: Timer stoppen**
+```
+# Timer läuft nur wenn Input 0 AN ist
+GET I 0
+DUP
+CSET T 0 1000
+
+# Timer stoppen wenn Input 0 AUS ist
+GETNOT I 0
+CSET T 0 0
+
+GET T 0
+MOV O 0
+```
+
+**Beispiel 3: Taktgeber**
+```
+# Schneller Takt: 100ms an, 100ms aus  
+SET T 0 100
+GET T 0
+MOV O 0
+
+# Langsamer Takt: 2000ms an, 2000ms aus
+SET T 1 2000
+GET T 1
+MOV O 1
+```
+
+#### WICHTIG - Was Timer NICHT sind:
+
+❌ **FALSCH:** Timer als einfache Einschaltverzögerung verwenden
+```
+# Dies funktioniert NICHT wie eine Verzögerung!
+GET I 0
+CSET T 0 5000
+GET T 0  # Dies pulsiert, verzögert aber nicht!
+MOV O 0
+```
+
+❌ **KRITISCHER FEHLER:** SET/CSET ohne Memory-Schutz
+```
+# FEHLER: Timer wird in jedem Zyklus neu gestartet!
+SET T 0 1000  # Wird z.B. alle 100ms ausgeführt → Timer startet nie!
+GET T 0
+MOV O 0
+```
+
+✅ **RICHTIG:** Timer mit Memory-Verwaltung
+```
+# Timer nur beim ersten Mal starten
+GETNOT M 0
+DUP
+CSET T 0 1000  # Startet nur wenn M0=0
+CMOV M 0 1     # Setzt M0=1 um Neustart zu verhindern
+
+GET T 0
+MOV O 0
+```
+
+✅ **Richtige Verwendung:** Timer sind für periodische Signale, Blinker und Taktgeber gedacht
 
 ### Wichtige Regeln
 
@@ -82,7 +188,42 @@ Die FPC-Programmiersprache ist eine stackbasierte Sprache für frei programmierb
 
 4. **Pop vs. Peek**: Die meisten Operationen konsumieren (pop) die Stack-Werte
 
-5. **Ausführungsreihenfolge**: Befehle werden sequenziell von oben nach unten ausgeführt
+5. **Zyklische Ausführung** (KRITISCH!):
+   - **Programme laufen in einer ENDLOSSCHLEIFE** (Zyklus)
+   - Nach der letzten Zeile startet das Programm **automatisch wieder bei Zeile 1**
+   - **Zykluszeit**: Standardmäßig ~100ms (konfigurierbar)
+   - **Jede Zeile wird in jedem Zyklus ausgeführt**
+   - **WICHTIG**: Befehle wie `SET T 0 1000` werden JEDES MAL ausgeführt (ca. 10x pro Sekunde)!
+   
+   **Beispiel - Was passiert:**
+   ```
+   # Zeile 1
+   SET T 0 1000
+   # Zeile 2
+   GET T 0
+   # Zeile 3
+   MOV O 0
+   # → Nach Zeile 3 springt das Programm zurück zu Zeile 1
+   # → Zeile 1 wird wieder ausgeführt (nach ~100ms)
+   # → Timer wird NEU GESTARTET (FEHLER!)
+   ```
+   
+   **Konsequenz**: Timer/Counter-Starts müssen mit Memory geschützt werden!
+   
+   ```
+   # RICHTIG - Timer startet nur einmal
+   GETNOT M 0    # Prüfe ob schon gestartet
+   DUP
+   CSET T 0 1000 # Starte nur beim ersten Durchlauf
+   CMOV M 0 1    # Merke: Timer läuft
+   
+   GET T 0
+   MOV O 0
+   # Nach diesem Zyklus: M0=1, Timer läuft weiter
+   # Nächster Zyklus: M0=1 → Timer wird NICHT neu gestartet ✓
+   ```
+
+6. **Ausführungsreihenfolge**: Befehle werden sequenziell von oben nach unten ausgeführt, dann wiederholt sich der Zyklus
 
 ### Stack-Balance-Regeln (KRITISCH!)
 
@@ -340,112 +481,171 @@ MOV O 1
 
 ---
 
-### Beispiel 6: Timer-Einschaltverzögerung (Komplex)
+### Beispiel 6: Einfacher Blinker (Mittel)
 
-**Aufgabe**: Output 0 schaltet sich 5 Sekunden NACH dem Einschalten von Input 0 ein.
+**Aufgabe**: Output 0 blinkt mit 1 Hz (500ms AN, 500ms AUS).
 
 **Code**:
 ```
-# Einschaltverzögerung 5 Sekunden
-# Wenn Input 0 ausgeschaltet wird, Memory 0 zurücksetzen
-GETNOT I 0
-CMOV M 0 0
-
-# Wenn Input 0 AN ist und Memory 0 noch nicht gesetzt ist
-GET I 0
+# Starte Timer 0 nur wenn noch nicht gestartet (Memory 0 = 0)
 GETNOT M 0
-AND
 DUP
-
-# Timer auf 5000ms setzen (wenn Stack = true)
-CSET T 0 5000
-
-# Memory 0 auf 1 setzen (Timer wurde gestartet)
+CSET T 0 500
 CMOV M 0 1
 
-# Output nur AN wenn Input AN und Timer abgelaufen
-GET I 0
-GETNOT T 0
-AND
+# Hole Timer 0 und schreibe auf Output 0
+GET T 0
 MOV O 0
 ```
 
 **Schritt-für-Schritt Erklärung**:
+1. `GETNOT M 0` → Stack: [!M0] (true wenn Memory 0 = 0, d.h. Timer noch nicht gestartet)
+2. `DUP` → Stack: [!M0, !M0] (duplizieren für CSET und CMOV)
+3. `CSET T 0 500` → Wenn Stack=true: Timer 0 mit 500ms starten, Stack: [!M0]
+4. `CMOV M 0 1` → Wenn Stack=true: Memory 0 = 1 (Timer wurde gestartet), Stack: []
+5. `GET T 0` → Stack: [T0] (aktueller Timer-Zustand)
+6. `MOV O 0` → Output 0 = Timer-Zustand, Stack: []
 
-**Teil 1 - Reset bei Input AUS**:
-1. `GETNOT I 0` → Stack: [!I0] (true wenn Input 0 AUS)
-2. `CMOV M 0 0` → Wenn Stack=true: Memory 0 = 0 (Reset), Stack: []
+**Funktionsweise**:
+- **Erster Zyklus**: M0=0 → Timer wird gestartet, M0 wird auf 1 gesetzt
+- **Folgezyklen**: M0=1 → Timer wird NICHT neu gestartet, läuft einfach weiter
+- Timer pulsiert kontinuierlich: 500ms true, 500ms false, 500ms true, ...
+- Output 0 folgt dem Timer-Zustand
 
-**Teil 2 - Timer starten**:
-3. `GET I 0` → Stack: [I0]
-4. `GETNOT M 0` → Stack: [I0, !M0]
-5. `AND` → Stack: [I0 && !M0] (true wenn Input AN und noch nicht gestartet)
-6. `DUP` → Stack: [I0 && !M0, I0 && !M0]
-7. `CSET T 0 5000` → Wenn Stack=true: Timer 0 = 5000ms, Stack: [I0 && !M0]
-8. `CMOV M 0 1` → Wenn Stack=true: Memory 0 = 1 (merkt, dass Timer läuft), Stack: []
+**WICHTIG**: Memory 0 verhindert, dass der Timer in jedem Zyklus neu gestartet wird!
 
-**Teil 3 - Output schalten**:
-9. `GET I 0` → Stack: [I0]
-10. `GETNOT T 0` → Stack: [I0, !T0] (true wenn Timer abgelaufen)
-11. `AND` → Stack: [I0 && !T0]
-12. `MOV O 0` → Output 0 = (Input AN und Timer abgelaufen), Stack: []
-
-**Funktionsweise**: 
-- Input geht AN → Timer startet (5s)
-- Nach 5s → Timer läuft ab → Output geht AN
-- Input geht AUS → Timer und Output gehen sofort AUS
+**Beispiel - Zeitverlauf**:
+- 0-500ms: Timer=true → Output 0 = AN
+- 500-1000ms: Timer=false → Output 0 = AUS
+- 1000-1500ms: Timer=true → Output 0 = AN
+- usw.
 
 ---
 
-### Beispiel 7: Blinker (Komplex)
+### Beispiel 7: Steuerbarer Blinker (Komplex)
 
-**Aufgabe**: Output 0 blinkt mit 1 Sekunde Periode (0,5s AN, 0,5s AUS).
+**Aufgabe**: Output 0 blinkt mit 1 Hz, aber nur wenn Input 0 AN ist.
 
 **Code**:
 ```
-# Blinker mit 1 Hz (0,5s AN / 0,5s AUS)
-# Timer initialisieren wenn beide Timer abgelaufen sind
-GETNOT T 0
-GETNOT T 1
-AND
+# Blinker der nur bei Input 0 = AN blinkt
+# Timer läuft wenn Input AN
+GET I 0
 DUP
-
-# Timer 0 und 1 auf 500ms bzw. 1000ms setzen
 CSET T 0 500
-CSET T 1 1000
 
-# Output ist AN wenn beide Timer noch laufen
+# Timer stoppen wenn Input AUS
+GETNOT I 0
+CSET T 0 0
+
+# Output folgt Timer UND Input
+GET I 0
 GET T 0
-GET T 1
 AND
 MOV O 0
 ```
 
 **Schritt-für-Schritt Erklärung**:
 
-**Teil 1 - Timer initialisieren**:
-1. `GETNOT T 0` → Stack: [!T0] (true wenn Timer 0 abgelaufen)
-2. `GETNOT T 1` → Stack: [!T0, !T1]
-3. `AND` → Stack: [!T0 && !T1] (true wenn beide abgelaufen)
-4. `DUP` → Stack: [!T0 && !T1, !T0 && !T1]
-5. `CSET T 0 500` → Wenn Stack=true: Timer 0 = 500ms, Stack: [!T0 && !T1]
-6. `CSET T 1 1000` → Wenn Stack=true: Timer 1 = 1000ms, Stack: []
+**Teil 1 - Timer starten**:
+1. `GET I 0` → Stack: [I0]
+2. `DUP` → Stack: [I0, I0]
+3. `CSET T 0 500` → Wenn I0=true: Timer 0 = 500ms (pulsierend), Stack: [I0]
 
-**Teil 2 - Output schalten**:
-7. `GET T 0` → Stack: [T0] (true solange Timer 0 läuft)
-8. `GET T 1` → Stack: [T0, T1]
-9. `AND` → Stack: [T0 && T1] (true nur wenn beide Timer noch laufen)
-10. `MOV O 0` → Output 0 = (beide Timer laufen), Stack: []
+**Teil 2 - Timer stoppen**:
+4. `GETNOT I 0` → Stack: [I0, !I0]
+   - (Achtung: Stack hat noch alten Wert! Wird aber nicht gebraucht)
+5. `CSET T 0 0` → Wenn !I0=true: Timer 0 = 0 (gestoppt), Stack: [I0]
+
+**Teil 3 - Output schalten**:
+6. Korrektur - Stack von Teil 1 leeren:
+   - (Der Code oben ist vereinfacht, in Realität müssen wir den Stack besser managen)
+
+Bessere Version des Codes:
+```
+# Blinker der nur bei Input 0 = AN blinkt (korrigiert)
+# Timer läuft wenn Input AN
+GET I 0
+CSET T 0 500
+
+# Timer stoppen wenn Input AUS
+GETNOT I 0
+CSET T 0 0
+
+# Output folgt Timer UND Input
+GET I 0
+GET T 0
+AND
+MOV O 0
+```
 
 **Funktionsweise**:
-- Start: Beide Timer abgelaufen → beide Timer werden gestartet
-- 0-500ms: T0 läuft, T1 läuft → Output AN
-- 500-1000ms: T0 abgelaufen, T1 läuft → Output AUS
-- Nach 1000ms: Beide abgelaufen → Zyklus wiederholt sich
+- Input AN → Timer startet mit 500ms Pulsierung
+- Input AUS → Timer stoppt (auf 0 gesetzt)
+- Output blinkt nur wenn Input AN und Timer true
 
 ---
 
-### Beispiel 8: Counter bis 10 (Komplex)
+### Beispiel 8: Mehrere Blinker (Komplex)
+
+**Aufgabe**: Output 0 blinkt mit 1 Sekunde (1s an/1s aus), Output 1 blinkt mit 2 Sekunden (2s an/2s aus).
+
+**Code**:
+```
+# Starte Timer 0 nur wenn noch nicht gestartet (Memory 0 = 0)
+GETNOT M 0
+DUP
+CSET T 0 1000
+CMOV M 0 1
+
+# Hole Timer 0 und schreibe auf Output 0
+GET T 0
+MOV O 0
+
+# Starte Timer 1 nur wenn noch nicht gestartet (Memory 1 = 0)
+GETNOT M 1
+DUP
+CSET T 1 2000
+CMOV M 1 1
+
+# Hole Timer 1 und schreibe auf Output 1
+GET T 1
+MOV O 1
+```
+
+**Schritt-für-Schritt Erklärung**:
+
+**Teil 1 - Timer 0 initialisieren (nur einmal!)**:
+1. `GETNOT M 0` → Stack: [!M0] (true wenn Memory 0 = 0)
+2. `DUP` → Stack: [!M0, !M0]
+3. `CSET T 0 1000` → Wenn true: Timer 0 mit 1000ms starten, Stack: [!M0]
+4. `CMOV M 0 1` → Wenn true: Memory 0 = 1 (verhindert Neustart), Stack: []
+
+**Teil 2 - Output 0 setzen**:
+5. `GET T 0` → Stack: [T0] (aktueller Timer-Zustand)
+6. `MOV O 0` → Output 0 = T0, Stack: []
+
+**Teil 3 - Timer 1 initialisieren (nur einmal!)**:
+7. `GETNOT M 1` → Stack: [!M1]
+8. `DUP` → Stack: [!M1, !M1]
+9. `CSET T 1 2000` → Wenn true: Timer 1 mit 2000ms starten, Stack: [!M1]
+10. `CMOV M 1 1` → Wenn true: Memory 1 = 1, Stack: []
+
+**Teil 4 - Output 1 setzen**:
+11. `GET T 1` → Stack: [T1]
+12. `MOV O 1` → Output 1 = T1, Stack: []
+
+**Funktionsweise**:
+- **Erster Zyklus**: Beide Timer werden gestartet, M0 und M1 werden auf 1 gesetzt
+- **Folgezyklen**: Timer laufen weiter ohne Neustart
+- Timer 0: 1000ms true, 1000ms false → Output 0 blinkt mit 0,5 Hz
+- Timer 1: 2000ms true, 2000ms false → Output 1 blinkt mit 0,25 Hz
+
+**KRITISCH**: Ohne Memory-Verwaltung würden die Timer in jedem Zyklus neu starten und nie pulsieren!
+
+---
+
+### Beispiel 9: Counter bis 10 (Komplex)
 
 **Aufgabe**: Zähle Impulse auf Input 0 (bei steigender Flanke +1). Bei Input 1 dekrementieren. Output 0 ist AN wenn Counter = 10.
 
@@ -477,6 +677,123 @@ MOV O 0
 - Jeder Impuls auf Input 0 erhöht Counter um 1
 - Jeder Impuls auf Input 1 verringert Counter um 1
 - Output 0 ist AN wenn Counter genau 10 ist
+
+---
+
+### Beispiel 10: Taktgeber mit Counter für Ablaufsteuerung (Komplex)
+
+**Aufgabe**: Erstelle einen Taktgeber der alle 500ms einen Counter hochzählt. Nutze den Counter für zeitbasierte Ablaufsteuerung (z.B. Output 0 für 5 Sekunden AN, dann Output 1 für 3 Sekunden AN, dann wiederholen).
+
+**Wichtige Konzepte:**
+- **Timer für Takt**: Pulsiert kontinuierlich (500ms an/aus)
+- **Flanken-Erkennung**: Erkennt Übergang von true→false
+- **Counter als Zeitgeber**: Zählt die Takte (10 Takte = 5 Sekunden bei 500ms Takt)
+- **Auto-Reset**: Counter setzt sich automatisch zurück
+
+**Code**:
+```
+# TAKTGEBER INITIALISIEREN UND AUTO-RESET
+# Starte Timer wenn Counter > 50 ODER noch nicht gestartet
+GT C 0 50
+GETNOT M 0
+OR
+DUP
+DUP
+CSET T 0 500
+CMOV M 0 1
+CSET C 0 0
+
+# FLANKEN-ERKENNUNG: COUNTER BEI FALLENDER FLANKE HOCHZÄHLEN
+# M1 speichert vorherigen Timer-Zustand
+GETNOT M 1
+GET T 0
+AND
+DUP
+CMOV M 1 1
+CINC C 0
+
+# M1 ZURÜCKSETZEN WENN TIMER AUS IST
+GET M 1
+GETNOT T 0
+AND
+CMOV M 1 0
+
+# ABLAUFSTEUERUNG: OUTPUT 0 FÜR TICK 1-10 (0-5 SEKUNDEN)
+GT C 0 0
+LE C 0 10
+AND
+MOV O 0
+
+# ABLAUFSTEUERUNG: OUTPUT 1 FÜR TICK 11-16 (5-8 SEKUNDEN)
+GT C 0 10
+LE C 0 16
+AND
+MOV O 1
+```
+
+**Schritt-für-Schritt Erklärung**:
+
+**Teil 1 - Taktgeber initialisieren (nur einmal!) und Auto-Reset**:
+1. `GT C 0 50` → Stack: [C0 > 50] (true wenn Counter über 50 → Reset nötig)
+2. `GETNOT M 0` → Stack: [C0>50, !M0] (true wenn Timer noch nicht gestartet)
+3. `OR` → Stack: [C0>50 || !M0] (Timer starten wenn Reset nötig ODER noch nicht gestartet)
+4. `DUP` → Stack: [Bedingung, Bedingung]
+5. `DUP` → Stack: [Bedingung, Bedingung, Bedingung] (3 Kopien für CSET, CMOV, CSET)
+6. `CSET T 0 500` → Wenn true: Timer 0 mit 500ms starten, Stack: [Bedingung, Bedingung]
+7. `CMOV M 0 1` → Wenn true: Memory 0 = 1 (merkt sich Timer gestartet), Stack: [Bedingung]
+8. `CSET C 0 0` → Wenn true: Counter 0 zurücksetzen, Stack: []
+
+**Teil 2 - Flanken-Erkennung (Counter bei fallender Flanke hochzählen)**:
+9. `GETNOT M 1` → Stack: [!M1] (true wenn vorheriger Zustand = false)
+10. `GET T 0` → Stack: [!M1, T0] (aktueller Timer-Zustand)
+11. `AND` → Stack: [!M1 && T0] (true wenn Übergang false→true)
+12. `DUP` → Stack: [Flanke, Flanke]
+13. `CMOV M 1 1` → Wenn Flanke: M1 = 1 (merkt sich Timer ist true), Stack: [Flanke]
+14. `CINC C 0` → Wenn Flanke: Counter 0++, Stack: []
+
+**Teil 3 - M1 zurücksetzen wenn Timer aus**:
+15. `GET M 1` → Stack: [M1]
+16. `GETNOT T 0` → Stack: [M1, !T0]
+17. `AND` → Stack: [M1 && !T0] (true wenn Timer gerade aus gegangen)
+18. `CMOV M 1 0` → Wenn true: M1 = 0 (bereit für nächste Flanke), Stack: []
+
+**Teil 4 - Ablaufsteuerung mit Counter-Bereichen**:
+19. `GT C 0 0` → Stack: [C0 > 0]
+20. `LE C 0 10` → Stack: [C0>0, C0<=10]
+21. `AND` → Stack: [C0>0 && C0<=10] = Bereich [1-10]
+22. `MOV O 0` → Output 0 = (Counter in Bereich 1-10), Stack: []
+
+23. `GT C 0 10` → Stack: [C0 > 10]
+24. `LE C 0 16` → Stack: [C0>10, C0<=16]
+25. `AND` → Stack: [C0>10 && C0<=16] = Bereich [11-16]
+26. `MOV O 1` → Output 1 = (Counter in Bereich 11-16), Stack: []
+
+**Funktionsweise**:
+- **Taktgeber**: Timer 0 pulsiert mit 500ms (0,5s an, 0,5s aus)
+- **Flanken-Erkennung**: Bei jeder fallenden Flanke (true→false) wird Counter hochgezählt
+- **1 Tick = 1 Sekunde** (500ms an + 500ms aus)
+- **Auto-Reset**: Bei Counter > 50 wird Timer neu gestartet und Counter auf 0 gesetzt
+- **Ablauf**: 
+  - Tick 1-10: Output 0 AN (10 Sekunden)
+  - Tick 11-16: Output 1 AN (6 Sekunden)
+  - Tick > 16: Beide AUS bis Reset bei Tick 50
+
+**Wichtige Patterns für Ablaufsteuerung**:
+
+1. **Bereichsprüfung**: `GT C 0 X` + `LE C 0 Y` + `AND` = Bereich [X+1, Y]
+2. **Mehrere Bereiche mit OR**: 
+   ```
+   GT C 0 5
+   LE C 0 10
+   AND
+   GT C 0 20
+   LE C 0 25
+   AND
+   OR
+   MOV O 0
+   # Output 0 ist AN in Bereich [6-10] ODER [21-25]
+   ```
+3. **Flanken-Erkennung ist KRITISCH**: Ohne Flanken-Erkennung würde Counter in jedem Zyklus hochzählen (z.B. 100x pro Sekunde statt 1x)!
 
 ## Deine Rolle als FPC-Experte
 

@@ -26,13 +26,12 @@ namespace FreelyProgrammableControl.Logic.Execution
 
         private readonly Common.Stack<bool> stack = new();
 
-        private readonly Memory<bool> memory = new(1024);
-
-        private readonly Inputs inputs = new(inputs);
         private readonly Outputs outputs = new(outputs);
-
-        private readonly Timers timers = new(264);
-        private readonly Counters counters = new(264);
+        private readonly Inputs inputs = new(inputs);
+        
+        private readonly Memory<bool> memory = new(1024);
+        private readonly Timers timers = new(128);
+        private readonly Counters counters = new(128);
         #endregion fields
 
         #region  properties
@@ -51,7 +50,13 @@ namespace FreelyProgrammableControl.Logic.Execution
                 {
                     if (executionLine != null)
                     {
-                        result.AppendLine($"Executed Line: {executionLine.LineNumber:d4} - {(executionLine.Source.HasContent() ? executionLine.Source : executionLine.Instruction)}");
+                        var lineInfo = $"Executed Line: {executionLine.LineNumber:d4} - {(executionLine.Source.HasContent() ? executionLine.Source : executionLine.Instruction)}";
+
+                        if (executionLine.HasError)
+                        {
+                            lineInfo += $"  !!! ERROR: {executionLine.ErrorMessage}";
+                        }
+                        result.AppendLine(lineInfo);
                     }
                     result.AppendLine(stack.ToString());
                     result.AppendLine(timers.ToString());
@@ -233,9 +238,19 @@ namespace FreelyProgrammableControl.Logic.Execution
                     currentLineNumber = 0;
                 }
 
-                executionLine = parsedLines[currentLineNumber];
-                Execute(executionLine);
-                currentLineNumber++;
+                executionLine = parsedLines[currentLineNumber++];
+                try
+                {
+                    executionLine.HasError = false;
+                    executionLine.ErrorMessage = null;
+                    Execute(executionLine);
+                }
+                catch (Exception ex)
+                {
+                    // Fehlerbehandlung erfolgt in Execute-Methode
+                    executionLine.HasError = true;
+                    executionLine.ErrorMessage = ex.Message;
+                }
                 NotifyAsync();
             }
         }

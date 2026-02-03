@@ -64,9 +64,9 @@ Jede Zeile wird zu einer `ParsedLine` verarbeitet. Kommentare beginnen mit `#`.
 | | `MOV M n` | n = Index | Pop vom Stack und schreibt in Memory `n` | Pop() → M[n] |
 | **Bedingtes Schreiben** | `CMOV O n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Output `n` = v (0/1) | Pop(), wenn true: O[n] = v |
 | | `CMOV M n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Memory `n` = v (0/1) | Pop(), wenn true: M[n] = v |
-| **Timer/Counter setzen** | `SET T n v` | n = Index, v = Wert | Setzt Timer `n` auf v (ms) | - |
+| **Timer/Counter setzen** | `SET T n v` | n = Index, v = Wert | Startet pulsierenden Timer `n` mit v ms (true/false Wechsel). Timer pulsiert bis v=0 gesetzt wird | - |
 | | `SET C n v` | n = Index, v = Wert | Setzt Counter `n` auf Wert v | - |
-| **Bedingtes Setzen** | `CSET T n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Timer `n` = v (ms) | Pop(), wenn true: T[n] = v |
+| **Bedingtes Setzen** | `CSET T n v` | n = Index, v = Wert | Pop vom Stack, wenn true: startet pulsierenden Timer `n` mit v ms. Timer pulsiert bis v=0 gesetzt wird | Pop(), wenn true: T[n] = v |
 | | `CSET C n v` | n = Index, v = Wert | Pop vom Stack, wenn true: Counter `n` = v | Pop(), wenn true: C[n] = v |
 | **Counter-Operationen** | `CINC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` inkrementieren | Pop(), wenn true: C[n]++ |
 | | `CDEC C n` | n = Index | Pop vom Stack, wenn true: Counter `n` dekrementieren | Pop(), wenn true: C[n]-- |
@@ -82,18 +82,39 @@ Jede Zeile wird zu einer `ParsedLine` verarbeitet. Kommentare beginnen mit `#`.
 | `I` | Input (Eingang) | `GET I 0` - Liest Input 0 |
 | `O` | Output (Ausgang) | `MOV O 5` - Schreibt in Output 5 |
 | `M` | Memory (Speicher) | `GET M 10` - Liest Memory 10 |
-| `T` | Timer | `SET T 2 1000` - Setzt Timer 2 auf 1000 ms |
+| `T` | Timer (pulsierend) | `SET T 2 1000` - Timer 2 pulsiert mit 1000 ms (1s true, 1s false) |
 | `C` | Counter (Zähler) | `CINC C 3` - Inkrementiert Counter 3 |
+
+### Timer-Verhalten (WICHTIG!)
+
+Timer in FPC funktionieren als **pulsierende Timer**:
+
+- **`SET T n v`** startet einen pulsierenden Timer mit Periode `v` Millisekunden
+- Der Timer wechselt automatisch zwischen `true` (v ms) und `false` (v ms)
+- **Beispiel:** `SET T 0 500` 
+  - Timer 0 ist 500 ms lang `true`
+  - Dann 500 ms lang `false`
+  - Dann wieder 500 ms `true`, usw.
+- Der Timer pulsiert kontinuierlich, bis er mit `SET T n 0` gestoppt wird
+- **Anwendung:** Ideal für Blinker, Taktgeber und periodische Signale
+
+**Beispiel - Blinker:**
+```
+# LED blinkt mit 1 Hz (500ms an, 500ms aus)
+SET T 0 500
+GET T 0
+MOV O 0
+```
 
 ### Ressourcen-Limits
 
 | Ressource | Standard-Größe | Beschreibung |
 |-----------|----------------|--------------|
 | Memory | 1024 | Boolean-Speicherzellen |
-| Timers | 264 | Timer (in Millisekunden) |
-| Counters | 264 | Integer-Zähler |
-| Inputs | Konfigurierbar | Input-Geräte (default: 20/64) |
-| Outputs | Konfigurierbar | Output-Geräte (default: 20/64) |
+| Timers | 128 | Timer (in Millisekunden) |
+| Counters | 128 | Integer-Zähler |
+| Inputs | Konfigurierbar | Input-Geräte (default: 20) |
+| Outputs | Konfigurierbar | Output-Geräte (default: 20) |
 | Stack | Dynamisch | Boolean-Stack für Operationen |
 
 ## Beispielprogramme
