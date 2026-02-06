@@ -12,11 +12,12 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     /// <summary>
     /// HTTP API Service für die Remote-Steuerung der Desktop-Anwendung
     /// </summary>
-    public class ApiService
+    public class ApiService : IDisposable
     {
         private IWebHost? _webHost;
         private readonly MainWindowViewModel _viewModel;
         private readonly int _port;
+        private bool _disposed;
 
         public bool IsRunning => _webHost != null;
         public int Port => _port;
@@ -63,11 +64,11 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             var response = new
                             {
-                                isRunning = _viewModel.ExecutionUnit?.IsRunning ?? false,
-                                hasParseError = _viewModel.ExecutionUnit?.HasParseError ?? false,
-                                parseErrorMessage = _viewModel.ExecutionUnit?.ParseErrorMessage,
-                                debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false,
-                                sourceLines = _viewModel.ExecutionUnit?.Source.Length ?? 0,
+                                isRunning = _viewModel.IsRunning,
+                                hasParseError = _viewModel.HasParseError,
+                                parseErrorMessage = _viewModel.ParseErrorMessage,
+                                debugEnabled = _viewModel.IsDebugEnabled,
+                                sourceLines = _viewModel.Source.Length,
                                 executionState = _viewModel.ExecutionState
                             };
                             await context.Response.WriteAsJsonAsync(response);
@@ -109,9 +110,9 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
                             var response = new
                             {
-                                success = !(_viewModel.ExecutionUnit?.HasParseError ?? true),
-                                hasParseError = _viewModel.ExecutionUnit?.HasParseError ?? false,
-                                parseErrorMessage = _viewModel.ExecutionUnit?.ParseErrorMessage,
+                                success = !_viewModel.HasParseError,
+                                hasParseError = _viewModel.HasParseError,
+                                parseErrorMessage = _viewModel.ParseErrorMessage,
                                 sourceLines = lines.Length
                             };
 
@@ -138,7 +139,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             var response = new
                             {
                                 success = true,
-                                isRunning = _viewModel.ExecutionUnit?.IsRunning ?? false
+                                isRunning = _viewModel.IsRunning
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -155,7 +156,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             var response = new
                             {
                                 success = true,
-                                isRunning = _viewModel.ExecutionUnit?.IsRunning ?? false
+                                isRunning = _viewModel.IsRunning
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -166,7 +167,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             var response = new
                             {
                                 programCode = _viewModel.SourceText,
-                                sourceLines = _viewModel.ExecutionUnit?.Source.Length ?? 0
+                                sourceLines = _viewModel.Source.Length
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -185,13 +186,13 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             }
 
                             // Prüfe ob Steuerung läuft
-                            if (_viewModel.ExecutionUnit?.IsRunning ?? false)
+                            if (_viewModel.IsRunning)
                             {
                                 context.Response.StatusCode = 409; // Conflict
                                 await context.Response.WriteAsJsonAsync(new 
                                 { 
                                     success = false,
-                                    debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false,
+                                    debugEnabled = _viewModel.DebugEnabled,
                                     error = "Debug-Modus kann nur geändert werden, wenn die Steuerung gestoppt ist" 
                                 });
                                 return;
@@ -199,16 +200,13 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                if (_viewModel.ExecutionUnit != null)
-                                {
-                                    _viewModel.ExecutionUnit.DebugEnabled = enable;
-                                }
+                                _viewModel.DebugEnabled = enable;
                             });
 
                             var response = new
                             {
                                 success = true,
-                                debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false
+                                debugEnabled = _viewModel.IsDebugEnabled
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -217,7 +215,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         endpoints.MapPost("/api/step", async context =>
                         {
                             // Prüfe ob Steuerung läuft und Debug-Modus aktiviert ist
-                            if (!(_viewModel.ExecutionUnit?.IsRunning ?? false))
+                            if (!_viewModel.IsRunning)
                             {
                                 context.Response.StatusCode = 409;
                                 await context.Response.WriteAsJsonAsync(new 
@@ -228,7 +226,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 return;
                             }
 
-                            if (!(_viewModel.ExecutionUnit?.DebugEnabled ?? false))
+                            if (!_viewModel.DebugEnabled)
                             {
                                 context.Response.StatusCode = 409;
                                 await context.Response.WriteAsJsonAsync(new 
@@ -241,7 +239,6 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                //_viewModel.ExecutionUnit?.Step();
                                 _viewModel.StepCommand?.Execute(null);
                             });
 
@@ -251,7 +248,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             var response = new
                             {
                                 success = true,
-                                executionState = _viewModel.ExecutionUnit?.State
+                                executionState = _viewModel.State,
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -261,9 +258,9 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             var response = new
                             {
-                                isRunning = _viewModel.ExecutionUnit?.IsRunning ?? false,
-                                debugEnabled = _viewModel.ExecutionUnit?.DebugEnabled ?? false,
-                                executionState = _viewModel.ExecutionUnit?.State
+                                isRunning = _viewModel.IsRunning,
+                                debugEnabled = _viewModel.DebugEnabled,
+                                executionState = _viewModel.State
                             };
                             await context.Response.WriteAsJsonAsync(response);
                         });
@@ -284,6 +281,29 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 await _webHost.StopAsync();
                 _webHost.Dispose();
                 _webHost = null;
+            }
+        }
+
+        /// <summary>
+        /// Dispose implementation
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _webHost?.StopAsync().GetAwaiter().GetResult();
+                    _webHost?.Dispose();
+                    _webHost = null;
+                }
+                _disposed = true;
             }
         }
     }
