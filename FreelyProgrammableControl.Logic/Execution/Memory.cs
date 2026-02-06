@@ -50,14 +50,25 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         /// <param name="position">The zero-based index of the position where the value should be set.</param>
         /// <param name="value">The value to be set at the specified position.</param>
-        /// <exception cref="IndexOutOfRangeException">Thrown when the position is outside the bounds of the collection.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the position is outside the bounds of the collection.</exception>
         /// <remarks>
-        /// This method updates the value at the given position and triggers a notification to indicate that the value has changed.
+        /// This method updates the value at the given position and triggers a notification only if the value has changed.
         /// </remarks>
         public void SetValue(int position, T value)
         {
+            if (position < 0 || position >= values.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the values array.");
+            }
+            
+            var oldValue = values[position];
             values[position] = value;
-            Notify();
+            
+            // Only notify if the value actually changed
+            if (!EqualityComparer<T>.Default.Equals(oldValue, value))
+            {
+                Notify();
+            }
         }
         /// <summary>
         /// Retrieves the value at the specified position in the collection.
@@ -65,9 +76,13 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <typeparam name="T">The type of the value to be retrieved.</typeparam>
         /// <param name="position">The zero-based index of the value to retrieve.</param>
         /// <returns>The value at the specified position in the collection.</returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown when the specified position is outside the bounds of the collection.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the specified position is outside the bounds of the collection.</exception>
         public T GetValue(int position)
         {
+            if (position < 0 || position >= values.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the values array.");
+            }
             return values[position];
         }
 

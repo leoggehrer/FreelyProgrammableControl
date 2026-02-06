@@ -115,11 +115,15 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <c>true</c> if the timer at the specified position has a value; otherwise, <c>false</c>.
         /// If the timer at the specified position is <c>default</c>, it will return <c>false</c>.
         /// </returns>
-        /// <exception cref="IndexOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the <paramref name="position"/> is outside the bounds of the <see cref="timers"/> collection.
-        /// </exception
+        /// </exception>
         public bool GetValue(int position)
         {
+            if (position < 0 || position >= timers.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the timers array.");
+            }
             return timers[position] == default ? false : timers[position]!.Value;
         }
 

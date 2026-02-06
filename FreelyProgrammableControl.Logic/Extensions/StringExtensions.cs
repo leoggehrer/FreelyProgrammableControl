@@ -94,22 +94,37 @@ namespace FreelyProgrammableControl.Logic.Extensions
             return result.ToString();
         }
         ///<summary>
-        /// Converts a string to an integer.
+        /// Converts a string to an integer by extracting all digits.
         ///</summary>
         ///<param name="text">The string to be converted.</param>
-        ///<returns>An integer representation of the input string.</returns>
+        ///<returns>An integer representation of the digits in the input string. Returns 0 if no digits are found.</returns>
+        ///<remarks>
+        /// This method extracts only numeric digits from the string and ignores all other characters.
+        /// For standard numeric parsing with validation, consider using int.TryParse or int.Parse instead.
+        ///</remarks>
         public static int ToInt(this string text)
         {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return 0;
+            }
+
             int result = 0;
 
             foreach (var item in text)
             {
                 if (char.IsDigit(item))
                 {
+                    // Check for potential overflow
+                    if (result > (int.MaxValue - (item - '0')) / 10)
+                    {
+                        throw new OverflowException($"The numeric value in '{text}' is too large for an Int32.");
+                    }
                     result *= 10;
                     result = result + item - '0';
                 }
             }
+            
             return result;
         }
 

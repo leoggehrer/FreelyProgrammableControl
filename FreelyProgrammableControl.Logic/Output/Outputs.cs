@@ -21,11 +21,29 @@ namespace FreelyProgrammableControl.Logic.Output
         /// </summary>
         /// <value>The length of the devices array.</value>
         public int Length => devices.Length;
+        
+        /// <summary>
+        /// Gets or sets the output device at the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the device to get or set.</param>
+        /// <returns>The output device at the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the index is outside the bounds of the collection.</exception>
         public IOutputDevice this[int index]
         {
-            get => devices[index];
+            get
+            {
+                if (index < 0 || index >= devices.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of the bounds of the devices array.");
+                }
+                return devices[index];
+            }
             set
             {
+                if (index < 0 || index >= devices.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of the bounds of the devices array.");
+                }
                 devices[index] = value;
                 devices[index].Attach((sender, e) => NotifyAsync());
             }
@@ -73,11 +91,17 @@ namespace FreelyProgrammableControl.Logic.Output
         /// </summary>
         /// <param name="position">The zero-based index of the device in the devices collection.</param>
         /// <param name="value">The boolean value to set for the device.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the position is outside the bounds of the collection.</exception>
         /// <remarks>
         /// If the new value is different from the current value, the method will trigger an asynchronous notification.
         /// </remarks>
         public void SetValue(int position, bool value)
         {
+            if (position < 0 || position >= devices.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the devices array.");
+            }
+            
             var save = devices[position].Value;
 
             devices[position].Value = value;
@@ -91,9 +115,13 @@ namespace FreelyProgrammableControl.Logic.Output
         /// <returns>
         /// <c>true</c> if the device at the specified position has a value of true; otherwise, <c>false</c>.
         /// </returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown when the position is outside the bounds of the devices collection.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the position is outside the bounds of the devices collection.</exception>
         public bool GetValue(int position)
         {
+            if (position < 0 || position >= devices.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the devices array.");
+            }
             return devices[position].Value;
         }
         /// <summary>

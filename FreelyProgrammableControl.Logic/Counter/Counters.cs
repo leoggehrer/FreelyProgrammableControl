@@ -52,23 +52,38 @@ namespace FreelyProgrammableControl.Logic.Counter
         /// </summary>
         /// <param name="position">The zero-based index at which to set the value.</param>
         /// <param name="value">The value to set at the specified position.</param>
-        /// <exception cref="IndexOutOfRangeException">Thrown when the position is outside the bounds of the collection.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the position is outside the bounds of the collection.</exception>
         /// <remarks>
-        /// This method updates the value at the given position and then notifies any observers of the change.
+        /// This method updates the value at the given position and then notifies any observers only if the value has changed.
         /// </remarks>
         public void SetValue(int position, int value)
         {
+            if (position < 0 || position >= values.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the values array.");
+            }
+            
+            var oldValue = values[position];
             values[position] = value;
-            Notify();
+            
+            // Only notify if the value actually changed
+            if (oldValue != value)
+            {
+                Notify();
+            }
         }
         /// <summary>
         /// Retrieves the value at the specified position in the values array.
         /// </summary>
         /// <param name="position">The zero-based index of the value to retrieve.</param>
         /// <returns>The value at the specified position.</returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown when the position is outside the bounds of the values array.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the position is outside the bounds of the values array.</exception>
         public int GetValue(int position)
         {
+            if (position < 0 || position >= values.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the values array.");
+            }
             return values[position];
         }
         /// <summary>

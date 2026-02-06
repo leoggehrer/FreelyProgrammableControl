@@ -16,10 +16,37 @@ namespace FreelyProgrammableControl.Logic.Execution
     /// </remarks>
     public class ExecutionUnit(int inputs, int outputs) : Subject
     {
+        #region constants
+        /// <summary>
+        /// Default size for memory in boolean values.
+        /// </summary>
+        private const int DefaultMemorySize = 1024;
+        
+        /// <summary>
+        /// Default number of available timers.
+        /// </summary>
+        private const int DefaultTimerCount = 128;
+        
+        /// <summary>
+        /// Default number of available counters.
+        /// </summary>
+        private const int DefaultCounterCount = 128;
+        
+        /// <summary>
+        /// Default cycle time in milliseconds for the execution loop.
+        /// </summary>
+        private const int DefaultCycleTimeMs = 100;
+        
+        /// <summary>
+        /// Minimum allowed cycle time in milliseconds to prevent busy loops.
+        /// </summary>
+        private const int MinCycleTimeMs = 1;
+        #endregion constants
+        
         #region  fields
         private volatile bool running = false;
         private bool debugEnabled = false;
-        private int cycleTimeMs = 100;
+        private int cycleTimeMs = DefaultCycleTimeMs;
         private int currentLineNumber = -1;
         private ParsedLine? executionLine = null;
         private readonly List<ParsedLine> parsedLines = [];
@@ -29,9 +56,9 @@ namespace FreelyProgrammableControl.Logic.Execution
         private readonly Outputs outputs = new(outputs);
         private readonly Inputs inputs = new(inputs);
         
-        private readonly Memory<bool> memory = new(1024);
-        private readonly Timers timers = new(128);
-        private readonly Counters counters = new(128);
+        private readonly Memory<bool> memory = new(DefaultMemorySize);
+        private readonly Timers timers = new(DefaultTimerCount);
+        private readonly Counters counters = new(DefaultCounterCount);
         #endregion fields
 
         #region  properties
@@ -146,12 +173,12 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// Gets or sets the cycle time (in milliseconds) for the execution loop.
         /// </summary>
         /// <remarks>
-        /// Values &lt;= 0 werden auf 1 ms begrenzt, um einen Busy-Loop zu vermeiden.
+        /// Values &lt;= 0 werden auf <see cref="MinCycleTimeMs"/> ms begrenzt, um einen Busy-Loop zu vermeiden.
         /// </remarks>
         public int CycleTimeMs
         {
             get => cycleTimeMs;
-            set => cycleTimeMs = Math.Max(1, value);
+            set => cycleTimeMs = Math.Max(MinCycleTimeMs, value);
         }
 
         /// <summary>

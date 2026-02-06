@@ -29,6 +29,7 @@ namespace FreelyProgrammableControl.Logic.Common
 
         #region  fields
         private Element? head = null;
+        private int count = 0;
         #endregion fields
 
         #region  properties
@@ -39,6 +40,14 @@ namespace FreelyProgrammableControl.Logic.Common
         /// <c>true</c> if the collection has no elements; otherwise, <c>false</c>.
         /// </value>
         public bool IsEmpty => head == null;
+        
+        /// <summary>
+        /// Gets the number of elements contained in the stack.
+        /// </summary>
+        /// <value>
+        /// The number of elements in the stack.
+        /// </value>
+        public int Count => count;
         #endregion properties
 
         #region constructors
@@ -62,6 +71,7 @@ namespace FreelyProgrammableControl.Logic.Common
         public void Clear()
         {
             head = null;
+            count = 0;
         }
         /// <summary>
         /// Retrieves the top element of the stack without removing it.
@@ -94,6 +104,7 @@ namespace FreelyProgrammableControl.Logic.Common
             Element tmp = head!;
 
             head = tmp.Next;
+            count--;
             return tmp.Data;
         }
         /// <summary>
@@ -107,6 +118,7 @@ namespace FreelyProgrammableControl.Logic.Common
         public void Push(T data)
         {
             head = new Element(data, head);
+            count++;
         }
 
         /// <summary>

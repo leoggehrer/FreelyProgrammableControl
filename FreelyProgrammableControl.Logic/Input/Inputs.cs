@@ -23,11 +23,29 @@ namespace FreelyProgrammableControl.Logic.Input
         /// The length of the devices array.
         /// </value>
         public int Length => devices.Length;
+        
+        /// <summary>
+        /// Gets or sets the input device at the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the device to get or set.</param>
+        /// <returns>The input device at the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when the index is outside the bounds of the collection.</exception>
         public IInputDevice this[int index]
         {
-            get => devices[index];
+            get
+            {
+                if (index < 0 || index >= devices.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of the bounds of the devices array.");
+                }
+                return devices[index];
+            }
             set
             {
+                if (index < 0 || index >= devices.Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(index), "Index is out of the bounds of the devices array.");
+                }
                 devices[index] = value;
                 devices[index].Attach((sender, e) => NotifyAsync());
             }
@@ -62,11 +80,15 @@ namespace FreelyProgrammableControl.Logic.Input
         /// <returns>
         /// <c>true</c> if the device at the specified position has a value of true; otherwise, <c>false</c>.
         /// </returns>
-        /// <exception cref="IndexOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified position is outside the bounds of the devices collection.
         /// </exception>
         public bool GetValue(int position)
         {
+            if (position < 0 || position >= devices.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the devices array.");
+            }
             return devices[position].Value;
         }
         #endregion methods

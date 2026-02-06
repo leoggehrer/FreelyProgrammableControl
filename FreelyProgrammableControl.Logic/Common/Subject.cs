@@ -59,12 +59,24 @@ namespace FreelyProgrammableControl.Logic.Common
         /// event handler, passing the current instance and an empty <see cref="EventArgs"/>
         /// as parameters. This is typically used in the observer pattern to inform
         /// subscribers of an event or state change.
+        /// Exceptions from individual observers are caught and logged to prevent one faulty observer from breaking the notification chain.
         /// </remarks>
         protected void Notify()
         {
-            foreach (EventHandler observer in observers)
+            // Create a copy to avoid issues if observers are modified during notification
+            var observersCopy = observers.ToArray();
+            
+            foreach (EventHandler observer in observersCopy)
             {
-                observer.Invoke(this, EventArgs.Empty);
+                try
+                {
+                    observer.Invoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    // Log exception but continue notifying other observers
+                    System.Diagnostics.Debug.WriteLine($"Exception in observer notification: {ex.Message}");
+                }
             }
         }
         /// <summary>
