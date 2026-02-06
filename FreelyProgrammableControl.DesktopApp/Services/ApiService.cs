@@ -77,88 +77,75 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         // Program laden
                         endpoints.MapPost("/api/program", async context =>
                         {
-                            // Prüfe ob Steuerung läuft
-                            // if (_viewModel.ExecutionUnit?.IsRunning ?? false)
-                            // {
-                            //     context.Response.StatusCode = 409; // Conflict
-                            //     await context.Response.WriteAsJsonAsync(new { error = "Die Steuerung muss zuerst gestoppt werden, bevor ein neues Programm geladen werden kann" });
-                            //     return;
-                            // }
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
                                 _viewModel.StopCommand?.Execute(null);
-                            });
 
-                            using var reader = new StreamReader(context.Request.Body);
-                            var programCode = await reader.ReadToEndAsync();
+                                using var reader = new StreamReader(context.Request.Body);
+                                var programCode = await reader.ReadToEndAsync();
 
-                            if (string.IsNullOrWhiteSpace(programCode))
-                            {
-                                context.Response.StatusCode = 400;
-                                await context.Response.WriteAsJsonAsync(new { error = "Programm-Code darf nicht leer sein" });
-                                return;
-                            }
+                                if (string.IsNullOrWhiteSpace(programCode))
+                                {
+                                    context.Response.StatusCode = 400;
+                                    await context.Response.WriteAsJsonAsync(new { error = "Programm-Code darf nicht leer sein" });
+                                    return;
+                                }
 
-                            var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
-                            
-                            // Update ViewModel
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                            {
+                                var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+
                                 _viewModel.SourceText = programCode;
                                 _viewModel.LoadSourceCommand?.Execute(null);
+
+                                var response = new
+                                {
+                                    success = !_viewModel.HasParseError,
+                                    hasParseError = _viewModel.HasParseError,
+                                    parseErrorMessage = _viewModel.ParseErrorMessage,
+                                    sourceLines = lines.Length
+                                };
+
+                                if (response.success)
+                                {
+                                    await context.Response.WriteAsJsonAsync(response);
+                                }
+                                else
+                                {
+                                    context.Response.StatusCode = 400;
+                                    await context.Response.WriteAsJsonAsync(response);
+                                }
                             });
-
-                            var response = new
-                            {
-                                success = !_viewModel.HasParseError,
-                                hasParseError = _viewModel.HasParseError,
-                                parseErrorMessage = _viewModel.ParseErrorMessage,
-                                sourceLines = lines.Length
-                            };
-
-                            if (response.success)
-                            {
-                                await context.Response.WriteAsJsonAsync(response);
-                            }
-                            else
-                            {
-                                context.Response.StatusCode = 400;
-                                await context.Response.WriteAsJsonAsync(response);
-                            }
                         });
 
                         // Programm starten
                         endpoints.MapPost("/api/start", async context =>
                         {
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
-                                //_viewModel.ExecutionUnit?.Start();
                                 _viewModel.StartCommand?.Execute(null);
-                            });
 
-                            var response = new
-                            {
-                                success = true,
-                                isRunning = _viewModel.IsRunning
-                            };
-                            await context.Response.WriteAsJsonAsync(response);
+                                var response = new
+                                {
+                                    success = true,
+                                    isRunning = _viewModel.IsRunning
+                                };
+                                await context.Response.WriteAsJsonAsync(response);
+                            });
                         });
 
                         // Programm stoppen
                         endpoints.MapPost("/api/stop", async context =>
                         {
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
-                               //_viewModel.ExecutionUnit?.Stop();
-                               _viewModel.StopCommand?.Execute(null);
-                            });
+                                _viewModel.StopCommand?.Execute(null);
 
-                            var response = new
-                            {
-                                success = true,
-                                isRunning = _viewModel.IsRunning
-                            };
-                            await context.Response.WriteAsJsonAsync(response);
+                                var response = new
+                                {
+                                    success = true,
+                                    isRunning = _viewModel.IsRunning
+                                };
+                                await context.Response.WriteAsJsonAsync(response);
+                            });
                         });
 
                         // Programm abrufen
@@ -177,7 +164,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             using var reader = new StreamReader(context.Request.Body);
                             var enableText = await reader.ReadToEndAsync();
-                            
+
                             if (!bool.TryParse(enableText, out var enable))
                             {
                                 context.Response.StatusCode = 400;
@@ -189,26 +176,26 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             if (_viewModel.IsRunning)
                             {
                                 context.Response.StatusCode = 409; // Conflict
-                                await context.Response.WriteAsJsonAsync(new 
-                                { 
+                                await context.Response.WriteAsJsonAsync(new
+                                {
                                     success = false,
                                     debugEnabled = _viewModel.DebugEnabled,
-                                    error = "Debug-Modus kann nur geändert werden, wenn die Steuerung gestoppt ist" 
+                                    error = "Debug-Modus kann nur geändert werden, wenn die Steuerung gestoppt ist"
                                 });
                                 return;
                             }
 
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
                                 _viewModel.DebugEnabled = enable;
-                            });
 
-                            var response = new
-                            {
-                                success = true,
-                                debugEnabled = _viewModel.IsDebugEnabled
-                            };
-                            await context.Response.WriteAsJsonAsync(response);
+                                var response = new
+                                {
+                                    success = true,
+                                    debugEnabled = _viewModel.IsDebugEnabled
+                                };
+                                await context.Response.WriteAsJsonAsync(response);
+                            });
                         });
 
                         // Programmschritt ausführen
@@ -218,10 +205,10 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             if (!_viewModel.IsRunning)
                             {
                                 context.Response.StatusCode = 409;
-                                await context.Response.WriteAsJsonAsync(new 
-                                { 
+                                await context.Response.WriteAsJsonAsync(new
+                                {
                                     success = false,
-                                    error = "Die Steuerung muss gestartet sein" 
+                                    error = "Die Steuerung muss gestartet sein"
                                 });
                                 return;
                             }
@@ -229,28 +216,28 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             if (!_viewModel.DebugEnabled)
                             {
                                 context.Response.StatusCode = 409;
-                                await context.Response.WriteAsJsonAsync(new 
-                                { 
+                                await context.Response.WriteAsJsonAsync(new
+                                {
                                     success = false,
-                                    error = "Debug-Modus ist nicht aktiviert" 
+                                    error = "Debug-Modus ist nicht aktiviert"
                                 });
                                 return;
                             }
 
-                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
                                 _viewModel.StepCommand?.Execute(null);
+
+                                // Warte kurz, damit der Step verarbeitet wird
+                                await Task.Delay(50);
+
+                                var response = new
+                                {
+                                    success = true,
+                                    executionState = _viewModel.State,
+                                };
+                                await context.Response.WriteAsJsonAsync(response);
                             });
-
-                            // Warte kurz, damit der Step verarbeitet wird
-                            await Task.Delay(50);
-
-                            var response = new
-                            {
-                                success = true,
-                                executionState = _viewModel.State,
-                            };
-                            await context.Response.WriteAsJsonAsync(response);
                         });
 
                         // Ausführungszustand abrufen

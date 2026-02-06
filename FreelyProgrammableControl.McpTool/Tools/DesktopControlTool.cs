@@ -10,7 +10,18 @@ namespace FreelyProgrammableControl.McpTool.Tools
     [McpServerToolType]
     public static partial class DesktopControlTool
     {
-        private static readonly DesktopClientService _client = new("http://localhost:5555");
+        private static DesktopClientService _client = new("http://localhost:5555");
+
+        /// <summary>
+        /// Konfiguriert den Desktop-Client mit der URL aus den Settings.
+        /// </summary>
+        public static void Configure(string baseUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(baseUrl))
+            {
+                _client = new DesktopClientService(baseUrl);
+            }
+        }
 
         /// <summary>
         /// Prüft die Verbindung zur Desktop-Anwendung und gibt den aktuellen Status zurück.

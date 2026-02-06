@@ -1,3 +1,5 @@
+using FreelyProgrammableControl.McpTool.Tools;
+
 namespace FreelyProgrammableControl.McpTool;
 
 internal class Program
@@ -12,6 +14,14 @@ internal class Program
             .WithToolsFromAssembly();
 
         var app = builder.Build();
+
+        // Desktop-App URL aus Configuration laden
+        var desktopBaseUrl = app.Configuration["DesktopApp:BaseUrl"];
+        
+        if (!string.IsNullOrWhiteSpace(desktopBaseUrl))
+        {
+            DesktopControlTool.Configure(desktopBaseUrl);
+        }
 
         // MCP via MapMcp (Standard)
         app.MapMcp("/mcp");

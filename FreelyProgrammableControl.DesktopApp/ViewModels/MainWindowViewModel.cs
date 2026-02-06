@@ -53,7 +53,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 SourceText = value.ToUpper();
                 return;
             }
-            
+
             // Undo/Redo Stack Management
             if (!string.IsNullOrEmpty(lastSourceText) && lastSourceText != value)
             {
@@ -105,7 +105,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         #region constructor and initialization
         public MainWindowViewModel()
         {
-//            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
+            //            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             StatusText = selectedFile;
 
@@ -113,7 +113,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 var lines = File.ReadAllLines(selectedFile);
 
-                SourceText = lines.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+                SourceText = lines.Length > 0 ? lines.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}") : string.Empty;
                 executionUnit.LoadSource(lines);
             }
 
@@ -123,16 +123,18 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             CreateInputItems();
             CreateOutputItems();
-            
+
             // Start API Service
             StartApiService();
         }
-        
+
         private async void StartApiService()
         {
             try
             {
-                apiService = new ApiService(this, 5555);
+                var settings = ConfigurationHelper.GetSettings();
+
+                apiService = new ApiService(this, settings.Api.Port);
                 await apiService.StartAsync();
                 StatusText = $"{selectedFile} - API läuft auf Port {apiService.Port}";
             }
@@ -276,7 +278,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             // Cleanup API Service
             apiService?.Dispose();
             apiService = null;
-            
+
             ownerWindow?.Close();
         }
 
@@ -408,7 +410,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         {
             return executionUnit.IsRunning == false;
         }
-    
+
         [RelayCommand(CanExecute = nameof(CanStop))]
         private void Stop()
         {
@@ -429,10 +431,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [RelayCommand(CanExecute = nameof(CanParse))]
         private void Parse()
         {
-            if (string.IsNullOrWhiteSpace(SourceText) == false)
-            {
-                ParseAndView(SourceText.Split(Environment.NewLine));
-            }
+            ParseAndView(SourceText.Split(Environment.NewLine));
         }
 
         private bool CanParse()
@@ -626,7 +625,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     CanResize = false,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
-                
+
                 var okButton = new Button
                 {
                     Content = "OK",
@@ -634,7 +633,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
                 };
                 okButton.Click += (s, e) => errorDialog.Close();
-                
+
                 errorDialog.Content = new StackPanel
                 {
                     Margin = new Avalonia.Thickness(20),
@@ -650,7 +649,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                         okButton
                     }
                 };
-                
+
                 await errorDialog.ShowDialog(ownerWindow);
             }
         }
@@ -671,7 +670,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 // Stop and dispose API service
                 apiService?.Dispose();
                 apiService = null;
-                
+
                 // Stop execution unit if running
                 if (executionUnit?.IsRunning == true)
                 {
