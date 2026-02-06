@@ -303,6 +303,28 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        [RelayCommand(CanExecute = nameof(CanLoadSource))]
+        private void LoadSource()
+        {
+            if (executionUnit.IsRunning == false && string.IsNullOrWhiteSpace(SourceText) == false)
+            {
+                var source = SourceText.Split(Environment.NewLine);
+                var errors = ParseAndView(source);
+
+                if (errors == 0)
+                {
+                    executionUnit.LoadSource(source);
+
+                    UpdateRunState();
+                }
+            }
+        }
+
+        private bool CanLoadSource()
+        {
+            return executionUnit.IsRunning == false;
+        }
+    
         [RelayCommand(CanExecute = nameof(CanStop))]
         private void Stop()
         {
@@ -372,7 +394,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return errorCount;
         }
 
-        private void UpdateRunState()
+        public void UpdateRunState()
         {
             IsSourceReadOnly = executionUnit.IsRunning;
             IsDebugEnabled = !executionUnit.IsRunning;

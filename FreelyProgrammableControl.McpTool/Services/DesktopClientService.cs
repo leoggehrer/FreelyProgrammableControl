@@ -63,7 +63,6 @@ namespace FreelyProgrammableControl.McpTool.Services
             {
                 var content = new StringContent(programCode, Encoding.UTF8, "text/plain");
                 var response = await _httpClient.PostAsync("/api/program", content);
-                
                 var result = await response.Content.ReadFromJsonAsync<ProgramLoadResponse>();
                 
                 if (!response.IsSuccessStatusCode)

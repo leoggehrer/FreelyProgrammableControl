@@ -512,14 +512,14 @@ namespace FreelyProgrammableControl.Logic.Execution
                             opd_A = stack.Pop();
                             if (opd_A)
                             {
-                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) + 1);
+                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) + parsedLine.Value);
                             }
                             break;
                         case "CDEC":
                             opd_A = stack.Pop();
                             if (opd_A)
                             {
-                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) - 1);
+                                counters.SetValue(parsedLine.Address, counters.GetValue(parsedLine.Address) - parsedLine.Value);
                             }
                             break;
                         case "CMP":

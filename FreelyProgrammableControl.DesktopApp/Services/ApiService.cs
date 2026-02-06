@@ -77,12 +77,16 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         endpoints.MapPost("/api/program", async context =>
                         {
                             // Prüfe ob Steuerung läuft
-                            if (_viewModel.ExecutionUnit?.IsRunning ?? false)
+                            // if (_viewModel.ExecutionUnit?.IsRunning ?? false)
+                            // {
+                            //     context.Response.StatusCode = 409; // Conflict
+                            //     await context.Response.WriteAsJsonAsync(new { error = "Die Steuerung muss zuerst gestoppt werden, bevor ein neues Programm geladen werden kann" });
+                            //     return;
+                            // }
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                context.Response.StatusCode = 409; // Conflict
-                                await context.Response.WriteAsJsonAsync(new { error = "Die Steuerung muss zuerst gestoppt werden, bevor ein neues Programm geladen werden kann" });
-                                return;
-                            }
+                                _viewModel.StopCommand?.Execute(null);
+                            });
 
                             using var reader = new StreamReader(context.Request.Body);
                             var programCode = await reader.ReadToEndAsync();
@@ -94,13 +98,13 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 return;
                             }
 
-                            var lines = programCode.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                            var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
                             
                             // Update ViewModel
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
                                 _viewModel.SourceText = programCode;
-                                _viewModel.ExecutionUnit?.LoadSource(lines);
+                                _viewModel.LoadSourceCommand?.Execute(null);
                             });
 
                             var response = new
@@ -127,7 +131,8 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                _viewModel.ExecutionUnit?.Start();
+                                //_viewModel.ExecutionUnit?.Start();
+                                _viewModel.StartCommand?.Execute(null);
                             });
 
                             var response = new
@@ -143,7 +148,8 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                _viewModel.ExecutionUnit?.Stop();
+                               //_viewModel.ExecutionUnit?.Stop();
+                               _viewModel.StopCommand?.Execute(null);
                             });
 
                             var response = new
@@ -235,7 +241,8 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                             {
-                                _viewModel.ExecutionUnit?.Step();
+                                //_viewModel.ExecutionUnit?.Step();
+                                _viewModel.StepCommand?.Execute(null);
                             });
 
                             // Warte kurz, damit der Step verarbeitet wird

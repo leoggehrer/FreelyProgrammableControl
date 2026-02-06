@@ -322,7 +322,16 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);
                     }
-                    // e.g.: INC C 10 1 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
+                    // e.g.: INC C 10 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 1)
+                    else if (items.Length == 3 && (items[0] == "CI" || items[0] == "CINC")
+                             && (items[1] == "C"))
+                    {
+                        Instruction = "CINC";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = 1;
+                    }
+                    // e.g.: INC C 10 2 => if (statck.pop() == true) => counters.SetValue(10, counters.GetValue(10) + 2)
                     else if (items.Length == 4 && (items[0] == "CI" || items[0] == "CINC")
                              && (items[1] == "C"))
                     {
@@ -331,7 +340,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);
                     }
-                    // e.g.: DEC C 10 0 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
+                    // e.g.: DEC C 10 2 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 2)
                     else if (items.Length == 4 && (items[0] == "CD" || items[0] == "CDEC")
                              && (items[1] == "C"))
                     {
@@ -339,6 +348,15 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Subject = items[1];
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);
+                    }
+                    // e.g.: DEC C 10 => if (statck.pop() == false) => counters.SetValue(10, counters.GetValue(10) - 1)
+                    else if (items.Length == 3 && (items[0] == "CD" || items[0] == "CDEC")
+                             && (items[1] == "C"))
+                    {
+                        Instruction = "CDEC";
+                        Subject = items[1];
+                        Address = Convert.ToInt32(items[2]);
+                        Value = 1;
                     }
                     // e.g.: CMP C 10 17 => stack.pop(counters.GetValue(10) == 17)
                     else if (items.Length == 4 && (items[0] == "C" || items[0] == "CMP")
