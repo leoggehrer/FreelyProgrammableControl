@@ -11,7 +11,7 @@ namespace FreelyProgrammableControl.Logic.Common
         /// <value>
         /// A <see cref="string"/> that represents the label.
         /// </value>
-        string Label { get; }
+        string Label { get; set; }
         /// <summary>
         /// Gets a value indicating whether the condition is true or false.
         /// </summary>
