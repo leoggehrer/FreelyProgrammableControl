@@ -93,10 +93,13 @@
           <ItemsControl ItemsSource="{Binding Inputs}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:InputDeviceViewModel">
-                <CheckBox IsEnabled="{Binding IsEnabled}"
-                          IsChecked="{Binding IsChecked}"
-                          Content="{Binding Label}"
-                          Margin="5,1" />
+                <Border Background="Transparent" 
+                        Margin="5,1"
+                        DoubleTapped="Input_DoubleTapped">
+                  <CheckBox IsEnabled="{Binding IsEnabled}"
+                            IsChecked="{Binding IsChecked}"
+                            Content="{Binding Label}" />
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -257,13 +260,16 @@
           <ItemsControl ItemsSource="{Binding Outputs}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:OutputDeviceViewModel">
-                <RadioButton GroupName="{Binding GroupName}"
-                             IsEnabled="True"
-                             IsHitTestVisible="False"
-                             Focusable="False"
-                             IsChecked="{Binding IsChecked}"
-                             Content="{Binding Label}"
-                             Margin="5,1" />
+                <Border Background="Transparent" 
+                        Margin="5,1"
+                        DoubleTapped="Output_DoubleTapped">
+                  <RadioButton GroupName="{Binding GroupName}"
+                               IsEnabled="True"
+                               IsHitTestVisible="False"
+                               Focusable="False"
+                               IsChecked="{Binding IsChecked}"
+                               Content="{Binding Label}" />
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

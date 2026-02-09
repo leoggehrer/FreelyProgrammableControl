@@ -155,6 +155,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             ownerWindow = owner;
             clipboard = owner.Clipboard;
             isInitialized = true;
+            
+            // Recreate inputs and outputs with window reference
+            CreateInputItems();
+            CreateOutputItems();
         }
         #endregion constructor and initialization
 
@@ -597,7 +601,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             Inputs.Clear();
             for (int i = 0; i < executionUnit.Inputs.Length; i++)
             {
-                Inputs.Add(new InputDeviceViewModel(executionUnit.Inputs[i]));
+                Inputs.Add(new InputDeviceViewModel(executionUnit.Inputs[i], ownerWindow));
             }
         }
 
@@ -606,7 +610,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             Outputs.Clear();
             for (int i = 0; i < executionUnit.Outputs.Length; i++)
             {
-                Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i));
+                Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow));
             }
         }
 
