@@ -156,6 +156,16 @@
                       IsChecked="{Binding DebugEnabled}"
                       Content="{Binding DebugButtonText}"
                       ToolTip.Tip="Debug-Modus umschalten" />
+        <NumericUpDown Width="140"
+                       Height="28"
+                       Margin="5,0"
+                       Increment="1"
+                       FormatString="0000"
+                       Minimum="{Binding MinLineNumber}"
+                       Maximum="{Binding MaxLineNumber}"
+                       Value="{Binding CurrentLineNumber}"
+                       IsEnabled="{Binding DebugEnabled}"
+                       ToolTip.Tip="Zeilennummer" />
         <Button Width="100"
                 Height="28"
                 Margin="5,0"
@@ -196,7 +206,8 @@
                          FontSize="12"
                          Margin="10,10,10,5"
                          Foreground="Gray"/>
-              <TextBox Grid.Row="1"
+              <TextBox x:Name="SourceTextBox"
+                       Grid.Row="1"
                        VerticalAlignment="Stretch"
                        HorizontalAlignment="Stretch"
                        AcceptsReturn="True"

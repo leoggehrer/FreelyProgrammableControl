@@ -47,6 +47,18 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         partial void OnSourceTextChanged(string value)
         {
+            var lineCount = value?.Split(Environment.NewLine).Length ?? 0;
+
+            MinLineNumber = 0;
+            MaxLineNumber = lineCount > 0 ? lineCount - 1 : 0;
+
+            if (CurrentLineNumber < MinLineNumber
+                || CurrentLineNumber > MaxLineNumber
+                || lineCount == 0)
+            {
+                CurrentLineNumber = MinLineNumber;
+            }
+
             // Konvertiere Text zu Großbuchstaben wenn sich der Wert ändert
             if (value != null && value != value.ToUpper())
             {
@@ -92,6 +104,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         [ObservableProperty]
         private string debugButtonText = "Debug: OFF";
+
+        [ObservableProperty]
+        private int currentLineNumber = 0;
+        [ObservableProperty]
+        private int maxLineNumber = 0;
+        [ObservableProperty]
+        private int minLineNumber = 0;
         #endregion observable properties
 
         #region properties
@@ -155,7 +174,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             ownerWindow = owner;
             clipboard = owner.Clipboard;
             isInitialized = true;
-            
+
             // Recreate inputs and outputs with window reference
             CreateInputItems();
             CreateOutputItems();
@@ -446,9 +465,26 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [RelayCommand(CanExecute = nameof(CanStep))]
         private void Step()
         {
-            if (executionUnit.IsRunning)
+            if (executionUnit.IsRunning
+                && executionUnit.DebugEnabled
+                && executionUnit.CurrentExecutionLine != null)
             {
-                executionUnit.Step();
+                if (executionUnit.CurrentExecutionLine.LineNumber == CurrentLineNumber)
+                {
+                    executionUnit.Step();
+                    if (executionUnit.CurrentExecutionLine != null)
+                    {
+                        CurrentLineNumber = executionUnit.CurrentExecutionLine.LineNumber;
+                    }
+                }
+                else 
+                {
+                    while (executionUnit.CurrentExecutionLine != null
+                           && executionUnit.CurrentExecutionLine.LineNumber != CurrentLineNumber)
+                    {
+                        executionUnit.Step();
+                    }
+                }
             }
             UpdateRunState();
         }

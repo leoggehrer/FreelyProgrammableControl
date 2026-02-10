@@ -21,41 +21,41 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// Default size for memory in boolean values.
         /// </summary>
         private const int DefaultMemorySize = 1024;
-        
+
         /// <summary>
         /// Default number of available timers.
         /// </summary>
         private const int DefaultTimerCount = 128;
-        
+
         /// <summary>
         /// Default number of available counters.
         /// </summary>
         private const int DefaultCounterCount = 128;
-        
+
         /// <summary>
         /// Default cycle time in milliseconds for the execution loop.
         /// </summary>
         private const int DefaultCycleTimeMs = 100;
-        
+
         /// <summary>
         /// Minimum allowed cycle time in milliseconds to prevent busy loops.
         /// </summary>
         private const int MinCycleTimeMs = 1;
         #endregion constants
-        
+
         #region  fields
         private volatile bool running = false;
         private bool debugEnabled = false;
         private int cycleTimeMs = DefaultCycleTimeMs;
         private int currentLineNumber = -1;
-        private ParsedLine? executionLine = null;
+        private ParsedLine? currentExecutionLine = null;
         private readonly List<ParsedLine> parsedLines = [];
 
         private readonly Common.Stack<bool> stack = new();
 
         private readonly Outputs outputs = new(outputs);
         private readonly Inputs inputs = new(inputs);
-        
+
         private readonly Memory<bool> memory = new(DefaultMemorySize);
         private readonly Timers timers = new(DefaultTimerCount);
         private readonly Counters counters = new(DefaultCounterCount);
@@ -75,20 +75,19 @@ namespace FreelyProgrammableControl.Logic.Execution
                 result.AppendLine($"Debug Enabled: {debugEnabled}");
                 if (debugEnabled)
                 {
-                    if (executionLine != null)
+                    if (currentExecutionLine != null)
                     {
-                        var lineInfo = $"Executed Line: {executionLine.LineNumber:d4} - {(executionLine.Source.HasContent() ? executionLine.Source : executionLine.Instruction)}";
+                        var lineInfo = $"Executed Line: {currentExecutionLine.LineNumber:d4} - {(currentExecutionLine.Source.HasContent() ? currentExecutionLine.Source : currentExecutionLine.Instruction)}";
 
-                        if (executionLine.HasError)
+                        if (currentExecutionLine.HasError)
                         {
-                            lineInfo += $"  !!! ERROR: {executionLine.ErrorMessage}";
+                            lineInfo += $"  !!! ERROR: {currentExecutionLine.ErrorMessage}";
                         }
                         result.AppendLine(lineInfo);
                     }
                     result.AppendLine(stack.ToString());
-                    result.AppendLine(timers.ToString());
-                    result.AppendLine(counters.ToString());
                     result.AppendLine(memory.ToString());
+                    result.AppendLine(counters.ToString());
                 }
                 else
                 {
@@ -98,11 +97,16 @@ namespace FreelyProgrammableControl.Logic.Execution
             }
         }
         /// <summary>
+        ///  Gets the currently executing line of code, if any.
+        /// </summary>
+        public ParsedLine? CurrentExecutionLine => currentExecutionLine;
+
+        /// <summary>
         /// Gets or sets a value indicating whether debug mode is enabled.
         /// </summary>
-        public bool DebugEnabled 
-        { 
-            get => debugEnabled; 
+        public bool DebugEnabled
+        {
+            get => debugEnabled;
             set
             {
                 if (IsRunning == false)
@@ -256,28 +260,29 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         public void Step()
         {
-            if (running && DebugEnabled)
+            if (running
+                && DebugEnabled)
             {
-                if (currentLineNumber == -1
-                    || currentLineNumber >= parsedLines.Count)
-                {
-                    stack.Clear();
-                    currentLineNumber = 0;
-                }
-
-                executionLine = parsedLines[currentLineNumber++];
+                currentExecutionLine = parsedLines[currentLineNumber++];
                 try
                 {
-                    executionLine.HasError = false;
-                    executionLine.ErrorMessage = null;
-                    Execute(executionLine);
+                    currentExecutionLine.HasError = false;
+                    currentExecutionLine.ErrorMessage = null;
+                    Execute(currentExecutionLine);
                 }
                 catch (Exception ex)
                 {
                     // Fehlerbehandlung erfolgt in Execute-Methode
-                    executionLine.HasError = true;
-                    executionLine.ErrorMessage = ex.Message;
+                    currentExecutionLine.HasError = true;
+                    currentExecutionLine.ErrorMessage = ex.Message;
                 }
+
+                if (currentLineNumber >= parsedLines.Count)
+                {
+                    stack.Clear();
+                    currentLineNumber = 0;
+                }
+                currentExecutionLine = parsedLines[currentLineNumber];
                 NotifyAsync();
             }
         }
@@ -326,10 +331,15 @@ namespace FreelyProgrammableControl.Logic.Execution
                 Reset();
 
                 running = true;
-                if (DebugEnabled == false)
+                if (DebugEnabled)
+                {
+                    currentLineNumber = 0;
+                    currentExecutionLine = parsedLines.FirstOrDefault();
+                }
+                else
                 {
                     var thread = new Thread(Run) { IsBackground = true };
-                    
+
                     thread.Start();
                 }
                 NotifyAsync();
@@ -364,6 +374,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 if (DebugEnabled == false)
                 {
+                    stack.Clear();
                     foreach (var line in parsedLines)
                     {
                         var executionLine = line;
@@ -385,7 +396,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         private void Reset()
         {
-            executionLine = null;
+            currentExecutionLine = null;
             currentLineNumber = -1;
             HasExecutionError = false;
             ExecutionErrorMessage = null;
