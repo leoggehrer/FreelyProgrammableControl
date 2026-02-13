@@ -72,6 +72,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 executionState = _viewModel.ExecutionState
                             };
                             await context.Response.WriteAsJsonAsync(response);
+                            System.Diagnostics.Debug.WriteLine($"[API] Status abgefragt: {response}");
                         });
 
                         // Program laden
@@ -114,6 +115,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                     await context.Response.WriteAsJsonAsync(response);
                                 }
                             });
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm geladen: {context.Request.ContentLength} Bytes");
                         });
 
                         // Programm starten
@@ -130,6 +132,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestartet");
                         });
 
                         // Programm stoppen
@@ -146,6 +149,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestoppt");
                         });
 
                         // Programm abrufen
@@ -157,6 +161,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 sourceLines = _viewModel.Source.Length
                             };
                             await context.Response.WriteAsJsonAsync(response);
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm abgerufen: {response.sourceLines} Zeilen");
                         });
 
                         // Debug-Modus setzen
@@ -196,6 +201,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
+                            System.Diagnostics.Debug.WriteLine($"[API] Debug-Modus gesetzt: {enable}");
                         });
 
                         // Programmschritt ausführen
@@ -238,6 +244,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
+                            System.Diagnostics.Debug.WriteLine($"[API] Programmschritt ausgeführt");
                         });
 
                         // Ausführungszustand abrufen
@@ -250,6 +257,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 executionState = _viewModel.State
                             };
                             await context.Response.WriteAsJsonAsync(response);
+                            System.Diagnostics.Debug.WriteLine($"[API] Ausführungszustand abgefragt: {response}");
                         });
                     });
                 })

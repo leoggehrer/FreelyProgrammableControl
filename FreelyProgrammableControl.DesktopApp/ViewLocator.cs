@@ -1,7 +1,7 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using FreelyProgrammableControl.DesktopApp.ViewModels;
-using System;
 
 namespace FreelyProgrammableControl.DesktopApp
 {

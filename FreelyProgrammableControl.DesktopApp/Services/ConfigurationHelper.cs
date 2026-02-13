@@ -27,18 +27,30 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 if (!File.Exists(settingsPath))
                 {
                     // Fallback auf Default-Werte
-                    return new AppSettings { Api = new ApiSettings { Port = 5555 } };
+                    return new AppSettings
+                    {
+                        Api = new ApiSettings { Port = 5555 },
+                        N8n = new N8nSettings()
+                    };
                 }
 
                 var json = File.ReadAllText(settingsPath);
                 _settings = JsonSerializer.Deserialize<AppSettings>(json);
 
-                return _settings ?? new AppSettings { Api = new ApiSettings { Port = 5555 } };
+                return _settings ?? new AppSettings
+                {
+                    Api = new ApiSettings { Port = 5555 },
+                    N8n = new N8nSettings()
+                };
             }
             catch
             {
                 // Bei Fehler Default-Werte verwenden
-                return new AppSettings { Api = new ApiSettings { Port = 5555 } };
+                return new AppSettings
+                {
+                    Api = new ApiSettings { Port = 5555 },
+                    N8n = new N8nSettings()
+                };
             }
         }
     }
@@ -46,10 +58,16 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class AppSettings
     {
         public ApiSettings Api { get; set; } = new();
+        public N8nSettings N8n { get; set; } = new();
     }
 
     public class ApiSettings
     {
         public int Port { get; set; } = 5555;
+    }
+
+    public class N8nSettings
+    {
+        public string SaveToGoogleDriveWebhookUrl { get; set; } = string.Empty;
     }
 }

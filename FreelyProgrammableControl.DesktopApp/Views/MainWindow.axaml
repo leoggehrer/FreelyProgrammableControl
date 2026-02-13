@@ -47,7 +47,10 @@
         <MenuItem Header="_New" Command="{Binding NewCommand}" HotKey="Ctrl+N"/>
         <MenuItem Header="_Open" Command="{Binding OpenCommand}" HotKey="Ctrl+O"/>
         <MenuItem Header="_Save" Command="{Binding SaveCommand}" HotKey="Ctrl+S"/>
-        <MenuItem Header="Save _As..." Command="{Binding SaveAsCommand}" HotKey="Ctrl+Shift+S"/>
+        <MenuItem Header="Save _As...">
+          <MenuItem Header="_Local File..." Command="{Binding SaveAsCommand}" HotKey="Ctrl+Shift+S"/>
+          <MenuItem Header="Save To Google drive" Command="{Binding SaveToGoogleDriveCommand}"/>
+        </MenuItem>
         <Separator/>
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" HotKey="Alt+F4"/>
       </MenuItem>

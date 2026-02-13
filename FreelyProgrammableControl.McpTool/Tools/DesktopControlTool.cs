@@ -31,6 +31,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Prüft die Verbindung zur FPC Desktop-Anwendung und gibt den aktuellen Ausführungsstatus zurück.")]
         public static async Task<DesktopStatusResult> CheckDesktopStatus()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Prüfe Desktop-Status...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -81,6 +82,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
             [Description("Der vollständige FPC-Programm-Code, der in die Desktop-Anwendung geladen werden soll.")]
             string programCode)
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Lade Programm in Desktop-Anwendung...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -135,6 +137,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Startet die Ausführung des aktuell geladenen FPC-Programms in der Desktop-Anwendung.")]
         public static async Task<ExecutionControlResult> StartProgramExecution()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Starte Programmausführung in Desktop-Anwendung...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -188,6 +191,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Stoppt die Ausführung des FPC-Programms in der Desktop-Anwendung.")]
         public static async Task<ExecutionControlResult> StopProgramExecution()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Stoppe Programmausführung in Desktop-Anwendung...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -229,6 +233,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Ruft das aktuell in der Desktop-Anwendung geladene FPC-Programm ab.")]
         public static async Task<ProgramRetrieveResult> GetCurrentProgram()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Rufe aktuelles Programm aus Desktop-Anwendung ab...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -272,6 +277,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
             [Description("True zum Aktivieren des Debug-Modus, False zum Deaktivieren.")]
             bool enable)
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Setze Debug-Modus in Desktop-Anwendung: {(enable ? "Aktivieren" : "Deaktivieren")}...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -325,6 +331,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Führt einen einzelnen Programmschritt im Debug-Modus aus. Die Steuerung muss gestartet und im Debug-Modus sein. Nach jedem Schritt wird der aktuelle Ausführungszustand zurückgegeben.")]
         public static async Task<StepResult> StepProgram()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Führe Programmschritt im Debug-Modus aus...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -386,6 +393,7 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [Description("Ruft den detaillierten Ausführungszustand der Steuerung ab. Im Debug-Modus enthält dies Informationen über Stack, Speicher, Timer, Zähler und die aktuell ausgeführte Zeile.")]
         public static async Task<ExecutionStateResult> GetExecutionState()
         {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Ausführungszustand der Steuerung ab...");
             try
             {
                 var isConnected = await _client.IsConnectedAsync();
@@ -419,7 +427,6 @@ namespace FreelyProgrammableControl.McpTool.Tools
             }
         }
     }
-
     #region Result Classes
 
     public class DesktopStatusResult

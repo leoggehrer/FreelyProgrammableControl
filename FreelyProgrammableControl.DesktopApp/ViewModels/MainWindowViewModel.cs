@@ -1,17 +1,17 @@
-using Avalonia.Controls;
-using Avalonia.Input.Platform;
-using Avalonia.Platform.Storage;
-using Avalonia.Threading;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using FreelyProgrammableControl.Logic.Execution;
-using FreelyProgrammableControl.DesktopApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Input.Platform;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using FreelyProgrammableControl.DesktopApp.Services;
+using FreelyProgrammableControl.Logic.Execution;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {
@@ -29,6 +29,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private IStorageProvider? storageProvider;
         private IClipboard? clipboard;
         private ApiService? apiService;
+        private readonly N8nWebhookService n8nWebhookService;
         private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
@@ -140,19 +141,20 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             executionUnit.Inputs.Attach(OnUpdateInputs!);
             executionUnit.Outputs.Attach(OnUpdateOutputs!);
 
+            var settings = ConfigurationHelper.GetSettings();
+            n8nWebhookService = new N8nWebhookService();
+
             CreateInputItems();
             CreateOutputItems();
 
             // Start API Service
-            StartApiService();
+            StartApiService(settings);
         }
 
-        private async void StartApiService()
+        private async void StartApiService(AppSettings settings)
         {
             try
             {
-                var settings = ConfigurationHelper.GetSettings();
-
                 apiService = new ApiService(this, settings.Api.Port);
                 await apiService.StartAsync();
                 StatusText = $"{selectedFile} - API läuft auf Port {apiService.Port}";
@@ -292,6 +294,41 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             catch (Exception ex)
             {
                 await ShowErrorDialogAsync("Fehler beim Speichern", $"Die Datei konnte nicht gespeichert werden:\n{ex.Message}");
+            }
+        }
+
+        private bool CanSaveToGoogleDrive()
+        {
+            return executionUnit.IsRunning == false && !string.IsNullOrWhiteSpace(SourceText);
+        }
+
+        [RelayCommand(CanExecute = nameof(CanSaveToGoogleDrive))]
+        private async Task SaveToGoogleDriveAsync()
+        {
+            try
+            {
+                var suggestedFilename = string.IsNullOrWhiteSpace(selectedFile)
+                    ? "newProgram.fpc"
+                    : Path.GetFileName(selectedFile);
+
+                var filename = await PromptFilenameAsync(suggestedFilename);
+
+                if (string.IsNullOrWhiteSpace(filename))
+                {
+                    StatusText = "Speichern zu Google Drive abgebrochen";
+                    return;
+                }
+
+                await n8nWebhookService.SaveToGoogleDriveAsync(filename, SourceText ?? string.Empty);
+                StatusText = $"{filename} - An Google Drive gesendet";
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync("Fehler beim n8n-Aufruf", $"Der Webhook konnte nicht aufgerufen werden:\n{ex.Message}");
             }
         }
 
@@ -648,6 +685,82 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow));
             }
+        }
+
+        /// <summary>
+        /// Shows an input dialog to ask the user for a filename.
+        /// </summary>
+        private async Task<string?> PromptFilenameAsync(string suggestedFilename)
+        {
+            if (ownerWindow == null)
+            {
+                return null;
+            }
+
+            var dialog = new Window
+            {
+                Title = "Dateiname eingeben",
+                Width = 450,
+                Height = 190,
+                CanResize = false,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            var filenameBox = new TextBox
+            {
+                Text = suggestedFilename,
+                Watermark = "Dateiname (.fpc)",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+            };
+
+            string? result = null;
+
+            var okButton = new Button
+            {
+                Content = "OK",
+                Width = 100
+            };
+            okButton.Click += (s, e) =>
+            {
+                result = filenameBox.Text?.Trim();
+                dialog.Close();
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Abbrechen",
+                Width = 100
+            };
+            cancelButton.Click += (s, e) => dialog.Close();
+
+            dialog.Content = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(20),
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "Bitte Dateinamen für Google Drive eingeben:",
+                        FontSize = 14
+                    },
+                    filenameBox,
+                    new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children =
+                        {
+                            cancelButton,
+                            okButton
+                        }
+                    }
+                }
+            };
+
+            await dialog.ShowDialog(ownerWindow);
+            return result;
         }
 
         /// <summary>
