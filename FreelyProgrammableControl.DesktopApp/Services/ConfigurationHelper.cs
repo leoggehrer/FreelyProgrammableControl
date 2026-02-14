@@ -69,5 +69,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class N8nSettings
     {
         public string SaveToGoogleDriveWebhookUrl { get; set; } = string.Empty;
+        public string GetFpcSampleListWebhookUrl { get; set; } = string.Empty;
+        public string LoadFpcSampleWebhookUrl { get; set; } = string.Empty;
     }
 }

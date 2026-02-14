@@ -45,7 +45,10 @@
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="_File">
         <MenuItem Header="_New" Command="{Binding NewCommand}" HotKey="Ctrl+N"/>
-        <MenuItem Header="_Open" Command="{Binding OpenCommand}" HotKey="Ctrl+O"/>
+        <MenuItem Header="_Open">
+          <MenuItem Header="_Local File..." Command="{Binding OpenCommand}" HotKey="Ctrl+O"/>
+          <MenuItem Header="Load From Google drive" Command="{Binding LoadFromGoogleDriveCommand}"/>
+        </MenuItem>
         <MenuItem Header="_Save" Command="{Binding SaveCommand}" HotKey="Ctrl+S"/>
         <MenuItem Header="Save _As...">
           <MenuItem Header="_Local File..." Command="{Binding SaveAsCommand}" HotKey="Ctrl+Shift+S"/>

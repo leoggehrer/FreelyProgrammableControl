@@ -331,6 +331,55 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
+        private bool CanLoadFromGoogleDrive()
+        {
+            return executionUnit.IsRunning == false;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanLoadFromGoogleDrive))]
+        private async Task LoadFromGoogleDriveAsync()
+        {
+            if (executionUnit.IsRunning)
+            {
+                StatusText = "Laden aus Google Drive nur im gestoppten Zustand möglich";
+                return;
+            }
+
+            try
+            {
+                var samples = await n8nWebhookService.GetFpcSampleListAsync();
+
+                if (samples.Count == 0)
+                {
+                    StatusText = "Keine Dateien in Google Drive gefunden";
+                    return;
+                }
+
+                var selectedSample = await PromptFpcSampleSelectionAsync(samples);
+                if (selectedSample == null)
+                {
+                    StatusText = "Laden aus Google Drive abgebrochen";
+                    return;
+                }
+
+                var loadResult = await n8nWebhookService.LoadFpcSampleAsync(selectedSample.Id);
+                SourceText = loadResult.Source;
+                selectedFile = selectedSample.Name;
+                var loadSourceLabel = loadResult.LoadSource == FpcSampleLoadSource.PrimaryWebhook
+                    ? "Primary"
+                    : "Fallback";
+                StatusText = $"{selectedSample.Name} - Von Google Drive geladen ({loadSourceLabel})";
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync("Fehler beim Laden", $"Datei konnte nicht aus Google Drive geladen werden:\n{ex.Message}");
+            }
+        }
+
         [RelayCommand]
         private void Exit()
         {
@@ -624,6 +673,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             IsSourceReadOnly = executionUnit.IsRunning;
             IsDebugEnabled = !executionUnit.IsRunning;
 
+            OpenCommand.NotifyCanExecuteChanged();
+            SaveCommand.NotifyCanExecuteChanged();
+            SaveAsCommand.NotifyCanExecuteChanged();
+            SaveToGoogleDriveCommand.NotifyCanExecuteChanged();
+            LoadFromGoogleDriveCommand.NotifyCanExecuteChanged();
+            LoadSourceCommand.NotifyCanExecuteChanged();
             ParseCommand.NotifyCanExecuteChanged();
             StartCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
@@ -684,6 +739,84 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow));
             }
+        }
+
+        /// <summary>
+        /// Shows a selection dialog to choose one file from the Google Drive list.
+        /// </summary>
+        private async Task<FpcSampleListItem?> PromptFpcSampleSelectionAsync(IReadOnlyList<FpcSampleListItem> samples)
+        {
+            if (ownerWindow == null)
+            {
+                return null;
+            }
+
+            var sampleList = samples.ToList();
+
+            var dialog = new Window
+            {
+                Title = "Datei aus Google Drive laden",
+                Width = 500,
+                Height = 220,
+                CanResize = false,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            var comboBox = new ComboBox
+            {
+                ItemsSource = sampleList,
+                SelectedIndex = sampleList.Count > 0 ? 0 : -1,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+            };
+
+            FpcSampleListItem? result = null;
+
+            var okButton = new Button
+            {
+                Content = "Laden",
+                Width = 100
+            };
+            okButton.Click += (s, e) =>
+            {
+                result = comboBox.SelectedItem as FpcSampleListItem;
+                dialog.Close();
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Abbrechen",
+                Width = 100
+            };
+            cancelButton.Click += (s, e) => dialog.Close();
+
+            dialog.Content = new StackPanel
+            {
+                Margin = new Avalonia.Thickness(20),
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "Bitte Datei aus Google Drive auswählen:",
+                        FontSize = 14
+                    },
+                    comboBox,
+                    new StackPanel
+                    {
+                        Orientation = Avalonia.Layout.Orientation.Horizontal,
+                        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children =
+                        {
+                            cancelButton,
+                            okButton
+                        }
+                    }
+                }
+            };
+
+            await dialog.ShowDialog(ownerWindow);
+            return result;
         }
 
         /// <summary>
