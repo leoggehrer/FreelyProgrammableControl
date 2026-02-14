@@ -164,7 +164,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 StatusText = $"API-Server konnte nicht gestartet werden: {ex.Message}";
             }
         }
-
         public void Initialize(IStorageProvider? provider, Window owner)
         {
             if (isInitialized)

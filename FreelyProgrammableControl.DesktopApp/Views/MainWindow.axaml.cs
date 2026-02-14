@@ -26,7 +26,13 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         {
             if (sender is Border border && border.DataContext is OutputDeviceViewModel outputViewModel)
             {
-                outputViewModel.EditLabelCommand?.Execute(null);
+                if (DataContext is MainWindowViewModel viewModel)
+                {
+                    if (viewModel.IsRunning == false)
+                    {
+                        outputViewModel.EditLabelCommand?.Execute(null);
+                    }
+                }
             }
         }
 
@@ -34,7 +40,13 @@ namespace FreelyProgrammableControl.DesktopApp.Views
         {
             if (sender is Border border && border.DataContext is InputDeviceViewModel inputViewModel)
             {
-                inputViewModel.EditLabelCommand?.Execute(null);
+                if (DataContext is MainWindowViewModel viewModel)
+                {
+                    if (viewModel.IsRunning == false)
+                    {
+                        inputViewModel.EditLabelCommand?.Execute(null);
+                    }
+                }
             }
         }
 
