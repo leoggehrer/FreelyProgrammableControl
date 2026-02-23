@@ -5,10 +5,20 @@ FreelyProgrammableControl ist eine kleine Steuerungs- und Simulationsumgebung in
 * einer Konsolen-App zum Laden und Ausführen von .fpc-Programmen sowie zum Beobachten/Toggeln der Eingänge,
 * einer Avalonia-Desktop-App als UI-Starter, die aktuell als Basis dient.
 
+Im Kern handelt es sich bei FPC um eine **Stack-Maschine mit booleschen Werten**: Befehle lesen Werte auf den Stack (`GET`/`GETNOT`), verknüpfen sie logisch (`AND`/`OR`/`XOR`/`NOT`) und schreiben Ergebnisse zurück (`MOV`/`CMOV`) oder steuern Timer/Counter bedingt über den Stackzustand.
+
 ## Architektur
-- **Logic**: Kernkomponenten wie `ExecutionUnit`, `Inputs`, `Outputs`, `Memory<T>`, `Timers`, `Counters`, `Switch` ([FreelyProgrammableControl.Logic](FreelyProgrammableControl.Logic)). Die `ExecutionUnit` arbeitet mit einem Stack und führt die geparsten Befehlszeilen zyklisch aus.
+- **Logic**: Kernkomponenten wie `ExecutionUnit`, `Inputs`, `Outputs`, `Memory<T>`, `Timers`, `Counters`, `Switch` ([FreelyProgrammableControl.Logic](FreelyProgrammableControl.Logic)). Die `ExecutionUnit` arbeitet als boolesche Stack-Maschine und führt die geparsten Befehlszeilen zyklisch aus.
 - **Console App**: Menügestützte Steuerung der `ExecutionUnit`, Anzeige von Ausgängen und Countern in der Konsole, Laden von .fpc-Dateien ([FreelyProgrammableControl.ConApp](FreelyProgrammableControl.ConApp)).
 - **Desktop App**: Avalonia-Anwendung (net8.0) mit Fluent-Theme, vorbereitet für eine UI auf Basis der Logik ([FreelyProgrammableControl.DesktopApp](FreelyProgrammableControl.DesktopApp)).
+
+## Ausführungsmodell (Stack-Maschine)
+
+- Der Stack speichert boolesche Werte (`true`/`false`).
+- Lese-Befehle wie `GET I n`, `GET O n`, `GET M n`, `GET T n` legen Werte auf den Stack.
+- Logik-Befehle wie `NOT`, `AND`, `OR`, `XOR` arbeiten auf den obersten Stack-Werten.
+- Schreib-Befehle wie `MOV` und `CMOV` lesen vom Stack und schreiben in Ausgänge/Speicher.
+- Bedingte Befehle (`CMOV`, `CSET`, `CINC`, `CDEC`) führen Aktionen nur aus, wenn der vom Stack gepoppte Wert `true` ist.
 
 ## Voraussetzungen
 - .NET 8 SDK
@@ -35,6 +45,23 @@ dotnet run --project FreelyProgrammableControl.ConApp -- --program=Test.fpc --cy
 dotnet run --project FreelyProgrammableControl.DesktopApp
 ```
 Aktuell zeigt die App nur ein "Welcome to Avalonia!"-Gerüst und bindet noch keine `ExecutionUnit`. Sie kann als Basis für eine Visualisierung genutzt werden.
+
+## n8n-Webhooks (Desktop-App)
+
+Die Desktop-App nutzt `N8nWebhookService` für Speichern/Laden von FPC-Dateien über n8n.
+
+Konfiguration in `FreelyProgrammableControl.DesktopApp/appsettings.json` unter `N8N`:
+
+- `SaveToGoogleDriveWebhookUrl`: Ziel für Speichern (HTTP `POST`, JSON-Body mit `fileName`, `fpcSource`)
+- `GetFPCSampleListWebhookUrl`: Ziel für Dateiliste (HTTP `GET`, Query-Parameter `folderName`)
+- `LoadFPCSampleWebhookUrl`: Ziel für Dateiinhalt (HTTP `POST`, JSON-Body mit `id`)
+- `FPCSampleListFolderName`: Ordnername für den Dateilisten-Webhook
+
+Verhalten bei Dateiliste:
+
+- Aufruf: `GetFPCSampleListAsync(string folderName)`
+- Request: `GET {GetFPCSampleListWebhookUrl}?folderName=<wert>`
+- Erwartete Antwort: JSON-Array oder JSON-Objekt (optional mit `items`-Array), Einträge mit mindestens `id` und optional `name`
 
 ## .fpc-Befehlssatz - Vollständige Befehlsübersicht
 

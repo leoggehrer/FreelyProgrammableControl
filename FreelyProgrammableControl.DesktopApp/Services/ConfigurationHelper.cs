@@ -30,7 +30,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                     return new AppSettings
                     {
                         Api = new ApiSettings { Port = 5555 },
-                        N8n = new N8nSettings()
+                        N8N = new N8nSettings()
                     };
                 }
 
@@ -40,7 +40,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 return _settings ?? new AppSettings
                 {
                     Api = new ApiSettings { Port = 5555 },
-                    N8n = new N8nSettings()
+                    N8N = new N8nSettings()
                 };
             }
             catch
@@ -49,7 +49,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 return new AppSettings
                 {
                     Api = new ApiSettings { Port = 5555 },
-                    N8n = new N8nSettings()
+                    N8N = new N8nSettings()
                 };
             }
         }
@@ -58,7 +58,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class AppSettings
     {
         public ApiSettings Api { get; set; } = new();
-        public N8nSettings N8n { get; set; } = new();
+        public N8nSettings N8N { get; set; } = new();
     }
 
     public class ApiSettings
@@ -69,7 +69,8 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class N8nSettings
     {
         public string SaveToGoogleDriveWebhookUrl { get; set; } = string.Empty;
-        public string GetFpcSampleListWebhookUrl { get; set; } = string.Empty;
-        public string LoadFpcSampleWebhookUrl { get; set; } = string.Empty;
+        public string GetFPCSampleListWebhookUrl { get; set; } = string.Empty;
+        public string LoadFPCSampleWebhookUrl { get; set; } = string.Empty;
+        public string FPCSampleListFolderName { get; set; } = string.Empty;
     }
 }

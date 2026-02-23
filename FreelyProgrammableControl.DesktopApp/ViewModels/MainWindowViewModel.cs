@@ -30,6 +30,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private IClipboard? clipboard;
         private ApiService? apiService;
         private readonly N8nWebhookService n8nWebhookService;
+        private readonly string fpcSampleListFolderName = "fpc";
         private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
@@ -143,6 +144,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             var settings = ConfigurationHelper.GetSettings();
             n8nWebhookService = new N8nWebhookService();
+            fpcSampleListFolderName = settings.N8N.FPCSampleListFolderName ?? string.Empty;
 
             CreateInputItems();
             CreateOutputItems();
@@ -347,7 +349,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             try
             {
-                var samples = await n8nWebhookService.GetFpcSampleListAsync();
+                var samples = await n8nWebhookService.GetFPCSampleListAsync(fpcSampleListFolderName);
 
                 if (samples.Count == 0)
                 {
@@ -362,7 +364,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     return;
                 }
 
-                var loadResult = await n8nWebhookService.LoadFpcSampleAsync(selectedSample.Id);
+                var loadResult = await n8nWebhookService.LoadFPCSampleAsync(selectedSample.Id);
                 SourceText = loadResult.Source;
                 selectedFile = selectedSample.Name;
                 var loadSourceLabel = loadResult.LoadSource == FpcSampleLoadSource.PrimaryWebhook
@@ -744,7 +746,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <summary>
         /// Shows a selection dialog to choose one file from the Google Drive list.
         /// </summary>
-        private async Task<FpcSampleListItem?> PromptFpcSampleSelectionAsync(IReadOnlyList<FpcSampleListItem> samples)
+        private async Task<FPCSampleListItem?> PromptFpcSampleSelectionAsync(IReadOnlyList<FPCSampleListItem> samples)
         {
             if (ownerWindow == null)
             {
@@ -769,7 +771,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
             };
 
-            FpcSampleListItem? result = null;
+            FPCSampleListItem? result = null;
 
             var okButton = new Button
             {
@@ -778,7 +780,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             };
             okButton.Click += (s, e) =>
             {
-                result = comboBox.SelectedItem as FpcSampleListItem;
+                result = comboBox.SelectedItem as FPCSampleListItem;
                 dialog.Close();
             };
 

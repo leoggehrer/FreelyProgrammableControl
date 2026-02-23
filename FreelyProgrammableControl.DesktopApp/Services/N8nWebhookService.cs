@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -13,16 +14,16 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class N8nWebhookService
     {
         private readonly string _saveToGoogleDriveWebhookUrl;
-        private readonly string _getFpcSampleListWebhookUrl;
-        private readonly string _loadFpcSampleWebhookUrl;
+        private readonly string _getFPCSampleListWebhookUrl;
+        private readonly string _loadFPCSampleWebhookUrl;
 
         public N8nWebhookService()
         {
             var settings = ConfigurationHelper.GetSettings();
 
-            _saveToGoogleDriveWebhookUrl = settings.N8n.SaveToGoogleDriveWebhookUrl ?? string.Empty;
-            _getFpcSampleListWebhookUrl = settings.N8n.GetFpcSampleListWebhookUrl ?? string.Empty;
-            _loadFpcSampleWebhookUrl = settings.N8n.LoadFpcSampleWebhookUrl ?? string.Empty;
+            _saveToGoogleDriveWebhookUrl = settings.N8N.SaveToGoogleDriveWebhookUrl ?? string.Empty;
+            _getFPCSampleListWebhookUrl = settings.N8N.GetFPCSampleListWebhookUrl ?? string.Empty;
+            _loadFPCSampleWebhookUrl = settings.N8N.LoadFPCSampleWebhookUrl ?? string.Empty;
         }
 
         public async Task SaveToGoogleDriveAsync(string filename, string fpcSource)
@@ -45,21 +46,23 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task<IReadOnlyList<FpcSampleListItem>> GetFpcSampleListAsync()
+        public async Task<IReadOnlyList<FPCSampleListItem>> GetFPCSampleListAsync(string folderName)
         {
-            if (string.IsNullOrWhiteSpace(_getFpcSampleListWebhookUrl))
+            if (string.IsNullOrWhiteSpace(_getFPCSampleListWebhookUrl))
             {
                 throw new InvalidOperationException("Die n8n Webhook-URL für die Dateiliste ist nicht konfiguriert.");
             }
 
+            var requestUrl = BuildUrlWithQueryParameter(_getFPCSampleListWebhookUrl, "folderName", folderName ?? string.Empty);
+
             using var httpClient = new HttpClient();
-            using var response = await httpClient.GetAsync(_getFpcSampleListWebhookUrl);
+            using var response = await httpClient.GetAsync(requestUrl);
             response.EnsureSuccessStatusCode();
 
             await using var stream = await response.Content.ReadAsStreamAsync();
             using var document = await JsonDocument.ParseAsync(stream);
 
-            var items = new List<FpcSampleListItem>();
+            var items = new List<FPCSampleListItem>();
             var root = document.RootElement;
 
             if (root.ValueKind == JsonValueKind.Array)
@@ -84,10 +87,10 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 }
             }
 
-            return items;
+            return [.. items.Where(e => e.Name != folderName)];
         }
 
-        public async Task<FpcSampleLoadResult> LoadFpcSampleAsync(string id)
+        public async Task<FpcSampleLoadResult> LoadFPCSampleAsync(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -96,7 +99,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
             using var httpClient = new HttpClient();
 
-            if (!string.IsNullOrWhiteSpace(_loadFpcSampleWebhookUrl))
+            if (!string.IsNullOrWhiteSpace(_loadFPCSampleWebhookUrl))
             {
                 try
                 {
@@ -106,12 +109,12 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                     });
 
                     using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-                    using var response = await httpClient.PostAsync(_loadFpcSampleWebhookUrl, content);
+                    using var response = await httpClient.PostAsync(_loadFPCSampleWebhookUrl, content);
 
                     if (response.IsSuccessStatusCode)
                     {
                         var responseText = await response.Content.ReadAsStringAsync();
-                        return new FpcSampleLoadResult(ExtractFpcSource(responseText), FpcSampleLoadSource.PrimaryWebhook);
+                        return new FpcSampleLoadResult(ExtractFPCSource(responseText), FpcSampleLoadSource.PrimaryWebhook);
                     }
                 }
                 catch (HttpRequestException)
@@ -119,12 +122,12 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(_getFpcSampleListWebhookUrl))
+            if (!string.IsNullOrWhiteSpace(_getFPCSampleListWebhookUrl))
             {
                 var fallbackUrls = new[]
                 {
-                    BuildUrlWithQueryParameter(_getFpcSampleListWebhookUrl, "id", id),
-                    BuildUrlWithQueryParameter(_getFpcSampleListWebhookUrl, "fileId", id)
+                    BuildUrlWithQueryParameter(_getFPCSampleListWebhookUrl, "id", id),
+                    BuildUrlWithQueryParameter(_getFPCSampleListWebhookUrl, "fileId", id)
                 };
 
                 foreach (var fallbackUrl in fallbackUrls)
@@ -138,7 +141,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         }
 
                         var responseText = await response.Content.ReadAsStringAsync();
-                        return new FpcSampleLoadResult(ExtractFpcSource(responseText), FpcSampleLoadSource.FallbackListById);
+                        return new FpcSampleLoadResult(ExtractFPCSource(responseText), FpcSampleLoadSource.FallbackListById);
                     }
                     catch (HttpRequestException)
                     {
@@ -155,7 +158,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             return $"{baseUrl}{separator}{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}";
         }
 
-        private static string ExtractFpcSource(string responseText)
+        private static string ExtractFPCSource(string responseText)
         {
             if (string.IsNullOrWhiteSpace(responseText))
             {
@@ -174,43 +177,43 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                     if (TryGetStringProperty(root, "fpcSource", out var fpcSource))
                     {
                         candidateText = fpcSource;
-                        return ExtractFpcCodeBlock(candidateText);
+                        return ExtractFPCCodeBlock(candidateText);
                     }
 
                     if (TryGetStringProperty(root, "source", out var source))
                     {
                         candidateText = source;
-                        return ExtractFpcCodeBlock(candidateText);
+                        return ExtractFPCCodeBlock(candidateText);
                     }
 
                     if (TryGetStringProperty(root, "content", out var contentValue))
                     {
                         candidateText = contentValue;
-                        return ExtractFpcCodeBlock(candidateText);
+                        return ExtractFPCCodeBlock(candidateText);
                     }
 
                     if (TryGetStringProperty(root, "data", out var dataValue))
                     {
                         candidateText = dataValue;
-                        return ExtractFpcCodeBlock(candidateText);
+                        return ExtractFPCCodeBlock(candidateText);
                     }
                 }
 
                 if (root.ValueKind == JsonValueKind.String)
                 {
                     candidateText = root.GetString() ?? string.Empty;
-                    return ExtractFpcCodeBlock(candidateText);
+                    return ExtractFPCCodeBlock(candidateText);
                 }
             }
             catch (JsonException)
             {
-                return ExtractFpcCodeBlock(responseText);
+                return ExtractFPCCodeBlock(responseText);
             }
 
-            return ExtractFpcCodeBlock(candidateText);
+            return ExtractFPCCodeBlock(candidateText);
         }
 
-        private static string ExtractFpcCodeBlock(string content)
+        private static string ExtractFPCCodeBlock(string content)
         {
             if (string.IsNullOrWhiteSpace(content))
             {
@@ -241,7 +244,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             return content[codeStart..closingIndex].TrimEnd('\r', '\n');
         }
 
-        private static void AddListItem(JsonElement element, ICollection<FpcSampleListItem> items)
+        private static void AddListItem(JsonElement element, ICollection<FPCSampleListItem> items)
         {
             if (element.ValueKind != JsonValueKind.Object)
             {
@@ -257,7 +260,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 ? foundName
                 : id;
 
-            items.Add(new FpcSampleListItem(id, name));
+            items.Add(new FPCSampleListItem(id, name));
         }
 
         private static bool TryGetStringProperty(JsonElement element, string propertyName, out string value)
@@ -285,7 +288,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         }
     }
 
-    public record FpcSampleListItem(string Id, string Name)
+    public record FPCSampleListItem(string Id, string Name)
     {
         public override string ToString()
         {
