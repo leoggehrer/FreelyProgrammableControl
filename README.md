@@ -63,6 +63,22 @@ Verhalten bei Dateiliste:
 - Request: `GET {GetFPCSampleListWebhookUrl}?folderName=<wert>`
 - Erwartete Antwort: JSON-Array oder JSON-Objekt (optional mit `items`-Array), Einträge mit mindestens `id` und optional `name`
 
+## Konfiguration Ein-/Ausgänge (Desktop-App)
+
+Die Anzahl der Ein- und Ausgänge wird in der Desktop-App über `appsettings.json` gesteuert:
+
+```json
+"Machine": {
+  "InputCount": 20,
+  "OutputCount": 20
+}
+```
+
+- `InputCount`: Anzahl der erzeugten Eingänge in der `ExecutionUnit` und in der UI-Liste „Inputs“
+- `OutputCount`: Anzahl der erzeugten Ausgänge in der `ExecutionUnit` und in der UI-Liste „Outputs“
+
+Hinweis: Die UI zeigt immer genau so viele Ein-/Ausgänge an, wie in der `ExecutionUnit` konfiguriert sind.
+
 ## .fpc-Befehlssatz - Vollständige Befehlsübersicht
 
 Jede Zeile wird zu einer `ParsedLine` verarbeitet. Kommentare beginnen mit `#`.

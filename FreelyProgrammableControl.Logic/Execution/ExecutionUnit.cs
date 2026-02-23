@@ -35,7 +35,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <summary>
         /// Default cycle time in milliseconds for the execution loop.
         /// </summary>
-        private const int DefaultCycleTimeMs = 100;
+        private const int DefaultCycleTimeMs = 50;
 
         /// <summary>
         /// Minimum allowed cycle time in milliseconds to prevent busy loops.
@@ -244,7 +244,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// Each non-empty line from the source will be assigned a line number starting from 0.
         /// Empty lines are ignored during parsing.
         /// </remarks>
-        public static ParsedLine[] Parse(IEnumerable<string> source)
+        public ParsedLine[] Parse(IEnumerable<string> source)
         {
             var result = new List<ParsedLine>();
             var lineNumber = 0;
@@ -252,6 +252,44 @@ namespace FreelyProgrammableControl.Logic.Execution
             foreach (var item in PrepareSource(source))
             {
                 result.Add(new ParsedLine(lineNumber++, item));
+            }
+
+            foreach (var item in result)
+            {
+                if (item.HasError == false)
+                {
+                    switch (item.Subject)
+                    {
+                        case "I":
+                            if (item.Address < 0 || item.Address >= Inputs.Length)
+                            {
+                                item.HasError = true;
+                                item.ErrorMessage = $"Invalid input address '{item.Address}'";
+                            }
+                            break;
+                        case "O":
+                            if (item.Address < 0 || item.Address >= Outputs.Length)
+                            {
+                                item.HasError = true;
+                                item.ErrorMessage = $"Invalid output address '{item.Address}'";
+                            }
+                            break;
+                        case "M":
+                            if (item.Address < 0 || item.Address >= MemoryLength)
+                            {
+                                item.HasError = true;
+                                item.ErrorMessage = $"Invalid memory address '{item.Address}'";
+                            }
+                            break;
+                        case "T":
+                            if (item.Address < 0 || item.Address >= TimerLength)
+                            {
+                                item.HasError = true;
+                                item.ErrorMessage = $"Invalid timer address '{item.Address}'";
+                            }
+                            break;
+                    }
+                }
             }
             return [.. result];
         }

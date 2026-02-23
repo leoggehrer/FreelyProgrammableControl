@@ -24,25 +24,31 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
     /// </remarks>
     public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
+        private const int IoPageSize = 20;
+
         #region fields
         private Window? ownerWindow;
         private IStorageProvider? storageProvider;
         private IClipboard? clipboard;
         private ApiService? apiService;
         private readonly N8nWebhookService n8nWebhookService;
-        private readonly string fpcSampleListFolderName = "fpc";
+        private readonly string fpcSampleListFolderName;
         private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
         private readonly Stack<string> redoStack = new();
         private string lastSourceText = string.Empty;
         private string saveUserinput = string.Empty;
-        private readonly ExecutionUnit executionUnit = new(20, 20);
+        private readonly ExecutionUnit executionUnit;
         #endregion fields
 
         #region observable properties
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
         public ObservableCollection<OutputDeviceViewModel> Outputs { get; } = new();
+        public ObservableCollection<InputDeviceViewModel> VisibleInputs { get; } = new();
+        public ObservableCollection<OutputDeviceViewModel> VisibleOutputs { get; } = new();
+        public ObservableCollection<string> InputPageLabels { get; } = new();
+        public ObservableCollection<string> OutputPageLabels { get; } = new();
 
         [ObservableProperty]
         private string sourceText = string.Empty;
@@ -113,6 +119,18 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private int maxLineNumber = 0;
         [ObservableProperty]
         private int minLineNumber = 0;
+
+        [ObservableProperty]
+        private int selectedInputPageIndex;
+
+        [ObservableProperty]
+        private int selectedOutputPageIndex;
+
+        [ObservableProperty]
+        private bool hasMultipleInputPages;
+
+        [ObservableProperty]
+        private bool hasMultipleOutputPages;
         #endregion observable properties
 
         #region properties
@@ -126,6 +144,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         #region constructor and initialization
         public MainWindowViewModel()
         {
+            var settings = ConfigurationHelper.GetSettings();
+            var configuredInputCount = Math.Max(1, settings.Machine.InputCount);
+            var configuredOutputCount = Math.Max(1, settings.Machine.OutputCount);
+
+            executionUnit = new ExecutionUnit(configuredInputCount, configuredOutputCount);
             //            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             StatusText = selectedFile;
@@ -142,7 +165,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             executionUnit.Inputs.Attach(OnUpdateInputs!);
             executionUnit.Outputs.Attach(OnUpdateOutputs!);
 
-            var settings = ConfigurationHelper.GetSettings();
             n8nWebhookService = new N8nWebhookService();
             fpcSampleListFolderName = settings.N8N.FPCSampleListFolderName ?? string.Empty;
 
@@ -654,10 +676,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private int ParseAndView(string[] lines)
         {
-            var parsedLines = ExecutionUnit.Parse(lines);
+            var parsedLines = executionUnit.Parse(lines);
             var parsedText = parsedLines.Select(pl =>
             {
-                var result = $"{pl.LineNumber:d4}: {pl.Source,-50} {(pl.HasError ? "Error" : ""),-8} {pl.ErrorMessage}";
+                var result = $"{pl.LineNumber:d4}: {pl.Source,-30} {(pl.HasError ? "Error:" : ""),-6} {pl.ErrorMessage}";
 
                 return result;
             }).ToList();
@@ -725,6 +747,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             DebugButtonText = value ? "Debug: ON" : "Debug: OFF";
         }
 
+        partial void OnSelectedInputPageIndexChanged(int value)
+        {
+            RefreshVisibleInputs();
+        }
+
+        partial void OnSelectedOutputPageIndexChanged(int value)
+        {
+            RefreshVisibleOutputs();
+        }
+
         private void CreateInputItems()
         {
             Inputs.Clear();
@@ -732,6 +764,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 Inputs.Add(new InputDeviceViewModel(executionUnit.Inputs[i], ownerWindow));
             }
+
+            RebuildInputPages();
         }
 
         private void CreateOutputItems()
@@ -740,6 +774,92 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             for (int i = 0; i < executionUnit.Outputs.Length; i++)
             {
                 Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow));
+            }
+
+            RebuildOutputPages();
+        }
+
+        private void RebuildInputPages()
+        {
+            InputPageLabels.Clear();
+
+            var pageCount = Math.Max(1, (Inputs.Count + IoPageSize - 1) / IoPageSize);
+            for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
+            {
+                var start = pageIndex * IoPageSize + 1;
+                var end = Math.Min((pageIndex + 1) * IoPageSize, Inputs.Count);
+                InputPageLabels.Add($"{start}-{end}");
+            }
+
+            HasMultipleInputPages = pageCount > 1;
+
+            if (SelectedInputPageIndex >= pageCount || SelectedInputPageIndex < 0)
+            {
+                SelectedInputPageIndex = 0;
+            }
+
+            RefreshVisibleInputs();
+        }
+
+        private void RebuildOutputPages()
+        {
+            OutputPageLabels.Clear();
+
+            var pageCount = Math.Max(1, (Outputs.Count + IoPageSize - 1) / IoPageSize);
+            for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
+            {
+                var start = pageIndex * IoPageSize + 1;
+                var end = Math.Min((pageIndex + 1) * IoPageSize, Outputs.Count);
+                OutputPageLabels.Add($"{start}-{end}");
+            }
+
+            HasMultipleOutputPages = pageCount > 1;
+
+            if (SelectedOutputPageIndex >= pageCount || SelectedOutputPageIndex < 0)
+            {
+                SelectedOutputPageIndex = 0;
+            }
+
+            RefreshVisibleOutputs();
+        }
+
+        private void RefreshVisibleInputs()
+        {
+            VisibleInputs.Clear();
+
+            if (Inputs.Count == 0)
+            {
+                return;
+            }
+
+            var safeIndex = Math.Clamp(SelectedInputPageIndex, 0, Math.Max(0, InputPageLabels.Count - 1));
+            var start = safeIndex * IoPageSize;
+            var endExclusive = Math.Min(start + IoPageSize, Inputs.Count);
+
+            for (int i = start; i < endExclusive; i++)
+            {
+                Inputs[i].UpdateFromDevice();
+                VisibleInputs.Add(Inputs[i]);
+            }
+        }
+
+        private void RefreshVisibleOutputs()
+        {
+            VisibleOutputs.Clear();
+
+            if (Outputs.Count == 0)
+            {
+                return;
+            }
+
+            var safeIndex = Math.Clamp(SelectedOutputPageIndex, 0, Math.Max(0, OutputPageLabels.Count - 1));
+            var start = safeIndex * IoPageSize;
+            var endExclusive = Math.Min(start + IoPageSize, Outputs.Count);
+
+            for (int i = start; i < endExclusive; i++)
+            {
+                Outputs[i].UpdateFromDevice();
+                VisibleOutputs.Add(Outputs[i]);
             }
         }
 

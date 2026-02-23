@@ -30,6 +30,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                     return new AppSettings
                     {
                         Api = new ApiSettings { Port = 5555 },
+                        Machine = new MachineSettings(),
                         N8N = new N8nSettings()
                     };
                 }
@@ -40,6 +41,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 return _settings ?? new AppSettings
                 {
                     Api = new ApiSettings { Port = 5555 },
+                    Machine = new MachineSettings(),
                     N8N = new N8nSettings()
                 };
             }
@@ -49,6 +51,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 return new AppSettings
                 {
                     Api = new ApiSettings { Port = 5555 },
+                    Machine = new MachineSettings(),
                     N8N = new N8nSettings()
                 };
             }
@@ -58,12 +61,19 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     public class AppSettings
     {
         public ApiSettings Api { get; set; } = new();
+        public MachineSettings Machine { get; set; } = new();
         public N8nSettings N8N { get; set; } = new();
     }
 
     public class ApiSettings
     {
         public int Port { get; set; } = 5555;
+    }
+
+    public class MachineSettings
+    {
+        public int InputCount { get; set; } = 20;
+        public int OutputCount { get; set; } = 20;
     }
 
     public class N8nSettings

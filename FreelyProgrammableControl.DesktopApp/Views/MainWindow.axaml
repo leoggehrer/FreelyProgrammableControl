@@ -96,7 +96,11 @@
                      FontSize="14"
                      Margin="5,5,5,10"
                      HorizontalAlignment="Center"/>
-          <ItemsControl ItemsSource="{Binding Inputs}">
+          <ComboBox Margin="5,0,5,8"
+                    ItemsSource="{Binding InputPageLabels}"
+                    SelectedIndex="{Binding SelectedInputPageIndex}"
+                    IsVisible="{Binding HasMultipleInputPages}" />
+          <ItemsControl ItemsSource="{Binding VisibleInputs}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:InputDeviceViewModel">
                 <Border Background="Transparent" 
@@ -274,7 +278,11 @@
                      FontSize="14"
                      Margin="5,5,5,10"
                      HorizontalAlignment="Center"/>
-          <ItemsControl ItemsSource="{Binding Outputs}">
+          <ComboBox Margin="5,0,5,8"
+                    ItemsSource="{Binding OutputPageLabels}"
+                    SelectedIndex="{Binding SelectedOutputPageIndex}"
+                    IsVisible="{Binding HasMultipleOutputPages}" />
+          <ItemsControl ItemsSource="{Binding VisibleOutputs}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:OutputDeviceViewModel">
                 <Border Background="Transparent" 
@@ -284,7 +292,7 @@
                                IsEnabled="True"
                                IsHitTestVisible="False"
                                Focusable="False"
-                               IsChecked="{Binding IsChecked}"
+                               IsChecked="{Binding IsChecked, Mode=OneWay}"
                                Content="{Binding Label}" />
                 </Border>
               </DataTemplate>
