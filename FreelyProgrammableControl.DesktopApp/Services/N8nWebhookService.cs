@@ -103,13 +103,8 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             {
                 try
                 {
-                    var payload = JsonSerializer.Serialize(new
-                    {
-                        id
-                    });
-
-                    using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-                    using var response = await httpClient.PostAsync(_loadFPCSampleWebhookUrl, content);
+                    var requestUrl = BuildUrlWithQueryParameter(_loadFPCSampleWebhookUrl, "id", id);
+                    using var response = await httpClient.GetAsync(requestUrl);
 
                     if (response.IsSuccessStatusCode)
                     {

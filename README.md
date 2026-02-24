@@ -54,7 +54,7 @@ Konfiguration in `FreelyProgrammableControl.DesktopApp/appsettings.json` unter `
 
 - `SaveToGoogleDriveWebhookUrl`: Ziel für Speichern (HTTP `POST`, JSON-Body mit `fileName`, `fpcSource`)
 - `GetFPCSampleListWebhookUrl`: Ziel für Dateiliste (HTTP `GET`, Query-Parameter `folderName`)
-- `LoadFPCSampleWebhookUrl`: Ziel für Dateiinhalt (HTTP `POST`, JSON-Body mit `id`)
+- `LoadFPCSampleWebhookUrl`: Ziel für Dateiinhalt (HTTP `GET`, Query-Parameter `id`)
 - `FPCSampleListFolderName`: Ordnername für den Dateilisten-Webhook
 
 Verhalten bei Dateiliste:

@@ -230,7 +230,10 @@
             </Grid>
           </Border>
           <!-- Splitter between source and output -->
-          <GridSplitter Grid.Row="1" Grid.Column="0" Margin="0,5" Height="3"
+          <GridSplitter Grid.Row="1" 
+                        Grid.Column="0" 
+                        Margin="0,5" 
+                        Height="3"
                         Background="LightGray" 
                         ResizeDirection="Rows" />
           <!-- Output -->

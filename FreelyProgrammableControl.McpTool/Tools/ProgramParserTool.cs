@@ -21,12 +21,19 @@ namespace FreelyProgrammableControl.McpTool.Tools
         [McpServerTool(Name = "parse_fpc_program")]
         [Description("Parses a FPC program and validates its syntax. Returns detailed error information if parsing fails.")]
         public static ParseResult ParseProgram(            
-            [Description("The FPC program code to parse, with lines separated by newlines.")]string programCode)
+            [Description("The FPC program code to parse, with lines separated by newlines.")]
+            string programCode,
+            [Description("Number of input devices (default: 64).")]
+            int inputCount = 64,
+            [Description("Number of output devices (default: 64).")]
+            int outputCount = 64
+            )
         {
             try
             {
+                var executionUnit = new ExecutionUnit(inputCount, outputCount);
                 var lines = programCode.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-                var parsedLines = ExecutionUnit.Parse(lines);
+                var parsedLines = executionUnit.Parse(lines);
 
                 var errors = parsedLines
                     .Where(pl => pl.HasError)
