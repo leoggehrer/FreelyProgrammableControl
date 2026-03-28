@@ -10,7 +10,7 @@
         Icon="/Assets/avalonia-logo.ico"
         Width="1000"
         Height="900"
-        Title="FreelyProgrammableControl.DesktopApp">
+        Title="FreelyProgrammableControl">
 
   <Window.KeyBindings>
     <!-- File Operations -->

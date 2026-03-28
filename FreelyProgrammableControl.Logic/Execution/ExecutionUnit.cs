@@ -71,8 +71,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 var result = new StringBuilder();
 
-                result.AppendLine($"Running: {running}");
-                result.AppendLine($"Debug Enabled: {debugEnabled}");
+                result.AppendLine($"Running: {running} Debug Enabled: {debugEnabled}");
                 if (debugEnabled)
                 {
                     if (currentExecutionLine != null)
@@ -83,10 +82,14 @@ namespace FreelyProgrammableControl.Logic.Execution
                         {
                             lineInfo += $"  !!! ERROR: {currentExecutionLine.ErrorMessage}";
                         }
+                        result.AppendLine();
                         result.AppendLine(lineInfo);
+                        result.AppendLine();
                     }
                     result.AppendLine(stack.ToString());
+                    result.AppendLine();
                     result.AppendLine(memory.ToString());
+                    result.AppendLine();
                     result.AppendLine(counters.ToString());
                 }
                 else

@@ -43,7 +43,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 Title = "Label ändern",
                 Width = 400,
-                Height = 200,
+                Height = 180,
                 CanResize = false,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
@@ -58,14 +58,14 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             var okButton = new Button
             {
                 Content = "OK",
-                Width = 80,
+                Width = 100,
                 Margin = new Avalonia.Thickness(5)
             };
 
             var cancelButton = new Button
             {
                 Content = "Abbrechen",
-                Width = 80,
+                Width = 100,
                 Margin = new Avalonia.Thickness(5)
             };
 

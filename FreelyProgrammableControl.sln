@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 		SystemPrompt.md = SystemPrompt.md
+		FPCSamplesV2.md = FPCSamplesV2.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FreelyProgrammableControl.McpTool", "FreelyProgrammableControl.McpTool\FreelyProgrammableControl.McpTool.csproj", "{3E303D8D-0AB2-48B3-A0F7-2080082E3CDC}"

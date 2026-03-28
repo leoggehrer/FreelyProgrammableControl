@@ -127,7 +127,7 @@ namespace FreelyProgrammableControl.Logic.Common
         /// <returns>A string representation of the stack's contents.</returns>
         public override string ToString()
         {
-            var result = new StringBuilder(head == null ? "Stack is empty." : "Stack contents: ");
+            var result = new StringBuilder("Stack contents: ");
             var current = head;
 
             while (current != null)

@@ -27,12 +27,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private const int IoPageSize = 20;
 
         #region fields
-        private Window? ownerWindow;
-        private IStorageProvider? storageProvider;
         private IClipboard? clipboard;
-        private ApiService? apiService;
+        private IStorageProvider? storageProvider;
+        private Window? ownerWindow;
         private readonly N8nWebhookService n8nWebhookService;
         private readonly string fpcSampleListFolderName;
+        private ApiService? apiService;
         private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
