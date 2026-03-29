@@ -4,5 +4,6 @@ namespace FreelyProgrammableControl.McpServer.Models
     {
         public bool success { get; set; }
         public bool isRunning { get; set; }
+        public string? error { get; set; }
     }
 }

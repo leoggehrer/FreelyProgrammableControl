@@ -107,7 +107,8 @@ namespace FreelyProgrammableControl.McpServer.Services
             try
             {
                 var response = await _httpClient.PostAsync("/api/start", null);
-                response.EnsureSuccessStatusCode();
+                // KEIN EnsureSuccessStatusCode — bei HTTP 400 (Parse-Fehler) wollen wir
+                // trotzdem die Antwort lesen um die Fehlermeldung zu erhalten
                 return await response.Content.ReadFromJsonAsync<ExecutionControlResponse>();
             }
             catch (Exception ex)
@@ -124,7 +125,7 @@ namespace FreelyProgrammableControl.McpServer.Services
             try
             {
                 var response = await _httpClient.PostAsync("/api/stop", null);
-                response.EnsureSuccessStatusCode();
+                // KEIN EnsureSuccessStatusCode — Antwort immer lesen
                 return await response.Content.ReadFromJsonAsync<ExecutionControlResponse>();
             }
             catch (Exception ex)

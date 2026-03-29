@@ -152,14 +152,14 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 var result = await Client.StartExecutionAsync();
-                
+
                 return new ExecutionControlResult
                 {
                     Success = result?.success ?? false,
                     IsRunning = result?.isRunning ?? false,
-                    Message = result?.isRunning == true
+                    Message = result?.success == true
                         ? "Programm wurde erfolgreich gestartet"
-                        : "Programm konnte nicht gestartet werden"
+                        : $"Programm konnte nicht gestartet werden: {result?.error ?? "Unbekannter Fehler"}"
                 };
             }
             catch (Exception ex)
@@ -194,14 +194,14 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 var result = await Client.StopExecutionAsync();
-                
+
                 return new ExecutionControlResult
                 {
                     Success = result?.success ?? false,
                     IsRunning = result?.isRunning ?? false,
-                    Message = result?.isRunning == false
+                    Message = result?.success == true
                         ? "Programm wurde erfolgreich gestoppt"
-                        : "Programm läuft noch"
+                        : $"Programm konnte nicht gestoppt werden: {result?.error ?? "Programm läuft noch"}"
                 };
             }
             catch (Exception ex)
