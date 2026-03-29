@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using FreelyProgrammableControl.Logic.Output;
+using FreelyProgrammableControl.Logic.Contracts;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {

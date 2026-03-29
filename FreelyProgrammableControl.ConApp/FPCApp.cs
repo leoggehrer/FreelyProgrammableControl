@@ -1,4 +1,5 @@
 using CommonTool;
+using FreelyProgrammableControl.Logic.Contracts;
 using FreelyProgrammableControl.Logic.Execution;
 using FreelyProgrammableControl.Logic.Input;
 

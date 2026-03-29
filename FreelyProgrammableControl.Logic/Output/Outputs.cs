@@ -1,4 +1,5 @@
 using FreelyProgrammableControl.Logic.Common;
+using FreelyProgrammableControl.Logic.Contracts;
 
 namespace FreelyProgrammableControl.Logic.Output
 {

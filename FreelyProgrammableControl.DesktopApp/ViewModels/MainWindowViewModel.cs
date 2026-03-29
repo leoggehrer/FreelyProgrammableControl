@@ -42,7 +42,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private readonly ExecutionUnit executionUnit;
         #endregion fields
 
-        #region observable properties
+        #region properties
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
         public ObservableCollection<OutputDeviceViewModel> Outputs { get; } = new();
         public ObservableCollection<InputDeviceViewModel> VisibleInputs { get; } = new();
@@ -52,44 +52,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         [ObservableProperty]
         private string sourceText = string.Empty;
-        partial void OnSourceTextChanged(string value)
-        {
-            var lineCount = value?.Split(Environment.NewLine).Length ?? 0;
-
-            MinLineNumber = 0;
-            MaxLineNumber = lineCount > 0 ? lineCount - 1 : 0;
-
-            if (CurrentLineNumber < MinLineNumber
-                || CurrentLineNumber > MaxLineNumber
-                || lineCount == 0)
-            {
-                CurrentLineNumber = MinLineNumber;
-            }
-
-            // Konvertiere Text zu Großbuchstaben wenn sich der Wert ändert
-            if (value != null && value != value.ToUpper())
-            {
-                SourceText = value.ToUpper();
-                return;
-            }
-
-            // Undo/Redo Stack Management
-            if (!string.IsNullOrEmpty(lastSourceText) && lastSourceText != value)
-            {
-                undoStack.Push(lastSourceText);
-                if (undoStack.Count > 50) // Limit stack size
-                {
-                    var temp = undoStack.Reverse().Take(50).Reverse().ToList();
-                    undoStack.Clear();
-                    foreach (var item in temp)
-                        undoStack.Push(item);
-                }
-                redoStack.Clear();
-                UndoCommand?.NotifyCanExecuteChanged();
-                RedoCommand?.NotifyCanExecuteChanged();
-            }
-            lastSourceText = value ?? string.Empty;
-        }
 
         [ObservableProperty]
         private string outputText = string.Empty;
@@ -145,9 +107,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         [ObservableProperty]
         private bool hasMultipleOutputPages;
-        #endregion observable properties
 
-        #region properties
+        public int InputCount => executionUnit.Inputs.Length;
+        public int OutputCount => executionUnit.Outputs.Length;
+
         public bool IsRunning => executionUnit.IsRunning;
         public bool HasParseError => executionUnit.HasParseError;
         public string? ParseErrorMessage => executionUnit.ParseErrorMessage;
@@ -155,10 +118,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         public string State => executionUnit.State;
         #endregion properties
 
-        #region constructor and initialization
+        #region constructors
         public MainWindowViewModel()
         {
             var settings = ConfigurationHelper.GetSettings();
+            
             var configuredInputCount = Math.Max(1, settings.Machine.InputCount);
             var configuredOutputCount = Math.Max(1, settings.Machine.OutputCount);
 
@@ -188,7 +152,9 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             // Start API Service
             StartApiService(settings);
         }
+        #endregion constructors
 
+        #region methods
         private async void StartApiService(AppSettings settings)
         {
             try
@@ -218,9 +184,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CreateInputItems();
             CreateOutputItems();
         }
-        #endregion constructor and initialization
 
-        #region commands
         [RelayCommand]
         private void New()
         {
@@ -686,7 +650,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 await aboutDialog.ShowDialog(ownerWindow);
             }
         }
-        #endregion commands
 
         private int ParseAndView(string[] lines)
         {
@@ -753,31 +716,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private void UpdateExecutionState(object sender, EventArgs e)
         {
             ExecutionState = executionUnit.State;
-        }
-
-        partial void OnExecutionStateChanged(string value)
-        {
-            ExecutionStatePart1 = value ?? string.Empty;
-            ExecutionStatePart2 = DebugEnabled ? executionUnit.StackInfo : string.Empty;
-            ExecutionStatePart3 = DebugEnabled ? executionUnit.MemoryInfo : string.Empty;
-            ExecutionStatePart4 = DebugEnabled ? executionUnit.CountersInfo : string.Empty;
-            ExecutionStatePart5 = DebugEnabled ? executionUnit.TimersInfo : string.Empty;
-        }
-
-        partial void OnDebugEnabledChanged(bool value)
-        {
-            executionUnit.DebugEnabled = value;
-            DebugButtonText = value ? "Debug: ON" : "Debug: OFF";
-        }
-
-        partial void OnSelectedInputPageIndexChanged(int value)
-        {
-            RefreshVisibleInputs();
-        }
-
-        partial void OnSelectedOutputPageIndexChanged(int value)
-        {
-            RefreshVisibleOutputs();
         }
 
         private void CreateInputItems()
@@ -1108,5 +1046,73 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 }
             }
         }
+        #endregion methods
+
+        #region partial methods
+        partial void OnSourceTextChanged(string value)
+        {
+            var lineCount = value?.Split(Environment.NewLine).Length ?? 0;
+
+            MinLineNumber = 0;
+            MaxLineNumber = lineCount > 0 ? lineCount - 1 : 0;
+
+            if (CurrentLineNumber < MinLineNumber
+                || CurrentLineNumber > MaxLineNumber
+                || lineCount == 0)
+            {
+                CurrentLineNumber = MinLineNumber;
+            }
+
+            // Konvertiere Text zu Großbuchstaben wenn sich der Wert ändert
+            if (value != null && value != value.ToUpper())
+            {
+                SourceText = value.ToUpper();
+                return;
+            }
+
+            // Undo/Redo Stack Management
+            if (!string.IsNullOrEmpty(lastSourceText) && lastSourceText != value)
+            {
+                undoStack.Push(lastSourceText);
+                if (undoStack.Count > 50) // Limit stack size
+                {
+                    var temp = undoStack.Reverse().Take(50).Reverse().ToList();
+                    undoStack.Clear();
+                    foreach (var item in temp)
+                        undoStack.Push(item);
+                }
+                redoStack.Clear();
+                UndoCommand?.NotifyCanExecuteChanged();
+                RedoCommand?.NotifyCanExecuteChanged();
+            }
+
+            lastSourceText = value ?? string.Empty;
+        }
+
+        partial void OnExecutionStateChanged(string value)
+        {
+            ExecutionStatePart1 = value ?? string.Empty;
+            ExecutionStatePart2 = DebugEnabled ? executionUnit.StackInfo : string.Empty;
+            ExecutionStatePart3 = DebugEnabled ? executionUnit.MemoryInfo : string.Empty;
+            ExecutionStatePart4 = DebugEnabled ? executionUnit.CountersInfo : string.Empty;
+            ExecutionStatePart5 = DebugEnabled ? executionUnit.TimersInfo : string.Empty;
+        }
+
+        partial void OnDebugEnabledChanged(bool value)
+        {
+            executionUnit.DebugEnabled = value;
+            DebugButtonText = value ? "Debug: ON" : "Debug: OFF";
+        }
+
+        partial void OnSelectedInputPageIndexChanged(int value)
+        {
+            RefreshVisibleInputs();
+        }
+
+        partial void OnSelectedOutputPageIndexChanged(int value)
+        {
+            RefreshVisibleOutputs();
+        }
+        #endregion partial methods
     }
 }

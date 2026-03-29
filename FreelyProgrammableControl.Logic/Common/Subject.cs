@@ -1,3 +1,5 @@
+using FreelyProgrammableControl.Logic.Contracts;
+
 namespace FreelyProgrammableControl.Logic.Common
 {
     /// <summary>

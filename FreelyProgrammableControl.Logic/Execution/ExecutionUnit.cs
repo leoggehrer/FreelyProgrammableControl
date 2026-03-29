@@ -1,5 +1,6 @@
 using System.Text;
 using FreelyProgrammableControl.Logic.Common;
+using FreelyProgrammableControl.Logic.Contracts;
 using FreelyProgrammableControl.Logic.Counter;
 using FreelyProgrammableControl.Logic.Extensions;
 using FreelyProgrammableControl.Logic.Input;
@@ -14,7 +15,7 @@ namespace FreelyProgrammableControl.Logic.Execution
     /// This class inherits from <see cref="Subject"/> and manages the execution of a set of instructions,
     /// handling inputs, outputs, memory, timers, and counters.
     /// </remarks>
-    public class ExecutionUnit(int inputs, int outputs) : Subject
+    public class ExecutionUnit(int inputs, int outputs) : Subject, IExecutionUnit
     {
         #region constants
         /// <summary>
@@ -423,8 +424,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         public void Step()
         {
-            if (running
-                && DebugEnabled)
+            if (running && DebugEnabled)
             {
                 currentExecutionLine = parsedLines[currentLineNumber++];
                 try
