@@ -127,14 +127,14 @@ namespace FreelyProgrammableControl.Logic.Common
         /// <returns>A string representation of the stack's contents.</returns>
         public override string ToString()
         {
-            var result = new StringBuilder("Stack contents: ");
+            var result = new StringBuilder();
             var current = head;
 
             while (current != null)
             {
                 if (current != head)
                 {   
-                    result.Append(" - ");
+                    result.AppendLine();
                 }
                 result.Append($"{current.Data}");
                 current = current.Next;

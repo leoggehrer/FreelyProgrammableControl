@@ -112,12 +112,12 @@ namespace FreelyProgrammableControl.Logic.Counter
         /// <returns>A string that represents the contents of the counters.</returns>
         override public string ToString()
         {
-            var result = new StringBuilder(values.Length == 0 ? "Counters are empty." : "Counters contents: ");
+            var result = new StringBuilder();
 
             for (int i = 0; i < values.Length && i < 20; i++)
             {
                 if (i > 0)
-                    result.Append(" - ");
+                    result.AppendLine();
 
                 result.Append($"{i:d2} {values[i]:d3}");
             }

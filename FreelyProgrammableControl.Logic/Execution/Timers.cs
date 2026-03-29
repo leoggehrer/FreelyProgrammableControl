@@ -133,19 +133,14 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <returns>A string that represents the contents of the timers collection.</returns>
         public override string ToString()
         {
-            var result = new StringBuilder(timers.Length == 0 ? "Timers are empty." : "Timers contents: ");
-            var hasTimer = false;
+            var result = new StringBuilder();
 
             for (int i = 0; i < timers.Length && i < 20; i++)
             {
-                if (timers[i] != null)
-                {
-                    if (hasTimer)
-                        result.Append(" - ");
+                if (i > 0)
+                    result.AppendLine();
 
-                    result.Append($"{i:d2} {timers[i]?.Value}");
-                    hasTimer = true;
-                }
+                result.Append($"{i:d2} {timers[i]?.Value}");
             }
             return result.ToString();
         }

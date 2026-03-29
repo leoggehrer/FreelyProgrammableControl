@@ -71,26 +71,28 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 var result = new StringBuilder();
 
-                result.AppendLine($"Running: {running} Debug Enabled: {debugEnabled}");
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine($"Running:   {running}");
+                result.AppendLine($"Debug:     {debugEnabled}");
                 if (debugEnabled)
                 {
                     if (currentExecutionLine != null)
                     {
-                        var lineInfo = $"Executed Line: {currentExecutionLine.LineNumber:d4} - {(currentExecutionLine.Source.HasContent() ? currentExecutionLine.Source : currentExecutionLine.Instruction)}";
-
-                        if (currentExecutionLine.HasError)
+                        if (currentExecutionLine.IsComment)
                         {
-                            lineInfo += $"  !!! ERROR: {currentExecutionLine.ErrorMessage}";
+                            result.AppendLine($"Comment: {currentExecutionLine.Source}");
                         }
-                        result.AppendLine();
-                        result.AppendLine(lineInfo);
-                        result.AppendLine();
+                        else
+                        {
+                            var lineInfo = $"Command: {currentExecutionLine.LineNumber:d4} - {(currentExecutionLine.Source.HasContent() ? currentExecutionLine.Source : currentExecutionLine.Instruction)}";
+
+                            if (currentExecutionLine.HasError)
+                            {
+                                lineInfo += $"  !!! ERROR: {currentExecutionLine.ErrorMessage}";
+                            }
+                            result.AppendLine(lineInfo);
+                        }
                     }
-                    result.AppendLine(stack.ToString());
-                    result.AppendLine();
-                    result.AppendLine(memory.ToString());
-                    result.AppendLine();
-                    result.AppendLine(counters.ToString());
                 }
                 else
                 {
@@ -99,6 +101,126 @@ namespace FreelyProgrammableControl.Logic.Execution
                 return result.ToString();
             }
         }
+        /// <summary>
+        /// Gets a string containing debug information about the currently executing line of code, if any.
+        /// </summary>
+        public string DebugInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                if (currentExecutionLine != null)
+                {
+                    var lineInfo = $"Executed Line: {currentExecutionLine.LineNumber:d4} - {(currentExecutionLine.Source.HasContent() ? currentExecutionLine.Source : currentExecutionLine.Instruction)}";
+
+                    if (currentExecutionLine.HasError)
+                    {
+                        lineInfo += $"  !!! ERROR: {currentExecutionLine.ErrorMessage}";
+                    }
+                    result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                    result.AppendLine(lineInfo);
+                }
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the stack, including a timestamp.
+        /// </summary>
+        public string StackInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Stack contents:");
+                result.AppendLine(stack.ToString());
+
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the inputs, including a timestamp.
+        /// </summary>
+        public string InputsInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Input values:");
+                result.AppendLine(inputs.ToString());
+
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the outputs, including a timestamp.
+        /// </summary>
+        public string OutputsInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Output values:");
+                result.AppendLine(outputs.ToString());
+
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the memory, including a timestamp.
+        /// </summary>
+        public string MemoryInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Memory contents:");
+                result.AppendLine(memory.ToString());
+
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the timers, including a timestamp.
+        /// </summary>
+        public string CountersInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Counter contents:");
+                result.AppendLine(counters.ToString());
+
+                return result.ToString();
+            }
+        }
+        /// <summary>
+        /// Gets a string representation of the current state of the timers, including a timestamp.
+        /// </summary>
+        public string TimersInfo
+        {
+            get
+            {
+                var result = new StringBuilder();
+
+                result.AppendLine($"Timestamp: {DateTime.Now:HH:mm:ss.fff}");
+                result.AppendLine("Timer contents:");
+                result.AppendLine(timers.ToString());
+
+                return result.ToString();
+            }
+        }
+
         /// <summary>
         ///  Gets the currently executing line of code, if any.
         /// </summary>

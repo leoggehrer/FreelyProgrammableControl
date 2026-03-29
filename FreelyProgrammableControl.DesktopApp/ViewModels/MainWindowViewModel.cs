@@ -30,9 +30,9 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private IClipboard? clipboard;
         private IStorageProvider? storageProvider;
         private Window? ownerWindow;
-        private readonly N8nWebhookService n8nWebhookService;
-        private readonly string fpcSampleListFolderName;
         private ApiService? apiService;
+        private readonly string fpcSampleListFolderName;
+        private readonly N8nWebhookService n8nWebhookService;
         private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
@@ -52,7 +52,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         [ObservableProperty]
         private string sourceText = string.Empty;
-
         partial void OnSourceTextChanged(string value)
         {
             var lineCount = value?.Split(Environment.NewLine).Length ?? 0;
@@ -97,6 +96,21 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         [ObservableProperty]
         private string executionState = string.Empty;
+
+        [ObservableProperty]
+        private string executionStatePart1 = string.Empty;
+
+        [ObservableProperty]
+        private string executionStatePart2 = string.Empty;
+
+        [ObservableProperty]
+        private string executionStatePart3 = string.Empty;
+
+        [ObservableProperty]
+        private string executionStatePart4 = string.Empty;
+
+        [ObservableProperty]
+        private string executionStatePart5 = string.Empty;
 
         [ObservableProperty]
         private string statusText = string.Empty;
@@ -739,6 +753,15 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private void UpdateExecutionState(object sender, EventArgs e)
         {
             ExecutionState = executionUnit.State;
+        }
+
+        partial void OnExecutionStateChanged(string value)
+        {
+            ExecutionStatePart1 = value ?? string.Empty;
+            ExecutionStatePart2 = DebugEnabled ? executionUnit.StackInfo : string.Empty;
+            ExecutionStatePart3 = DebugEnabled ? executionUnit.MemoryInfo : string.Empty;
+            ExecutionStatePart4 = DebugEnabled ? executionUnit.CountersInfo : string.Empty;
+            ExecutionStatePart5 = DebugEnabled ? executionUnit.TimersInfo : string.Empty;
         }
 
         partial void OnDebugEnabledChanged(bool value)

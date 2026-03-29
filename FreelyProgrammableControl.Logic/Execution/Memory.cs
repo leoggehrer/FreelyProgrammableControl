@@ -92,12 +92,12 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <returns>A string that represents the contents of the memory.</returns>
         public override string ToString()
         {
-            var result = new StringBuilder(values.Length == 0 ? "Memory is empty." : "Memory contents: ");
+            var result = new StringBuilder();
 
             for (int i = 0; i < values.Length && i < 20; i++)
             {
                 if (i > 0)
-                    result.Append(" - ");
+                    result.AppendLine();
 
                 result.Append($"{i:d2} {values[i]:d3}");
             }
