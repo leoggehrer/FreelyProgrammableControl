@@ -21,13 +21,10 @@ namespace FreelyProgrammableControl.McpServer.Tools
         [McpServerTool(Name = "parse_fpc_program")]
         [Description("Parses a FPC program and validates its syntax. Returns detailed error information if parsing fails.")]
         public static ParseResult ParseProgram(            
-            [Description("The FPC program code to parse, with lines separated by newlines.")]
-            string programCode,
-            [Description("Number of input devices (default: 64).")]
-            int inputCount = 64,
-            [Description("Number of output devices (default: 64).")]
-            int outputCount = 64
-            )
+            [Description("The FPC program code to parse, with lines separated by newlines.")]string programCode,
+            [Description("Number of input devices (default: 128).")]int inputCount = 128,
+            [Description("Number of output devices (default: 128).")]int outputCount = 128
+        )
         {
             try
             {
@@ -89,18 +86,15 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Parses a FPC program and loads it into an ExecutionUnit for execution testing.
         /// </summary>
         /// <param name="programCode">The FPC program code to parse and load.</param>
-        /// <param name="inputCount">Number of inputs available (default: 64).</param>
-        /// <param name="outputCount">Number of outputs available (default: 64).</param>
+        /// <param name="inputCount">Number of inputs available (default: 128).</param>
+        /// <param name="outputCount">Number of outputs available (default: 128).</param>
         /// <returns>Validation result with execution unit status.</returns>
         [McpServerTool(Name = "validate_fpc_execution")]
         [Description("Parses a FPC program and loads it into an ExecutionUnit. Validates that the program can be executed properly.")]
         public static ExecutionValidationResult ValidateProgramExecution(
-            [Description("The FPC program code to validate.")]
-            string programCode,
-            [Description("Number of input devices (default: 64).")]
-            int inputCount = 64,
-            [Description("Number of output devices (default: 64).")]
-            int outputCount = 64)
+            [Description("The FPC program code to validate.")]string programCode,
+            [Description("Number of input devices (default: 128).")]int inputCount = 128,
+            [Description("Number of output devices (default: 128).")]int outputCount = 128)
         {
             try
             {
