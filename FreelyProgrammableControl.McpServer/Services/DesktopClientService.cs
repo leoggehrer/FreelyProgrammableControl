@@ -1,7 +1,7 @@
 using System.Text;
-using FreelyProgrammableControl.McpTool.Models;
+using FreelyProgrammableControl.McpServer.Models;
 
-namespace FreelyProgrammableControl.McpTool.Services
+namespace FreelyProgrammableControl.McpServer.Services
 {
     /// <summary>
     /// Client zum Kommunizieren mit der FPC Desktop-Anwendung über HTTP

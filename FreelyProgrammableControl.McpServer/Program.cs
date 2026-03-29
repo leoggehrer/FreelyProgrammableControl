@@ -1,6 +1,6 @@
-using FreelyProgrammableControl.McpTool.Tools;
+using FreelyProgrammableControl.McpServer.Tools;
 
-namespace FreelyProgrammableControl.McpTool;
+namespace FreelyProgrammableControl.McpServer;
 
 internal class Program
 {

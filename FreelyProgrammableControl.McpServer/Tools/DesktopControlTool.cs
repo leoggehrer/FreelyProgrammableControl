@@ -1,8 +1,8 @@
 using System.ComponentModel;
-using FreelyProgrammableControl.McpTool.Services;
+using FreelyProgrammableControl.McpServer.Services;
 using ModelContextProtocol.Server;
 
-namespace FreelyProgrammableControl.McpTool.Tools
+namespace FreelyProgrammableControl.McpServer.Tools
 {
     /// <summary>
     /// MCP-Tools zur Kommunikation mit der FPC Desktop-Anwendung

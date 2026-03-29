@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using FreelyProgrammableControl.Logic.Execution;
-using FreelyProgrammableControl.McpTool.Models;
+using FreelyProgrammableControl.McpServer.Models;
 using ModelContextProtocol.Server;
 
-namespace FreelyProgrammableControl.McpTool.Tools
+namespace FreelyProgrammableControl.McpServer.Tools
 {
     /// <summary>
     /// Tool for parsing FPC (Freely Programmable Control) programs.

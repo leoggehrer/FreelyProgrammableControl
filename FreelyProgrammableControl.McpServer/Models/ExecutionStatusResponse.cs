@@ -1,4 +1,4 @@
-namespace FreelyProgrammableControl.McpTool.Models
+namespace FreelyProgrammableControl.McpServer.Models
 {
     public class ExecutionStatusResponse
     {

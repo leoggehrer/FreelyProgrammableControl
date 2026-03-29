@@ -1,6 +1,6 @@
 using System;
 
-namespace FreelyProgrammableControl.McpTool.Models;
+namespace FreelyProgrammableControl.McpServer.Models;
 
    /// <summary>
     /// Details of a single parse error.
