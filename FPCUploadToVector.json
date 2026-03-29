@@ -1,0 +1,311 @@
+{
+  "name": "FPCUploadToVector",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "FPC – Datei zu Vector Store",
+        "formDescription": "Laden Sie eine FPC-Pattern-Datei (.md) hoch, um sie in den Vektorspeicher zu importieren.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Datei",
+              "fieldType": "file",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [-1248, 208],
+      "id": "e1000000-0000-0000-0000-000000000001",
+      "name": "FormUpload",
+      "webhookId": "fpc-upload-to-vector"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "Datei",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [-1024, 208],
+      "id": "e1000000-0000-0000-0000-000000000002",
+      "name": "ExtractFromFile"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1a00000-0000-0000-0000-000000000001",
+              "name": "file_id",
+              "value": "={{ $('FormUpload').item.json.Datei[0].filename }}",
+              "type": "string"
+            },
+            {
+              "id": "e1a00000-0000-0000-0000-000000000002",
+              "name": "file_type",
+              "value": "={{ $('FormUpload').item.json.Datei[0].mimetype }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-800, 208],
+      "id": "e1000000-0000-0000-0000-000000000003",
+      "name": "SetFileId"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM fpc_doc_vectors\nWHERE metadata#>>'{file_id}'='{{$('SetFileId').item.json.file_id}}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-544, 208],
+      "id": "e1000000-0000-0000-0000-000000000004",
+      "name": "DeleteExistItems",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fullText = $('ExtractFromFile').first().json.text;\n\n// Splitte an '---' Trennzeichen (wie in FPCSamplesV2.md)\nconst blocks = fullText\n  .split(/\\n---\\n/)\n  .map(b => b.trim())\n  .filter(b => b.length > 0);\n\nreturn blocks.map(block => ({ json: { block } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-176, 208],
+      "id": "e1000000-0000-0000-0000-000000000005",
+      "name": "SplitPatternBlocks"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = [];\n\nfor (const item of items) {\n  const block = item.json.block;\n\n  // Titel extrahieren: erste ### Zeile\n  const titleMatch = block.match(/^###\\s+(.+)$/m);\n  const title = titleMatch ? titleMatch[1].trim() : '';\n  if (!title) continue; // Bloecke ohne Titel ueberspringen (z.B. Kategorie-Header)\n\n  // Kategorie extrahieren: ## Kategorie: XYZ Zeile (aus vorherigem Kontext oder Block)\n  const catMatch = block.match(/^##\\s+Kategorie:\\s*(.+?)\\s*\\(/m);\n  const category = catMatch ? catMatch[1].trim() : 'Allgemein';\n\n  // Level extrahieren: steht in Klammern nach Kategorie\n  const levelMatch = block.match(/^##\\s+Kategorie:.*\\((.+?)\\)/m);\n  const level = levelMatch ? levelMatch[1].trim() : 'Mittel';\n\n  // Beschreibung extrahieren\n  const descMatch = block.match(/\\*\\*Beschreibung\\*\\*:\\s*(.+?)$/m);\n  const description = descMatch ? descMatch[1].trim() : '';\n\n  // Anwendung extrahieren\n  const appMatch = block.match(/\\*\\*Anwendung\\*\\*:\\s*(.+?)$/m);\n  const application = appMatch ? appMatch[1].trim() : '';\n\n  // Code-Block extrahieren\n  const codeMatch = block.match(/```\\n([\\s\\S]*?)```/);\n  const code = codeMatch ? codeMatch[1].trim() : '';\n\n  // FPC-Befehle aus dem Code extrahieren\n  let commands = '';\n  if (code) {\n    const codeLines = code.split('\\n')\n      .map(l => l.trim())\n      .filter(l => l && !l.startsWith('#'));\n    const cmds = [...new Set(codeLines.map(l => l.split(/\\s+/)[0].toUpperCase()))];\n    commands = cmds.join(', ');\n  }\n\n  // Tags extrahieren (aus Tags: Zeile oder aus Titel + Befehle)\n  const tagsMatch = block.match(/Tags:\\s*(.+?)$/m);\n  let tags = tagsMatch ? tagsMatch[1].trim() : '';\n  if (!tags) {\n    // Auto-Tags aus Titel und Befehlen\n    const words = title.split(/[\\s–—()]+/).filter(w => w.length > 2);\n    tags = [...new Set([...words, ...commands.split(', ')])].join(', ');\n  }\n\n  // Testfaelle extrahieren\n  const testLines = block.split('\\n')\n    .filter(l => l.match(/^-\\s+(I\\d|Test)/i))\n    .map(l => l.trim());\n  const testCases = testLines.join('\\n');\n\n  // Hinweise/Warnungen extrahieren\n  const warnings = block.split('\\n')\n    .filter(l => l.match(/^(WICHTIG|WARNUNG|Problem|LÖSUNG|Hinweis|ACHTUNG|DIESES|NIE\\s)/i))\n    .map(l => l.trim())\n    .join('\\n');\n\n  // Text fuer Embedding zusammenbauen\n  let textForEmbedding = '';\n  textForEmbedding += `${title}.\\n`;\n  if (description) textForEmbedding += `${description}\\n`;\n  if (application) textForEmbedding += `Anwendung: ${application}\\n`;\n  if (code) textForEmbedding += `\\nCode:\\n${code}\\n`;\n  if (testCases) textForEmbedding += `\\nTestfaelle:\\n${testCases}\\n`;\n  if (warnings) textForEmbedding += `\\n${warnings}\\n`;\n\n  output.push({\n    json: {\n      title,\n      category,\n      level,\n      description,\n      application,\n      code,\n      commands,\n      tags,\n      testCases,\n      warnings,\n      textForEmbedding\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [64, 208],
+      "id": "e1000000-0000-0000-0000-000000000006",
+      "name": "ParseFPCBlocks"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "fpc_doc_vectors",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [336, 208],
+      "id": "e1000000-0000-0000-0000-000000000007",
+      "name": "PGVectorStore",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [208, 576],
+      "id": "e1000000-0000-0000-0000-000000000008",
+      "name": "Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.textForEmbedding }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $('SetFileId').first().json.file_id }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.title }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.category }}"
+              },
+              {
+                "name": "level",
+                "value": "={{ $json.level }}"
+              },
+              {
+                "name": "tags",
+                "value": "={{ $json.tags }}"
+              },
+              {
+                "name": "commands",
+                "value": "={{ $json.commands }}"
+              },
+              {
+                "name": "verified",
+                "value": "true"
+              },
+              {
+                "name": "source",
+                "value": "upload"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [432, 576],
+      "id": "e1000000-0000-0000-0000-000000000009",
+      "name": "DefaultDataLoader"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [496, 832],
+      "id": "e1000000-0000-0000-0000-000000000010",
+      "name": "CharacterTextSplitter"
+    }
+  ],
+  "connections": {
+    "FormUpload": {
+      "main": [
+        [
+          {
+            "node": "ExtractFromFile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExtractFromFile": {
+      "main": [
+        [
+          {
+            "node": "SetFileId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetFileId": {
+      "main": [
+        [
+          {
+            "node": "DeleteExistItems",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeleteExistItems": {
+      "main": [
+        [
+          {
+            "node": "SplitPatternBlocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitPatternBlocks": {
+      "main": [
+        [
+          {
+            "node": "ParseFPCBlocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParseFPCBlocks": {
+      "main": [
+        [
+          {
+            "node": "PGVectorStore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "PGVectorStore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DefaultDataLoader": {
+      "ai_document": [
+        [
+          {
+            "node": "PGVectorStore",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CharacterTextSplitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "DefaultDataLoader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

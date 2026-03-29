@@ -1,0 +1,430 @@
+{
+  "updatedAt": "2026-03-29T19:30:24.163Z",
+  "createdAt": "2026-03-29T18:52:38.977Z",
+  "id": "iwudzzrpk1Z03bCl",
+  "name": "FPCStorePatternSWF",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        0
+      ],
+      "id": "95e843dd-6d78-46ed-96d0-65384a1d83fd",
+      "name": "WorkflowTrigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bereite das Dokument fuer den Vector Store vor\nconst input = $input.first().json;\n\n// Daten koennen als separate Felder ODER als einzelner query-String kommen\nlet pageContent = input.pageContent || '';\nlet title = input.title || '';\nlet category = input.category || '';\nlet level = input.level || '';\nlet tags = input.tags || '';\nlet commands = input.commands || '';\n\n// Fallback: Wenn alles in einem query-Feld steckt, verwende es als pageContent\nif (!pageContent && input.query) {\n  pageContent = input.query;\n}\n\n// Titel aus pageContent extrahieren wenn nicht separat\nif (!title && pageContent) {\n  const lines = pageContent.split('\\n').filter(l => l.trim());\n  if (lines.length > 0) {\n    let firstLine = lines[0].replace(/^Beschreibung:\\s*/i, '').trim();\n    title = firstLine.length > 80 ? firstLine.substring(0, 80) + '...' : firstLine;\n  }\n}\n\n// Befehle aus Code-Block extrahieren\nif (!commands && pageContent) {\n  const codeMatch = pageContent.match(/Code:\\s*\\n([\\s\\S]*?)(?:\\n\\n|\\nStack|\\nTest|$)/);\n  if (codeMatch) {\n    const codeLines = codeMatch[1].split('\\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));\n    const cmds = [...new Set(codeLines.map(l => l.split(/\\s+/)[0].toUpperCase()))];\n    commands = cmds.join(', ');\n  }\n}\n\nif (!title) title = 'FPC Pattern';\nif (!category) category = 'Grundlagen';\nif (!level) level = 'Einfach';\nif (!tags) tags = commands || 'FPC';\n\nreturn [{\n  json: {\n    pageContent: pageContent,\n    metadata: {\n      title: title,\n      category: category,\n      level: level,\n      tags: tags,\n      commands: commands,\n      verified: 'true',\n      source: 'self-learning',\n      createdAt: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        0
+      ],
+      "id": "f8aee32c-eeae-4673-9031-29249737ec65",
+      "name": "PrepareDocument"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "text-embedding-3-large",
+          "mode": "list",
+          "cachedResultName": "text-embedding-3-large"
+        },
+        "options": {
+          "dimensions": 3072
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        224
+      ],
+      "id": "29b50637-f7ee-4228-b2b3-d48f32215eee",
+      "name": "Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.pageContent }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "title",
+                "value": "={{ $json.metadata.title }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.metadata.category }}"
+              },
+              {
+                "name": "level",
+                "value": "={{ $json.metadata.level }}"
+              },
+              {
+                "name": "tags",
+                "value": "={{ $json.metadata.tags }}"
+              },
+              {
+                "name": "commands",
+                "value": "={{ $json.metadata.commands }}"
+              },
+              {
+                "name": "verified",
+                "value": "={{ $json.metadata.verified }}"
+              },
+              {
+                "name": "source",
+                "value": "={{ $json.metadata.source }}"
+              },
+              {
+                "name": "createdAt",
+                "value": "={{ $json.metadata.createdAt }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        480,
+        208
+      ],
+      "id": "30e4c664-fa3e-4fcd-bd54-75eae50d9c75",
+      "name": "DocumentLoader"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        480,
+        400
+      ],
+      "id": "c574633c-1fdf-410f-bf2a-69443af8e4cd",
+      "name": "Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "fpc_doc_vectors",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        0
+      ],
+      "id": "eead5fe7-74c2-4fb9-a324-2351ce254cfa",
+      "name": "VectorStore",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WorkflowTrigger": {
+      "main": [
+        [
+          {
+            "node": "PrepareDocument",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareDocument": {
+      "main": [
+        [
+          {
+            "node": "VectorStore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "VectorStore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DocumentLoader": {
+      "ai_document": [
+        [
+          {
+            "node": "VectorStore",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "DocumentLoader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "5a747a04-a3a4-4e9f-8ab9-420252171fe3",
+  "activeVersionId": "5a747a04-a3a4-4e9f-8ab9-420252171fe3",
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-29T18:52:38.981Z",
+      "createdAt": "2026-03-29T18:52:38.981Z",
+      "role": "workflow:owner",
+      "workflowId": "iwudzzrpk1Z03bCl",
+      "projectId": "NGVmW0kzxTFQBNsK"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-03-29T19:30:28.000Z",
+    "createdAt": "2026-03-29T19:30:24.164Z",
+    "versionId": "5a747a04-a3a4-4e9f-8ab9-420252171fe3",
+    "workflowId": "iwudzzrpk1Z03bCl",
+    "nodes": [
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          112,
+          0
+        ],
+        "id": "95e843dd-6d78-46ed-96d0-65384a1d83fd",
+        "name": "WorkflowTrigger"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Bereite das Dokument fuer den Vector Store vor\nconst input = $input.first().json;\n\n// Daten koennen als separate Felder ODER als einzelner query-String kommen\nlet pageContent = input.pageContent || '';\nlet title = input.title || '';\nlet category = input.category || '';\nlet level = input.level || '';\nlet tags = input.tags || '';\nlet commands = input.commands || '';\n\n// Fallback: Wenn alles in einem query-Feld steckt, verwende es als pageContent\nif (!pageContent && input.query) {\n  pageContent = input.query;\n}\n\n// Titel aus pageContent extrahieren wenn nicht separat\nif (!title && pageContent) {\n  const lines = pageContent.split('\\n').filter(l => l.trim());\n  if (lines.length > 0) {\n    let firstLine = lines[0].replace(/^Beschreibung:\\s*/i, '').trim();\n    title = firstLine.length > 80 ? firstLine.substring(0, 80) + '...' : firstLine;\n  }\n}\n\n// Befehle aus Code-Block extrahieren\nif (!commands && pageContent) {\n  const codeMatch = pageContent.match(/Code:\\s*\\n([\\s\\S]*?)(?:\\n\\n|\\nStack|\\nTest|$)/);\n  if (codeMatch) {\n    const codeLines = codeMatch[1].split('\\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));\n    const cmds = [...new Set(codeLines.map(l => l.split(/\\s+/)[0].toUpperCase()))];\n    commands = cmds.join(', ');\n  }\n}\n\nif (!title) title = 'FPC Pattern';\nif (!category) category = 'Grundlagen';\nif (!level) level = 'Einfach';\nif (!tags) tags = commands || 'FPC';\n\nreturn [{\n  json: {\n    pageContent: pageContent,\n    metadata: {\n      title: title,\n      category: category,\n      level: level,\n      tags: tags,\n      commands: commands,\n      verified: 'true',\n      source: 'self-learning',\n      createdAt: new Date().toISOString()\n    }\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          304,
+          0
+        ],
+        "id": "f8aee32c-eeae-4673-9031-29249737ec65",
+        "name": "PrepareDocument"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "text-embedding-3-large",
+            "mode": "list",
+            "cachedResultName": "text-embedding-3-large"
+          },
+          "options": {
+            "dimensions": 3072
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          352,
+          224
+        ],
+        "id": "29b50637-f7ee-4228-b2b3-d48f32215eee",
+        "name": "Embeddings",
+        "credentials": {
+          "openAiApi": {
+            "id": "avFMsETk9vzF57mg",
+            "name": "OpenAiISO"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonMode": "expressionData",
+          "jsonData": "={{ $json.pageContent }}",
+          "options": {
+            "metadata": {
+              "metadataValues": [
+                {
+                  "name": "title",
+                  "value": "={{ $json.metadata.title }}"
+                },
+                {
+                  "name": "category",
+                  "value": "={{ $json.metadata.category }}"
+                },
+                {
+                  "name": "level",
+                  "value": "={{ $json.metadata.level }}"
+                },
+                {
+                  "name": "tags",
+                  "value": "={{ $json.metadata.tags }}"
+                },
+                {
+                  "name": "commands",
+                  "value": "={{ $json.metadata.commands }}"
+                },
+                {
+                  "name": "verified",
+                  "value": "={{ $json.metadata.verified }}"
+                },
+                {
+                  "name": "source",
+                  "value": "={{ $json.metadata.source }}"
+                },
+                {
+                  "name": "createdAt",
+                  "value": "={{ $json.metadata.createdAt }}"
+                }
+              ]
+            }
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+        "typeVersion": 1,
+        "position": [
+          480,
+          208
+        ],
+        "id": "30e4c664-fa3e-4fcd-bd54-75eae50d9c75",
+        "name": "DocumentLoader"
+      },
+      {
+        "parameters": {},
+        "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+        "typeVersion": 1,
+        "position": [
+          480,
+          400
+        ],
+        "id": "c574633c-1fdf-410f-bf2a-69443af8e4cd",
+        "name": "Character Text Splitter"
+      },
+      {
+        "parameters": {
+          "mode": "insert",
+          "tableName": "fpc_doc_vectors",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+        "typeVersion": 1.3,
+        "position": [
+          512,
+          0
+        ],
+        "id": "eead5fe7-74c2-4fb9-a324-2351ce254cfa",
+        "name": "VectorStore",
+        "credentials": {
+          "postgres": {
+            "id": "UoqszLjcmzlEQ1H5",
+            "name": "PGVector"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "WorkflowTrigger": {
+        "main": [
+          [
+            {
+              "node": "PrepareDocument",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PrepareDocument": {
+        "main": [
+          [
+            {
+              "node": "VectorStore",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Embeddings": {
+        "ai_embedding": [
+          [
+            {
+              "node": "VectorStore",
+              "type": "ai_embedding",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DocumentLoader": {
+        "ai_document": [
+          [
+            {
+              "node": "VectorStore",
+              "type": "ai_document",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Character Text Splitter": {
+        "ai_textSplitter": [
+          [
+            {
+              "node": "DocumentLoader",
+              "type": "ai_textSplitter",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Gerhard Gehrer",
+    "name": "Version 5a747a04",
+    "description": "",
+    "autosaved": true
+  },
+  "tags": []
+}

@@ -1,0 +1,297 @@
+{
+  "updatedAt": "2026-03-29T19:31:52.081Z",
+  "createdAt": "2026-03-29T19:23:22.615Z",
+  "id": "bsI9xk9DT3MPiW3q",
+  "name": "FPCSelfLearning",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e01a92a2-55e3-43ab-aa3b-aa3746f8ffe6",
+      "name": "FPCLearningChat",
+      "webhookId": "fpc-self-learning-chat"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxIterations": 40,
+          "systemMessage": "# FPC Self-Learning Agent\n\nDu bist ein FPC-Lernagent. Du MUSST bei jeder Anfrage ALLE 4 Schritte ausfuehren:\n1. Code generieren und validieren\n2. Code auf der ECHTEN Steuerung testen (MCP Tools PFLICHT!)\n3. Ergebnis auswerten\n4. Bei Erfolg im Vector Store speichern\n\nDu MUSST die MCP Tools verwenden um den Code auf der echten Steuerung zu testen! Ohne Test darf NICHTS gespeichert werden.\n\n---\n\n## Schritt 1: Code generieren\n\n1. Generiere FPC-Code fuer die Anforderung\n2. Rufe `fpc_validator` auf um den Code zu pruefen\n3. Plane eine Testmatrix: Fuer 2 Inputs = 4 Tests (FF, TF, FT, TT)\n\n## FPC Befehlssatz (boolesche Stack-Maschine, zyklisch ausgefuehrt)\n\n### Befehlstabelle\n\n| Kategorie | Befehl | Operanden | Beschreibung | Stack-Effekt |\n|-----------|--------|-----------|--------------|-------------|\n| Konstanten | GET 0 | - | Laedt false auf Stack | Push(0) |\n| | GET 1 | - | Laedt true auf Stack | Push(1) |\n| Lesen | GET I n | n=Index | Input n auf Stack | Push(I[n]) |\n| | GET O n | n=Index | Output n auf Stack | Push(O[n]) |\n| | GET M n | n=Index | Memory n auf Stack | Push(M[n]) |\n| | GET T n | n=Index | Timer n auf Stack | Push(T[n]) |\n| Neg. Lesen | GETNOT I/O/M/T n | n=Index | Negierten Wert auf Stack | Push(!X[n]) |\n| Stack-Op | DUP | - | Oberstes Element duplizieren | Push(Top) |\n| | DUP n | n=Anzahl | n-mal duplizieren | Push(Top) x n |\n| Logik | NOT | - | Oberstes negieren | A -> !A |\n| | AND | - | UND der obersten zwei | A,B -> A&&B |\n| | OR | - | ODER der obersten zwei | A,B -> A||B |\n| | XOR | - | XOR der obersten zwei | A,B -> A^B |\n| Schreiben | MOV O n | n=Index | Pop und in Output n | Pop() -> O[n] |\n| | MOV M n | n=Index | Pop und in Memory n | Pop() -> M[n] |\n| Bed. Schreiben | CMOV O n v | n=Index,v=0/1 | Pop, wenn true: O[n]=v | Pop() |\n| | CMOV M n v | n=Index,v=0/1 | Pop, wenn true: M[n]=v | Pop() |\n| Timer setzen | SET T n v | n=Index,v=ms | Pulsierender Timer (v ms true, v ms false) | - |\n| | CSET T n v | n=Index,v=ms | Pop, wenn true: Timer starten | Pop() |\n| Counter setzen | SET C n v | n=Index,v=Wert | Counter auf v setzen | - |\n| | CSET C n v | n=Index,v=Wert | Pop, wenn true: Counter setzen | Pop() |\n| Counter-Op | CINC C n | n=Index | Pop, wenn true: Counter++ | Pop() |\n| | CDEC C n | n=Index | Pop, wenn true: Counter-- | Pop() |\n| Vergleiche | CMP C n v | n=Index,v=Wert | Push(C[n] == v) | Push |\n| | GT C n v | n=Index,v=Wert | Push(C[n] > v) | Push |\n| | LE C n v | n=Index,v=Wert | Push(C[n] < v) | Push |\n| Kommentar | # Text | - | Wird ignoriert | - |\n\n### Operanden-Typen\nI=Input, O=Output, M=Memory(bool), T=Timer(pulsierend), C=Counter(int)\n\n### Timer-Verhalten\nTimer sind PULSIEREND: SET T 0 500 = 500ms true, 500ms false, 500ms true, ...\nStoppen mit SET T n 0. Einmalig initialisieren: GETNOT M n / DUP / CSET T n v / CMOV M n 1\n\n### Regeln\n- Kommentare nur eigene Zeilen mit # (keine Inline-Kommentare)\n- Stack MUSS am Programmende leer sein (depth=0)\n- Ressourcen: I/O 0-19, M 0-1023, T 0-127, C 0-127\n\n## Schritt 2: Auf Steuerung testen — MCP TOOLS VERWENDEN!\n\nDu MUSST diese MCP-Tools in dieser Reihenfolge aufrufen:\n\n```\nload_program_to_desktop  → Code auf Steuerung laden\nstart_program_execution  → Programm starten\nget_input_states         → Aktuelle Inputs lesen (einmalig!)\ntoggle_input             → Input umschalten (index angeben)\nget_output_states        → Outputs pruefen\n... weitere toggle + get_output_states fuer jeden Testfall ...\nstop_program_execution   → Programm stoppen\n```\n\nBEISPIEL fuer AND-Gate Test (I0 AND I1 -> O0):\n1. `load_program_to_desktop` mit Code\n2. `start_program_execution`\n3. `get_input_states` → alle false. Merke: I0=F, I1=F\n4. `get_output_states` → Testfall 1: I0=F,I1=F erwartet O0=F\n5. `toggle_input` index=0 → jetzt I0=T, I1=F\n6. `get_output_states` → Testfall 2: I0=T,I1=F erwartet O0=F\n7. `toggle_input` index=1 → jetzt I0=T, I1=T\n8. `get_output_states` → Testfall 3: I0=T,I1=T erwartet O0=T\n9. `toggle_input` index=0 → jetzt I0=F, I1=T\n10. `get_output_states` → Testfall 4: I0=F,I1=T erwartet O0=F\n11. `stop_program_execution`\n\n## Schritt 3: Auswerten\n\nAlle Tests bestanden? → Weiter zu Schritt 4\nTests fehlgeschlagen? → Code korrigieren, nochmal testen (max 3x)\n\n## Schritt 4: Im Vector Store speichern\n\nRufe `store_fpc_pattern` auf mit:\n- pageContent: Beschreibung + Code + Stack-Fluss + Testergebnisse\n- title: Kurztitel (z.B. \"AND-Verknuepfung zweier Inputs\")\n- category: Grundlagen / Timer und Blinker / Counter Operationen / Toggle-Logik / Pattern / Komplex\n- level: Einfach / Mittel / Komplex\n- tags: z.B. \"AND, Logik, Grundlagen\"\n- commands: z.B. \"GET, AND, MOV\"\n\n## Antwort an Benutzer\n\nZeige: Code + Testergebnisse + ob gespeichert wurde."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        304,
+        0
+      ],
+      "id": "5c25f530-e5a7-4c95-8e51-398bcf39faf4",
+      "name": "LearningAgent"
+    },
+    {
+      "parameters": {
+        "tableName": "fpc_learning_histories",
+        "contextWindowLength": 25
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        304
+      ],
+      "id": "9f18c181-7c7c-4ece-9d45-dbeacccefb05",
+      "name": "ChatMemory",
+      "credentials": {
+        "postgres": {
+          "id": "iYMqy2OzuA3ajmSK",
+          "name": "Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://localhost:5042/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        304
+      ],
+      "id": "7ce8ca5a-78e6-4759-ba42-bfaf5c4c5993",
+      "name": "MCPClient"
+    },
+    {
+      "parameters": {
+        "name": "fpc_validator",
+        "description": "Validiert FPC-Code auf korrekte Syntax, erlaubte Befehle und Stack-Balance. Uebergib den reinen FPC-Code (eine Instruktion pro Zeile, ohne Markdown). Gibt zurueck ob der Code gueltig ist und welche Fehler gefunden wurden.",
+        "jsCode": "// Agent-Tool-Input lesen (NICHT chatInput - das ist die User-Nachricht!)\nconst inp = $input.first().json;\nconst code = inp.query || inp.input || inp.code || inp.programCode || '';\n\nconst VALID_COMMANDS = ['GET','GETNOT','DUP','NOT','AND','OR','XOR','MOV','CMOV','SET','CSET','CINC','CDEC','CMP','GT','LE'];\nconst STACK_EFFECTS = {\n  'GET': { pop: 0, push: 1 }, 'GETNOT': { pop: 0, push: 1 },\n  'DUP': { pop: 0, push: 1, needsMin: 1 }, 'NOT': { pop: 1, push: 1 },\n  'AND': { pop: 2, push: 1 }, 'OR': { pop: 2, push: 1 }, 'XOR': { pop: 2, push: 1 },\n  'MOV': { pop: 1, push: 0 }, 'CMOV': { pop: 1, push: 0 },\n  'SET': { pop: 0, push: 0 }, 'CSET': { pop: 1, push: 0 },\n  'CINC': { pop: 0, push: 0 }, 'CDEC': { pop: 0, push: 0 },\n  'CMP': { pop: 0, push: 1 }, 'GT': { pop: 0, push: 1 }, 'LE': { pop: 0, push: 1 }\n};\nconst LIMITS = { 'I': 64, 'O': 64, 'M': 1024, 'T': 128, 'C': 128 };\n\nconst lines = code.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\nconst errors = [];\nconst trace = [];\nlet depth = 0;\nlet lineNum = 0;\n\nfor (const line of lines) {\n  lineNum++;\n  if (line.startsWith('#')) { trace.push({ l: lineNum, i: line, d: depth, comment: true }); continue; }\n  const parts = line.split(/\\s+/);\n  const cmd = parts[0].toUpperCase();\n  if (!VALID_COMMANDS.includes(cmd)) { errors.push(`Zeile ${lineNum}: Unbekannter Befehl '${cmd}'`); continue; }\n  const fx = STACK_EFFECTS[cmd];\n  const before = depth;\n  const minReq = fx.needsMin || fx.pop;\n  if (depth < minReq) errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei '${cmd}' (braucht ${minReq}, hat ${depth})`);\n  if (['GET','GETNOT','MOV','CMOV','SET','CSET','CINC','CDEC','CMP','GT','LE'].includes(cmd) && parts.length >= 3) {\n    const subj = parts[1].toUpperCase();\n    const addr = parseInt(parts[2]);\n    if (LIMITS[subj] && (addr < 0 || addr >= LIMITS[subj])) errors.push(`Zeile ${lineNum}: Adresse ${addr} ungueltig fuer ${subj}`);\n  }\n  depth = Math.max(0, depth - fx.pop + fx.push);\n  trace.push({ l: lineNum, i: line, before, after: depth });\n}\nif (depth !== 0) errors.push(`Stack nicht leer am Ende: Tiefe=${depth}`);\n\nconst valid = errors.length === 0;\nlet result = `Validierung: ${valid ? 'GUELTIG' : 'FEHLERHAFT'}\\n`;\nif (!valid) { result += 'Fehler:\\n' + errors.map(e => `- ${e}`).join('\\n') + '\\n'; }\nresult += 'Stack-Trace:\\n' + trace.filter(t => !t.comment).map(t => `  ${t.l}: [${t.before}] ${t.i} [${t.after}]`).join('\\n');\nreturn result;"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        304
+      ],
+      "id": "891bde31-a327-4751-8e32-3973588a92b0",
+      "name": "FPCValidator"
+    },
+    {
+      "parameters": {
+        "name": "store_fpc_pattern",
+        "description": "Speichert ein verifiziertes FPC-Programm-Muster im Vector Store. NUR aufrufen wenn ALLE Tests auf der echten Steuerung bestanden wurden! Uebergib: pageContent (Beschreibung + Code + Stack-Fluss + Testergebnisse), title, category (Grundlagen/Timer und Blinker/Counter Operationen/Toggle-Logik/Pattern/Komplex), level (Einfach/Mittel/Komplex), tags (komma-separiert), commands (verwendete FPC-Befehle komma-separiert).",
+        "workflowId": {
+          "__rl": true,
+          "value": "iwudzzrpk1Z03bCl",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/iwudzzrpk1Z03bCl",
+          "cachedResultName": "FPCStorePatternSWF"
+        },
+        "workflowInputs": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        832,
+        304
+      ],
+      "id": "91625b76-5edc-40cc-b20e-12eb8b6e2f01",
+      "name": "StoreFPCPattern"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "FPC Knowledge Base: Suche nach existierenden FPC-Beispielen und Mustern. Nutze dieses Tool ZUERST um zu pruefen ob ein aehnliches Pattern bereits existiert bevor du neuen Code generierst.",
+        "tableName": "fpc_doc_vectors",
+        "topK": 3,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        1008,
+        304
+      ],
+      "id": "25eb3205-5b96-460d-bc4e-9760e86d709e",
+      "name": "FPCKnowledge",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        480
+      ],
+      "id": "3199df04-42ba-49f8-9c43-b5abfd29492b",
+      "name": "Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        304
+      ],
+      "id": "5e2a2f70-cc9a-4b0a-b393-dd9e4a8877c3",
+      "name": "ChatModel",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "FPCLearningChat": {
+      "main": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatMemory": {
+      "ai_memory": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCPClient": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCValidator": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreFPCPattern": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCKnowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "FPCKnowledge",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatModel": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "2b353df3-69c9-448b-afe2-0288fac7bc10",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-29T19:23:22.616Z",
+      "createdAt": "2026-03-29T19:23:22.616Z",
+      "role": "workflow:owner",
+      "workflowId": "bsI9xk9DT3MPiW3q",
+      "projectId": "NGVmW0kzxTFQBNsK"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}
