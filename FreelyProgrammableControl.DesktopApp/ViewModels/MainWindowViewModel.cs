@@ -116,6 +116,83 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         public string? ParseErrorMessage => executionUnit.ParseErrorMessage;
         public string[] Source => executionUnit.Source;
         public string State => executionUnit.State;
+
+        /// <summary>
+        /// Gibt die ExecutionUnit für API-Zugriffe zurück.
+        /// </summary>
+        public ExecutionUnit GetExecutionUnit() => executionUnit;
+
+        /// <summary>
+        /// Startet das Programm synchron ohne UI-Dialoge (für API-Aufrufe).
+        /// </summary>
+        /// <returns>Tuple mit Erfolg und optionaler Fehlermeldung.</returns>
+        public (bool Success, string? ErrorMessage) StartForApi()
+        {
+            if (executionUnit.IsRunning)
+                return (false, "Programm läuft bereits.");
+
+            if (string.IsNullOrWhiteSpace(SourceText))
+                return (false, "Kein Programm geladen (SourceText ist leer).");
+
+            try
+            {
+                var source = SourceText.Split(Environment.NewLine);
+                var parsedLines = executionUnit.Parse(source);
+                var errorCount = parsedLines.Count(pl => pl.HasError);
+
+                if (errorCount > 0)
+                {
+                    var errors = parsedLines.Where(pl => pl.HasError)
+                        .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
+                        .ToList();
+                    return (false, $"{errorCount} Parse-Fehler: {string.Join("; ", errors)}");
+                }
+
+                executionUnit.LoadSource(source);
+
+                if (executionUnit.HasParseError)
+                    return (false, $"Parse-Fehler beim Laden: {executionUnit.ParseErrorMessage}");
+
+                executionUnit.Start();
+
+                saveUserinput = SourceText;
+                SourceText = ExecutionUnit.PrepareSource(source)
+                    .Select((i, l) => $"{l:d4}: {i}")
+                    .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+
+                UpdateRunState();
+
+                return executionUnit.IsRunning
+                    ? (true, null)
+                    : (false, "Programm konnte nicht gestartet werden.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Fehler beim Starten: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Stoppt das Programm synchron ohne UI-Dialoge (für API-Aufrufe).
+        /// </summary>
+        public (bool Success, string? ErrorMessage) StopForApi()
+        {
+            if (!executionUnit.IsRunning)
+                return (false, "Programm läuft nicht.");
+
+            try
+            {
+                executionUnit.Stop();
+                SourceText = saveUserinput;
+                saveUserinput = string.Empty;
+                UpdateRunState();
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Fehler beim Stoppen: {ex.Message}");
+            }
+        }
         #endregion properties
 
         #region constructors

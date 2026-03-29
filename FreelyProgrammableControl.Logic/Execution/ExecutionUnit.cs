@@ -330,6 +330,20 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </summary>
         /// <value>An instance of <see cref="ICounters"/> that provides access to the counters.</value>
         public ICounters Counters => counters;
+
+        /// <summary>
+        /// Gets the value of a memory cell at the specified position.
+        /// </summary>
+        /// <param name="position">The zero-based index of the memory cell.</param>
+        /// <returns>The boolean value of the memory cell.</returns>
+        public bool GetMemoryValue(int position) => memory.GetValue(position);
+
+        /// <summary>
+        /// Gets the current value of a timer at the specified position.
+        /// </summary>
+        /// <param name="position">The zero-based index of the timer.</param>
+        /// <returns>The current boolean state of the timer.</returns>
+        public bool GetTimerValue(int position) => timers.GetValue(position);
         #endregion properties
 
         #region constructors

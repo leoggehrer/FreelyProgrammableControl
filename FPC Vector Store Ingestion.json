@@ -1,0 +1,210 @@
+{
+  "updatedAt": "2026-03-29T15:14:45.497Z",
+  "createdAt": "2026-03-29T15:11:57.978Z",
+  "id": "mBfJwOXiWDsfjE37",
+  "name": "FPC Vector Store Ingestion",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e6dd256d-2ad1-4210-bbd2-c0a89afb6c1e",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FPC Samples Splitter - Teilt FPCSamplesV2.md in einzelne Chunks\n// Jeder Chunk ist ein eigenstaendiges FPC-Beispiel mit Metadaten\n\nconst samples = [\n  {\n    title: \"AND-Verknuepfung zweier Inputs\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"AND\", \"Logik\", \"Grundlagen\"],\n    commands: [\"GET\", \"AND\", \"MOV\"],\n    content: \"AND-Verknuepfung: Output 0 = Input 0 AND Input 1. Grundlegende binaere Verknuepfung zweier Eingangssignale. Push-Push-Operate-Pop-Fluss.\\n\\nCode:\\nGET I 0\\nGET I 1\\nAND\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0&&I1] -> []\"\n  },\n  {\n    title: \"OR-Verknuepfung (Logisches ODER)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"OR\", \"Logik\", \"Grundlagen\", \"Parallelschaltung\"],\n    commands: [\"GET\", \"OR\", \"MOV\"],\n    content: \"OR-Verknuepfung: Output 0 = Input 0 OR Input 1. Output ist AN wenn mindestens ein Input AN ist. Anwendung: Mehrere Taster fuer eine Funktion, Parallelschaltung.\\n\\nCode:\\nGET I 0\\nGET I 1\\nOR\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0||I1] -> []\"\n  },\n  {\n    title: \"Negation eines Inputs\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"NOT\", \"Invertierung\", \"Grundlagen\"],\n    commands: [\"GET\", \"NOT\", \"MOV\"],\n    content: \"Invertierung: Output 0 = NOT Input 0. Verwendung eines unaeren logischen Operators auf dem Stack.\\n\\nCode:\\nGET I 0\\nNOT\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [!I0] -> []\"\n  },\n  {\n    title: \"XOR-Verknuepfung (Exklusiv-ODER)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"XOR\", \"Wechselschaltung\", \"Grundlagen\"],\n    commands: [\"GET\", \"XOR\", \"MOV\"],\n    content: \"XOR-Verknuepfung: Output 0 = Input 0 XOR Input 1. Output ist AN wenn genau ein Input AN ist. Anwendung: Wechselschaltung (Licht), Zustandsaenderungserkennung.\\n\\nCode:\\nGET I 0\\nGET I 1\\nXOR\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0^I1] -> []\"\n  },\n  {\n    title: \"NAND-Verknuepfung (Negiertes UND)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"NAND\", \"Logik\", \"Grundlagen\"],\n    commands: [\"GET\", \"AND\", \"NOT\", \"MOV\"],\n    content: \"NAND-Verknuepfung: Output 0 = NOT (Input 0 AND Input 1). Output ist AUS nur wenn beide Inputs AN sind. Basis fuer komplexe Logik.\\n\\nCode:\\nGET I 0\\nGET I 1\\nAND\\nNOT\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0&&I1] -> [!(I0&&I1)] -> []\"\n  },\n  {\n    title: \"NOR-Verknuepfung (Negiertes ODER)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"NOR\", \"Logik\", \"Grundlagen\", \"Stoerung\"],\n    commands: [\"GET\", \"OR\", \"NOT\", \"MOV\"],\n    content: \"NOR-Verknuepfung: Output 0 = NOT (Input 0 OR Input 1). Output ist AN nur wenn beide Inputs AUS sind. Anwendung: Ruhe-/Stoerungszustand.\\n\\nCode:\\nGET I 0\\nGET I 1\\nOR\\nNOT\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0||I1] -> [!(I0||I1)] -> []\"\n  },\n  {\n    title: \"Drei-Input AND-Verknuepfung\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"AND\", \"Drei-Input\", \"Mehrfachbedingung\"],\n    commands: [\"GET\", \"AND\", \"MOV\"],\n    content: \"Drei-Input AND: Output 0 = Input 0 AND Input 1 AND Input 2. Output nur AN wenn alle drei Inputs AN sind. Anwendung: Drei-Hand-Bedienung, Mehrfachbedingung.\\n\\nCode:\\nGET I 0\\nGET I 1\\nAND\\nGET I 2\\nAND\\nMOV O 0\\n\\nStack-Fluss: [] -> [I0] -> [I0,I1] -> [I0&&I1] -> [I0&&I1,I2] -> [I0&&I1&&I2] -> []\"\n  },\n  {\n    title: \"Bedingtes Setzen eines Outputs (CMOV)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"CMOV\", \"bedingt\", \"Grundlagen\"],\n    commands: [\"GET\", \"CMOV\"],\n    content: \"Bedingtes Setzen: Wenn I0 true dann O1 = 1. Bedingte Ausfuehrung einer Aktion auf Basis des obersten Stack-Wertes. CMOV poppt den Stack-Wert und fuehrt die Aktion nur bei true aus.\\n\\nCode:\\nGET I 0\\nCMOV O 1 1\\n\\nStack-Fluss: [] -> [I0] -> [] (O1 wird nur gesetzt wenn I0=true)\"\n  },\n  {\n    title: \"Bedingtes Setzen eines Timers (CSET)\",\n    category: \"Grundlagen\",\n    level: \"Einfach\",\n    tags: [\"CSET\", \"Timer\", \"bedingt\"],\n    commands: [\"GET\", \"CSET\"],\n    content: \"Bedingtes Timer-Setzen: Wenn I0 true dann Timer 0 mit 500ms starten. CSET poppt den Stack-Wert und startet den Timer nur bei true.\\n\\nCode:\\nGET I 0\\nCSET T 0 500\\n\\nStack-Fluss: [] -> [I0] -> [] (Timer wird nur gestartet wenn I0=true)\\n\\nWICHTIG: CSET darf nicht zyklisch in einem dauerhaft true-Zweig verwendet werden, da dies den Timer staendig neu triggert.\"\n  },\n  {\n    title: \"Einfacher Blinker (1 Hz)\",\n    category: \"Timer und Blinker\",\n    level: \"Mittel\",\n    tags: [\"Timer\", \"Blinker\", \"1Hz\", \"Statusanzeige\"],\n    commands: [\"GETNOT\", \"DUP\", \"CSET\", \"CMOV\", \"GET\", \"MOV\"],\n    content: \"Einfacher Blinker mit 1 Hz (500ms an/aus). Memory 0 verhindert Timer-Neustart. Timer wird nur beim ersten Zyklus gestartet (einmalige Initialisierung mit Memory-Flag).\\n\\nCode:\\n# Blinker mit 1 Hz\\nGETNOT M 0\\nDUP\\nCSET T 0 500\\nCMOV M 0 1\\nGET T 0\\nMOV O 0\\n\\nStack-Fluss:\\nGETNOT M 0: [] -> [!M0]\\nDUP: [!M0] -> [!M0, !M0]\\nCSET T 0 500: [!M0, !M0] -> [!M0] (startet Timer nur beim ersten Zyklus)\\nCMOV M 0 1: [!M0] -> [] (setzt Flag)\\nGET T 0: [] -> [T0]\\nMOV O 0: [T0] -> []\\n\\nWICHTIG: Das GETNOT+DUP+CSET+CMOV Pattern ist das verbindliche Muster fuer einmalige Timer-Initialisierung.\"\n  },\n  {\n    title: \"Eingangsgesteuerter Blinker (1 Hz nur bei I0)\",\n    category: \"Timer und Blinker\",\n    level: \"Mittel\",\n    tags: [\"Timer\", \"Blinker\", \"Gating\", \"eingangsgesteuert\"],\n    commands: [\"GETNOT\", \"DUP\", \"CSET\", \"CMOV\", \"GET\", \"AND\", \"MOV\"],\n    content: \"Eingangsgesteuerter Blinker: Output 0 blinkt mit 1 Hz, aber nur solange Input 0 aktiv ist. Zweiphasen-Muster: 1) Timer einmalig initialisieren 2) Ausgabe ueber Logik-Gating.\\n\\nCode:\\n# Timer einmalig initialisieren\\nGETNOT M 0\\nDUP\\nCSET T 0 500\\nCMOV M 0 1\\n# Blinksignal mit Freigabe I0 verbinden\\nGET I 0\\nGET T 0\\nAND\\nMOV O 0\\n\\nWICHTIG: Kein CSET im laufenden I/O-Gating-Teil! Timer wird einmalig gestartet und laeuft dauerhaft. Die Ausgabe wird nur durch AND mit I0 gesteuert.\\n\\nAnti-Pattern: CSET T 0 500 im Eingangspfad fuehrt zu staendigem Retrigger und verhindert stabiles Blinken.\"\n  },\n  {\n    title: \"Schneller Blinker (5 Hz)\",\n    category: \"Timer und Blinker\",\n    level: \"Mittel\",\n    tags: [\"Timer\", \"Blinker\", \"5Hz\", \"Alarm\"],\n    commands: [\"GETNOT\", \"DUP\", \"CSET\", \"CMOV\", \"GET\", \"MOV\"],\n    content: \"Schneller Blinker mit 5 Hz (100ms an/aus). Anwendung: Alarmanzeige, Aufmerksamkeitssignal.\\n\\nCode:\\nGETNOT M 0\\nDUP\\nCSET T 0 100\\nCMOV M 0 1\\nGET T 0\\nMOV O 0\\n\\nGleiche Struktur wie 1Hz-Blinker, nur mit 100ms statt 500ms Periode.\"\n  },\n  {\n    title: \"Timer stoppen\",\n    category: \"Timer und Blinker\",\n    level: \"Einfach\",\n    tags: [\"Timer\", \"stoppen\", \"deaktivieren\"],\n    commands: [\"GET\", \"CSET\"],\n    content: \"Timer-Deaktivierung: Stoppe Timer 0 wenn I0 true. Setzt Timer-Wert auf 0, was den Timer stoppt.\\n\\nCode:\\nGET I 0\\nCSET T 0 0\\n\\nCSET T n 0 stoppt den pulsierenden Timer n.\"\n  },\n  {\n    title: \"Einschaltverzoegerung mit Timer\",\n    category: \"Timer und Blinker\",\n    level: \"Mittel\",\n    tags: [\"Timer\", \"Verzoegerung\", \"Einschaltverzoegerung\", \"TON\"],\n    commands: [\"GETNOT\", \"DUP\", \"CMOV\", \"GET\", \"AND\", \"CSET\", \"MOV\"],\n    content: \"Einschaltverzoegerung: Ausgang 1 wird nach 5 Sekunden gesetzt, wenn Eingang 1 aktiv ist. Timer wird gestartet wenn Eingang 1 aktiv wird.\\n\\nCode:\\n# Zuruecksetzen wenn I1 inaktiv\\nGETNOT I 1\\nDUP\\nCMOV M 0 0\\nCMOV M 1 0\\n# Timer starten bei steigender Flanke\\nGET I 1\\nGETNOT M 0\\nAND\\nDUP\\nCMOV M 0 1\\nCSET T 0 5000\\n# Nach Ablauf Merker setzen\\nGET M 0\\nGETNOT T 0\\nAND\\nCMOV M 1 1\\n# Ausgang setzen\\nGET M 1\\nMOV O 1\\n\\nPrinzip: Timer laeuft als Puls (5s true, 5s false). Wenn Timer-Wert false wird (nach 5s), wird der Ausgang gesetzt.\"\n  },\n  {\n    title: \"Ausschaltverzoegerung mit Timer\",\n    category: \"Timer und Blinker\",\n    level: \"Mittel\",\n    tags: [\"Timer\", \"Verzoegerung\", \"Ausschaltverzoegerung\", \"TOF\"],\n    commands: [\"GET\", \"GETNOT\", \"AND\", \"DUP\", \"CMOV\", \"CSET\", \"OR\", \"MOV\"],\n    content: \"Ausschaltverzoegerung: Ausgang bleibt nach Abschalten von Eingang noch 5 Sekunden aktiv.\\n\\nCode:\\nGET I 1\\nCMOV M 0 1\\nGETNOT M 0\\nGETNOT T 0\\nAND\\nCSET T 0 0\\nGETNOT I 1\\nGET M 0\\nAND\\nDUP\\nCMOV M 0 0\\nCSET T 0 5000\\nGET I 1\\nGET T 0\\nOR\\nMOV O 1\\n\\nPrinzip: Wenn Eingang abfaellt, wird Timer gestartet. Ausgang = Eingang OR Timer.\"\n  },\n  {\n    title: \"Counter inkrementieren bei Bedingung\",\n    category: \"Counter Operationen\",\n    level: \"Mittel\",\n    tags: [\"Counter\", \"CINC\", \"Zaehler\", \"Ereignis\"],\n    commands: [\"GET\", \"CINC\"],\n    content: \"Counter inkrementieren: Wenn I0 true dann Counter 0 wird um 1 erhoeht. Ereignisbasierte Erhoehung eines Counters mittels bedingter Ausfuehrung.\\n\\nCode:\\nGET I 0\\nCINC C 0\\n\\nWICHTIG: CINC wird bei JEDEM Zyklus ausgefuehrt wenn I0 true ist! Fuer flankensensitive Zaehlung muss zusaetzlich eine Flankenerkennung implementiert werden.\"\n  },\n  {\n    title: \"Vergleich eines Counters\",\n    category: \"Counter Operationen\",\n    level: \"Mittel\",\n    tags: [\"Counter\", \"CMP\", \"Vergleich\", \"Schwellenwert\"],\n    commands: [\"CMP\", \"MOV\"],\n    content: \"Counter-Vergleich: Wenn Counter 0 == 5 dann O2 = true. Zustandspruefung eines Counters.\\n\\nCode:\\nCMP C 0 5\\nMOV O 2\\n\\nVergleichs-Semantik:\\n- CMP C n v -> true bei C[n] == v (exakter Vergleich)\\n- GT C n v -> true bei C[n] >= v+1 (groesser als v)\\n- LE C n v -> true bei C[n] <= v-1 (kleiner als v)\"\n  },\n  {\n    title: \"Toggle-Logik mit Memory\",\n    category: \"Toggle-Logik\",\n    level: \"Mittel\",\n    tags: [\"Toggle\", \"Memory\", \"Zustandsumschaltung\"],\n    commands: [\"GET\", \"NOT\", \"CMOV\"],\n    content: \"Toggle-Logik: Umschalten von M0 wenn I0 true. Einfache Zustandsumschaltung unter Verwendung eines Memory-Flags.\\n\\nCode:\\nGET I 0\\nGET M 0\\nNOT\\nCMOV M 0 1\\n\\nWICHTIG: Dieses Muster toggelt bei JEDEM Zyklus wenn I0 true ist! Fuer einmaliges Toggeln pro Tastendruck ist eine Flankenerkennung noetig.\"\n  },\n  {\n    title: \"Sicherheitsabschaltung (Not-Aus Vorrang)\",\n    category: \"Toggle-Logik\",\n    level: \"Mittel\",\n    tags: [\"Sicherheit\", \"Not-Aus\", \"Fail-Safe\", \"Vorrang\"],\n    commands: [\"GET\", \"GETNOT\", \"AND\", \"MOV\"],\n    content: \"Sicherheitsabschaltung: O0 nur aktiv wenn I0 AND NOT I1. I1 ist der Not-Aus-Schalter mit Vorrang. Einfache Fail-Safe-Logik.\\n\\nCode:\\nGET I 0\\nGETNOT I 1\\nAND\\nMOV O 0\\n\\nI1 = Not-Aus (bei true wird O0 sofort abgeschaltet, unabhaengig von I0)\"\n  },\n  {\n    title: \"Anti-Pattern: Timer-Initialisierung ohne DUP (Stack-Fehler)\",\n    category: \"Pattern\",\n    level: \"Mittel\",\n    tags: [\"Anti-Pattern\", \"Stack-Fehler\", \"Timer\", \"DUP\"],\n    commands: [\"GETNOT\", \"CSET\", \"CMOV\"],\n    content: \"ANTI-PATTERN - FALSCHER Code:\\nGETNOT M 0\\nCSET T 0 500\\nCMOV M 0 1\\n\\nProblem: CSET poppt den Stack-Wert. Fuer CMOV ist kein Wert mehr vorhanden. Stack-Unterlauf!\\n\\nKORREKTER Code (mit DUP):\\nGETNOT M 0\\nDUP\\nCSET T 0 500\\nCMOV M 0 1\\n\\nDUP dupliziert den Wert, so dass sowohl CSET als auch CMOV jeweils einen Wert haben.\"\n  },\n  {\n    title: \"Korrekte Timer-Initialisierung mit Flag\",\n    category: \"Pattern\",\n    level: \"Mittel\",\n    tags: [\"Pattern\", \"Timer\", \"DUP\", \"Initialisierung\", \"Best-Practice\"],\n    commands: [\"GETNOT\", \"DUP\", \"CSET\", \"CMOV\"],\n    content: \"VERBINDLICHES MUSTER fuer einmalige Timer-Initialisierung:\\n\\nGETNOT M 0\\nDUP\\nCSET T 0 500\\nCMOV M 0 1\\n\\nStack-Fluss:\\n1. GETNOT M 0: prueft ob noch nicht initialisiert -> [!M0]\\n2. DUP: erhaelt den Wert fuer zwei Operationen -> [!M0, !M0]\\n3. CSET T 0 500: startet Timer (poppt einen Wert) -> [!M0]\\n4. CMOV M 0 1: setzt Initialisierungs-Flag (poppt letzten Wert) -> []\\n\\nNach dem ersten Zyklus ist M0=true, GETNOT M 0 liefert false, und weder CSET noch CMOV werden ausgefuehrt.\\n\\nTimer-Definition: SET/CSET T n v bedeutet v ms TRUE, dann v ms FALSE. Gesamtperiode = 2*v ms.\"\n  },\n  {\n    title: \"FPC Sprachregeln und Stack-Disziplin\",\n    category: \"Referenz\",\n    level: \"Einfach\",\n    tags: [\"Referenz\", \"Regeln\", \"Stack\", \"Befehle\"],\n    commands: [],\n    content: \"FPC Sprachregeln:\\n\\nErlaubte Befehle: GET, GETNOT, DUP, NOT, AND, OR, XOR, MOV, CMOV, SET, CSET, CINC, CDEC, CMP, GT, LE\\n\\nStack-Aenderungen:\\n- GET, GETNOT, CMP, GT, LE: +1 (push)\\n- DUP: +1 (benoetigt mind. 1 Wert)\\n- NOT: 0 (benoetigt 1 Wert, ersetzt ihn)\\n- AND, OR, XOR: -1 (poppt 2, pusht 1)\\n- MOV, CMOV, CSET: -1 (poppt 1)\\n- SET, CINC, CDEC: 0 (kein Stack-Effekt)\\n\\nRessourcen: I 0-63, O 0-63, M 0-1023, T 0-127, C 0-127\\nKommentare: Nur eigene Zeilen mit #, keine Inline-Kommentare\\nStack muss am Programmende leer sein (depth=0)\"\n  },\n  {\n    title: \"FPC Timer-Semantik\",\n    category: \"Referenz\",\n    level: \"Einfach\",\n    tags: [\"Referenz\", \"Timer\", \"Pulsierend\", \"Semantik\"],\n    commands: [\"SET\", \"CSET\", \"GET\"],\n    content: \"FPC Timer-Semantik:\\n\\nTimer sind PULSIEREND (nicht einmalig!)\\n- SET T n v: startet Timer mit Periode 2*v ms\\n  - v ms TRUE, dann v ms FALSE, dann v ms TRUE, ...\\n- CSET T n v: wie SET, aber nur bei true am Stack-Top (poppt Wert)\\n- SET T n 0 / CSET T n 0: stoppt den Timer\\n- GET T n: aktueller Zustand (true/false)\\n\\nBeispiel 500ms: 500ms AN, 500ms AUS, 500ms AN, ...\\n\\nVERBINDLICH: Timer immer einmalig initialisieren (GETNOT M + DUP + CSET + CMOV Pattern).\\nNIE CSET im dauerhaft-true Pfad verwenden (verhindert stabiles Blinken durch Retrigger).\"\n  },\n  {\n    title: \"FPC Counter-Semantik\",\n    category: \"Referenz\",\n    level: \"Einfach\",\n    tags: [\"Referenz\", \"Counter\", \"Vergleich\", \"Semantik\"],\n    commands: [\"SET\", \"CINC\", \"CDEC\", \"CMP\", \"GT\", \"LE\"],\n    content: \"FPC Counter-Semantik:\\n\\nCounter sind Integer-Werte (C 0 bis C 127).\\n\\nBefehle:\\n- SET C n v: Counter n auf Wert v setzen\\n- CSET C n v: Counter n auf v setzen, nur bei true am Stack\\n- CINC C n [v]: Counter n um v erhoehen (default v=1), nur bei true am Stack\\n- CDEC C n [v]: Counter n um v verringern (default v=1), nur bei true am Stack\\n\\nVergleiche (pushen Ergebnis auf Stack):\\n- CMP C n v: true wenn C[n] == v (exakt gleich)\\n- GT C n v: true wenn C[n] > v (ACHTUNG: strikt groesser, also >= v+1)\\n- LE C n v: true wenn C[n] < v (ACHTUNG: strikt kleiner, also <= v-1)\\n\\nWICHTIG: CINC/CDEC werden bei JEDEM Zyklus ausgefuehrt wenn Bedingung true ist!\"\n  }\n];\n\n// Output als einzelne Items fuer Vector Store Ingestion\nreturn samples.map((sample, index) => ({\n  json: {\n    pageContent: sample.content,\n    metadata: {\n      id: `fpc_sample_${index + 1}`,\n      number: index + 1,\n      title: sample.title,\n      category: sample.category,\n      level: sample.level,\n      tags: sample.tags.join(', '),\n      commands: sample.commands.join(', ')\n    }\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        0
+      ],
+      "id": "40823e61-1534-43cc-9c60-7ff9de35fbcf",
+      "name": "FPC Samples Splitter"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "fpc_doc_vectors",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        0
+      ],
+      "id": "53415e5a-f892-4633-a217-492c43e2fe47",
+      "name": "VectorStore Insert",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        208
+      ],
+      "id": "b7f189c7-5d16-46f7-9471-7a754db0173c",
+      "name": "Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.pageContent }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "title",
+                "value": "={{ $json.metadata.title }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.metadata.category }}"
+              },
+              {
+                "name": "level",
+                "value": "={{ $json.metadata.level }}"
+              },
+              {
+                "name": "tags",
+                "value": "={{ $json.metadata.tags }}"
+              },
+              {
+                "name": "commands",
+                "value": "={{ $json.metadata.commands }}"
+              },
+              {
+                "name": "id",
+                "value": "={{ $json.metadata.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        512,
+        400
+      ],
+      "id": "a3ad608c-cb96-4cf1-ba00-9ebc5c6f7f6c",
+      "name": "Document Loader"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        608,
+        608
+      ],
+      "id": "4460692a-b8dc-41f2-af13-8bf3209b7766",
+      "name": "Character Text Splitter"
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "FPC Samples Splitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPC Samples Splitter": {
+      "main": [
+        [
+          {
+            "node": "VectorStore Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "VectorStore Insert",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "VectorStore Insert",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "60550e79-5d7d-4104-a1b4-3bbde04c0865",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-29T15:11:57.980Z",
+      "createdAt": "2026-03-29T15:11:57.980Z",
+      "role": "workflow:owner",
+      "workflowId": "mBfJwOXiWDsfjE37",
+      "projectId": "NGVmW0kzxTFQBNsK"
+    }
+  ],
+  "activeVersion": null,
+  "tags": []
+}

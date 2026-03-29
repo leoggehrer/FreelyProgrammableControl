@@ -10,18 +10,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
     [McpServerToolType]
     public static partial class DesktopControlTool
     {
-        private static DesktopClientService _client = new("http://localhost:5555");
-
-        /// <summary>
-        /// Konfiguriert den Desktop-Client mit der URL aus den Settings.
-        /// </summary>
-        public static void Configure(string baseUrl)
-        {
-            if (!string.IsNullOrWhiteSpace(baseUrl))
-            {
-                _client = new DesktopClientService(baseUrl);
-            }
-        }
+        private static DesktopClientService Client => DesktopClientProvider.Client;
 
         /// <summary>
         /// Prüft die Verbindung zur Desktop-Anwendung und gibt den aktuellen Status zurück.
@@ -34,7 +23,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Prüfe Desktop-Status...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 
                 if (!isConnected)
                 {
@@ -45,7 +34,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var status = await _client.GetStatusAsync();
+                var status = await Client.GetStatusAsync();
                 
                 return new DesktopStatusResult
                 {
@@ -85,7 +74,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Lade Programm in Desktop-Anwendung...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new ProgramLoadResult
@@ -96,7 +85,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 // Prüfe ob Steuerung läuft
-                var status = await _client.GetStatusAsync();
+                var status = await Client.GetStatusAsync();
                 if (status?.isRunning == true)
                 {
                     return new ProgramLoadResult
@@ -106,7 +95,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.LoadProgramAsync(programCode);
+                var result = await Client.LoadProgramAsync(programCode);
                 
                 return new ProgramLoadResult
                 {
@@ -140,7 +129,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Starte Programmausführung in Desktop-Anwendung...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new ExecutionControlResult
@@ -151,7 +140,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 // Erst Status prüfen
-                var status = await _client.GetStatusAsync();
+                var status = await Client.GetStatusAsync();
                 if (status?.hasParseError == true)
                 {
                     return new ExecutionControlResult
@@ -162,7 +151,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.StartExecutionAsync();
+                var result = await Client.StartExecutionAsync();
                 
                 return new ExecutionControlResult
                 {
@@ -194,7 +183,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Stoppe Programmausführung in Desktop-Anwendung...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new ExecutionControlResult
@@ -204,7 +193,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.StopExecutionAsync();
+                var result = await Client.StopExecutionAsync();
                 
                 return new ExecutionControlResult
                 {
@@ -236,7 +225,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe aktuelles Programm aus Desktop-Anwendung ab...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new ProgramRetrieveResult
@@ -246,7 +235,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.GetProgramAsync();
+                var result = await Client.GetProgramAsync();
                 
                 return new ProgramRetrieveResult
                 {
@@ -280,7 +269,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Setze Debug-Modus in Desktop-Anwendung: {(enable ? "Aktivieren" : "Deaktivieren")}...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new DebugModeResult
@@ -291,7 +280,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 // Prüfe ob Steuerung läuft
-                var status = await _client.GetStatusAsync();
+                var status = await Client.GetStatusAsync();
                 if (status?.isRunning == true)
                 {
                     return new DebugModeResult
@@ -302,7 +291,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.SetDebugModeAsync(enable);
+                var result = await Client.SetDebugModeAsync(enable);
                 
                 return new DebugModeResult
                 {
@@ -334,7 +323,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Führe Programmschritt im Debug-Modus aus...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new StepResult
@@ -345,7 +334,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 }
 
                 // Prüfe Status
-                var status = await _client.GetStatusAsync();
+                var status = await Client.GetStatusAsync();
                 if (status?.isRunning == false)
                 {
                     return new StepResult
@@ -364,7 +353,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.StepAsync();
+                var result = await Client.StepAsync();
                 
                 return new StepResult
                 {
@@ -396,7 +385,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Ausführungszustand der Steuerung ab...");
             try
             {
-                var isConnected = await _client.IsConnectedAsync();
+                var isConnected = await Client.IsConnectedAsync();
                 if (!isConnected)
                 {
                     return new ExecutionStateResult
@@ -406,7 +395,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                var result = await _client.GetExecutionStateAsync();
+                var result = await Client.GetExecutionStateAsync();
                 
                 return new ExecutionStateResult
                 {

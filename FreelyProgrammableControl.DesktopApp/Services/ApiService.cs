@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FreelyProgrammableControl.DesktopApp.ViewModels;
+using FreelyProgrammableControl.Logic.Input;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace FreelyProgrammableControl.DesktopApp.Services
 {
@@ -123,16 +126,23 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
-                                _viewModel.StartCommand?.Execute(null);
+                                var (success, errorMessage) = _viewModel.StartForApi();
 
                                 var response = new
                                 {
-                                    success = true,
-                                    isRunning = _viewModel.IsRunning
+                                    success,
+                                    isRunning = _viewModel.IsRunning,
+                                    error = errorMessage
                                 };
+
+                                if (!success)
+                                {
+                                    context.Response.StatusCode = 400;
+                                }
+
                                 await context.Response.WriteAsJsonAsync(response);
                             });
-                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestartet");
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestartet: {_viewModel.IsRunning}");
                         });
 
                         // Programm stoppen
@@ -140,16 +150,17 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                         {
                             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                             {
-                                _viewModel.StopCommand?.Execute(null);
+                                var (success, errorMessage) = _viewModel.StopForApi();
 
                                 var response = new
                                 {
-                                    success = true,
-                                    isRunning = _viewModel.IsRunning
+                                    success,
+                                    isRunning = _viewModel.IsRunning,
+                                    error = errorMessage
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
-                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestoppt");
+                            System.Diagnostics.Debug.WriteLine($"[API] Programm gestoppt: {!_viewModel.IsRunning}");
                         });
 
                         // Programm abrufen
@@ -258,6 +269,274 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                             };
                             await context.Response.WriteAsJsonAsync(response);
                             System.Diagnostics.Debug.WriteLine($"[API] Ausführungszustand abgefragt: {response}");
+                        });
+
+                        // ====================================================
+                        // Debug & Inspection Endpoints
+                        // ====================================================
+
+                        // Vollständigen Debug-Snapshot abrufen (Stack, Memory, Timer, Counter, aktuelle Zeile)
+                        endpoints.MapGet("/api/debug/snapshot", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var response = new
+                            {
+                                isRunning = _viewModel.IsRunning,
+                                debugEnabled = _viewModel.DebugEnabled,
+                                state = eu.State,
+                                debugInfo = eu.DebugInfo,
+                                stackInfo = eu.StackInfo,
+                                memoryInfo = eu.MemoryInfo,
+                                countersInfo = eu.CountersInfo,
+                                timersInfo = eu.TimersInfo,
+                                inputsInfo = eu.InputsInfo,
+                                outputsInfo = eu.OutputsInfo,
+                                currentLine = eu.CurrentExecutionLine != null ? new
+                                {
+                                    lineNumber = eu.CurrentExecutionLine.LineNumber,
+                                    source = eu.CurrentExecutionLine.Source,
+                                    isComment = eu.CurrentExecutionLine.IsComment,
+                                    hasError = eu.CurrentExecutionLine.HasError,
+                                    errorMessage = eu.CurrentExecutionLine.ErrorMessage
+                                } : null,
+                                hasParseError = eu.HasParseError,
+                                parseErrorMessage = eu.ParseErrorMessage,
+                                hasExecutionError = eu.HasExecutionError,
+                                executionErrorMessage = eu.ExecutionErrorMessage
+                            };
+                            await context.Response.WriteAsJsonAsync(response);
+                            System.Diagnostics.Debug.WriteLine($"[API] Debug-Snapshot abgefragt");
+                        });
+
+                        // Input-Zustände abrufen
+                        endpoints.MapGet("/api/inputs", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var inputs = new List<object>();
+                            for (int i = 0; i < eu.Inputs.Length; i++)
+                            {
+                                inputs.Add(new
+                                {
+                                    index = i,
+                                    value = eu.Inputs.GetValue(i),
+                                    label = eu.Inputs[i].Label
+                                });
+                            }
+                            await context.Response.WriteAsJsonAsync(new { count = eu.Inputs.Length, inputs });
+                            System.Diagnostics.Debug.WriteLine($"[API] Inputs abgefragt: {eu.Inputs.Length}");
+                        });
+
+                        // Einzelnen Input-Zustand abrufen
+                        endpoints.MapGet("/api/inputs/{index}", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            if (!int.TryParse(context.Request.RouteValues["index"]?.ToString(), out var index)
+                                || index < 0 || index >= eu.Inputs.Length)
+                            {
+                                context.Response.StatusCode = 400;
+                                await context.Response.WriteAsJsonAsync(new { error = $"Ungültiger Index. Gültig: 0-{eu.Inputs.Length - 1}" });
+                                return;
+                            }
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                index,
+                                value = eu.Inputs.GetValue(index),
+                                label = eu.Inputs[index].Label
+                            });
+                        });
+
+                        // Input umschalten (Toggle)
+                        endpoints.MapPost("/api/inputs/{index}/toggle", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            if (!int.TryParse(context.Request.RouteValues["index"]?.ToString(), out var index)
+                                || index < 0 || index >= eu.Inputs.Length)
+                            {
+                                context.Response.StatusCode = 400;
+                                await context.Response.WriteAsJsonAsync(new { error = $"Ungültiger Index. Gültig: 0-{eu.Inputs.Length - 1}" });
+                                return;
+                            }
+
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                            {
+                                if (eu.Inputs[index] is Switch sw && sw.Modifiable)
+                                {
+                                    sw.Toggle();
+                                    await context.Response.WriteAsJsonAsync(new
+                                    {
+                                        success = true,
+                                        index,
+                                        value = eu.Inputs.GetValue(index),
+                                        label = eu.Inputs[index].Label
+                                    });
+                                }
+                                else
+                                {
+                                    context.Response.StatusCode = 400;
+                                    await context.Response.WriteAsJsonAsync(new
+                                    {
+                                        success = false,
+                                        error = $"Input {index} ist nicht umschaltbar (kein Switch oder nicht modifizierbar)"
+                                    });
+                                }
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Input {index} getoggelt");
+                        });
+
+                        // Output-Zustände abrufen
+                        endpoints.MapGet("/api/outputs", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var outputs = new List<object>();
+                            for (int i = 0; i < eu.Outputs.Length; i++)
+                            {
+                                outputs.Add(new
+                                {
+                                    index = i,
+                                    value = eu.Outputs.GetValue(i),
+                                    label = eu.Outputs[i].Label
+                                });
+                            }
+                            await context.Response.WriteAsJsonAsync(new { count = eu.Outputs.Length, outputs });
+                            System.Diagnostics.Debug.WriteLine($"[API] Outputs abgefragt: {eu.Outputs.Length}");
+                        });
+
+                        // Memory-Werte abrufen (mit optionalem Bereich)
+                        endpoints.MapGet("/api/memory", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var from = 0;
+                            var to = Math.Min(63, eu.MemoryLength - 1);
+
+                            if (context.Request.Query.ContainsKey("from"))
+                                int.TryParse(context.Request.Query["from"], out from);
+                            if (context.Request.Query.ContainsKey("to"))
+                                int.TryParse(context.Request.Query["to"], out to);
+
+                            from = Math.Clamp(from, 0, eu.MemoryLength - 1);
+                            to = Math.Clamp(to, from, eu.MemoryLength - 1);
+
+                            var values = new List<object>();
+                            for (int i = from; i <= to; i++)
+                            {
+                                values.Add(new { index = i, value = eu.GetMemoryValue(i) });
+                            }
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                totalSize = eu.MemoryLength,
+                                from,
+                                to,
+                                values
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Memory abgefragt: {from}-{to}");
+                        });
+
+                        // Timer-Zustände abrufen
+                        endpoints.MapGet("/api/timers", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var from = 0;
+                            var to = Math.Min(15, eu.TimerLength - 1);
+
+                            if (context.Request.Query.ContainsKey("from"))
+                                int.TryParse(context.Request.Query["from"], out from);
+                            if (context.Request.Query.ContainsKey("to"))
+                                int.TryParse(context.Request.Query["to"], out to);
+
+                            from = Math.Clamp(from, 0, eu.TimerLength - 1);
+                            to = Math.Clamp(to, from, eu.TimerLength - 1);
+
+                            var values = new List<object>();
+                            for (int i = from; i <= to; i++)
+                            {
+                                values.Add(new { index = i, value = eu.GetTimerValue(i) });
+                            }
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                totalCount = eu.TimerLength,
+                                from,
+                                to,
+                                values
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Timers abgefragt: {from}-{to}");
+                        });
+
+                        // Counter-Werte abrufen
+                        endpoints.MapGet("/api/counters", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            var from = 0;
+                            var to = Math.Min(15, eu.Counters.Length - 1);
+
+                            if (context.Request.Query.ContainsKey("from"))
+                                int.TryParse(context.Request.Query["from"], out from);
+                            if (context.Request.Query.ContainsKey("to"))
+                                int.TryParse(context.Request.Query["to"], out to);
+
+                            from = Math.Clamp(from, 0, eu.Counters.Length - 1);
+                            to = Math.Clamp(to, from, eu.Counters.Length - 1);
+
+                            var values = new List<object>();
+                            for (int i = from; i <= to; i++)
+                            {
+                                values.Add(new { index = i, value = eu.Counters.GetValue(i) });
+                            }
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                totalCount = eu.Counters.Length,
+                                from,
+                                to,
+                                values
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Counters abgefragt: {from}-{to}");
+                        });
+
+                        // Zykluszeit abrufen/setzen
+                        endpoints.MapGet("/api/cycletime", async context =>
+                        {
+                            var eu = _viewModel.GetExecutionUnit();
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                cycleTimeMs = eu.CycleTimeMs
+                            });
+                        });
+
+                        endpoints.MapPost("/api/cycletime", async context =>
+                        {
+                            using var reader = new StreamReader(context.Request.Body);
+                            var body = await reader.ReadToEndAsync();
+
+                            if (!int.TryParse(body, out var cycleTimeMs) || cycleTimeMs < 1)
+                            {
+                                context.Response.StatusCode = 400;
+                                await context.Response.WriteAsJsonAsync(new { error = "Ungültiger Wert. Erwartet: positive Ganzzahl (Millisekunden, min. 1)" });
+                                return;
+                            }
+
+                            var eu = _viewModel.GetExecutionUnit();
+                            eu.CycleTimeMs = cycleTimeMs;
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                success = true,
+                                cycleTimeMs = eu.CycleTimeMs
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Zykluszeit gesetzt: {cycleTimeMs}ms");
+                        });
+
+                        // Outputs zurücksetzen
+                        endpoints.MapPost("/api/reset/outputs", async context =>
+                        {
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                            {
+                                var eu = _viewModel.GetExecutionUnit();
+                                // Alle Outputs auf false setzen
+                                for (int i = 0; i < eu.Outputs.Length; i++)
+                                {
+                                    eu.Outputs[i].Value = false;
+                                }
+                                await context.Response.WriteAsJsonAsync(new { success = true, message = "Alle Outputs zurückgesetzt" });
+                            });
+                            System.Diagnostics.Debug.WriteLine($"[API] Outputs zurückgesetzt");
                         });
                     });
                 })

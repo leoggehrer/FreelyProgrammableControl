@@ -1,4 +1,4 @@
-using FreelyProgrammableControl.McpServer.Tools;
+using FreelyProgrammableControl.McpServer.Services;
 
 namespace FreelyProgrammableControl.McpServer;
 
@@ -15,13 +15,13 @@ internal class Program
 
         var app = builder.Build();
 
-        // Desktop-App URL aus Configuration laden
-        var desktopBaseUrl = app.Configuration["DesktopApp:BaseUrl"];
-        
-        if (!string.IsNullOrWhiteSpace(desktopBaseUrl))
-        {
-            DesktopControlTool.Configure(desktopBaseUrl);
-        }
+        // Desktop-App URL einmalig aus appsettings.json laden
+        var desktopBaseUrl = app.Configuration["DesktopApp:BaseUrl"]
+            ?? throw new InvalidOperationException(
+                "Konfiguration 'DesktopApp:BaseUrl' fehlt in appsettings.json. " +
+                "Bitte z.B. \"DesktopApp\": { \"BaseUrl\": \"http://localhost:5555\" } eintragen.");
+
+        DesktopClientProvider.Initialize(desktopBaseUrl);
 
         // MCP via MapMcp (Standard)
         app.MapMcp("/mcp");
