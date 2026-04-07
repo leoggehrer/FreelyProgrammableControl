@@ -410,6 +410,31 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
+        [RelayCommand(CanExecute = nameof(CanSaveToVektor))]
+        private async Task SaveToVektorAsync()
+        {
+            try
+            {
+                StatusText = "Programm wird in Vector Store gespeichert...";
+                await n8nWebhookService.SaveToVektorAsync();
+                StatusText = "Programm erfolgreich im Vector Store gespeichert";
+                await ShowInfoDialogAsync("Vector Store", "Das Programm wurde erfolgreich im Vector Store gespeichert.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync("Fehler beim Speichern", $"Programm konnte nicht im Vector Store gespeichert werden:\n{ex.Message}");
+            }
+        }
+
+        private bool CanSaveToVektor()
+        {
+            return !string.IsNullOrWhiteSpace(SourceText) && !executionUnit.IsRunning;
+        }
+
         private bool CanLoadFromGoogleDrive()
         {
             return executionUnit.IsRunning == false;
@@ -1096,6 +1121,50 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 };
 
                 await errorDialog.ShowDialog(ownerWindow);
+            }
+        }
+
+        /// <summary>
+        /// Shows an info dialog to the user
+        /// </summary>
+        private async Task ShowInfoDialogAsync(string title, string message)
+        {
+            if (ownerWindow != null)
+            {
+                var infoDialog = new Window
+                {
+                    Title = title,
+                    Width = 450,
+                    Height = 180,
+                    CanResize = false,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+
+                var okButton = new Button
+                {
+                    Content = "OK",
+                    Width = 100,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                };
+                okButton.Click += (s, e) => infoDialog.Close();
+
+                infoDialog.Content = new StackPanel
+                {
+                    Margin = new Avalonia.Thickness(20),
+                    Spacing = 15,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = message,
+                            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                            FontSize = 14
+                        },
+                        okButton
+                    }
+                };
+
+                await infoDialog.ShowDialog(ownerWindow);
             }
         }
 

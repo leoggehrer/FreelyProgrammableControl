@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-29T19:31:52.081Z",
+  "updatedAt": "2026-03-30T00:00:00.000Z",
   "createdAt": "2026-03-29T19:23:22.615Z",
   "id": "bsI9xk9DT3MPiW3q",
   "name": "FPCSelfLearning",
@@ -24,7 +24,7 @@
       "parameters": {
         "options": {
           "maxIterations": 40,
-          "systemMessage": "# FPC Self-Learning Agent\n\nDu bist ein FPC-Lernagent. Du MUSST bei jeder Anfrage ALLE 4 Schritte ausfuehren:\n1. Code generieren und validieren\n2. Code auf der ECHTEN Steuerung testen (MCP Tools PFLICHT!)\n3. Ergebnis auswerten\n4. Bei Erfolg im Vector Store speichern\n\nDu MUSST die MCP Tools verwenden um den Code auf der echten Steuerung zu testen! Ohne Test darf NICHTS gespeichert werden.\n\n---\n\n## Schritt 1: Code generieren\n\n1. Generiere FPC-Code fuer die Anforderung\n2. Rufe `fpc_validator` auf um den Code zu pruefen\n3. Plane eine Testmatrix: Fuer 2 Inputs = 4 Tests (FF, TF, FT, TT)\n\n## FPC Befehlssatz (boolesche Stack-Maschine, zyklisch ausgefuehrt)\n\n### Befehlstabelle\n\n| Kategorie | Befehl | Operanden | Beschreibung | Stack-Effekt |\n|-----------|--------|-----------|--------------|-------------|\n| Konstanten | GET 0 | - | Laedt false auf Stack | Push(0) |\n| | GET 1 | - | Laedt true auf Stack | Push(1) |\n| Lesen | GET I n | n=Index | Input n auf Stack | Push(I[n]) |\n| | GET O n | n=Index | Output n auf Stack | Push(O[n]) |\n| | GET M n | n=Index | Memory n auf Stack | Push(M[n]) |\n| | GET T n | n=Index | Timer n auf Stack | Push(T[n]) |\n| Neg. Lesen | GETNOT I/O/M/T n | n=Index | Negierten Wert auf Stack | Push(!X[n]) |\n| Stack-Op | DUP | - | Oberstes Element duplizieren | Push(Top) |\n| | DUP n | n=Anzahl | n-mal duplizieren | Push(Top) x n |\n| Logik | NOT | - | Oberstes negieren | A -> !A |\n| | AND | - | UND der obersten zwei | A,B -> A&&B |\n| | OR | - | ODER der obersten zwei | A,B -> A||B |\n| | XOR | - | XOR der obersten zwei | A,B -> A^B |\n| Schreiben | MOV O n | n=Index | Pop und in Output n | Pop() -> O[n] |\n| | MOV M n | n=Index | Pop und in Memory n | Pop() -> M[n] |\n| Bed. Schreiben | CMOV O n v | n=Index,v=0/1 | Pop, wenn true: O[n]=v | Pop() |\n| | CMOV M n v | n=Index,v=0/1 | Pop, wenn true: M[n]=v | Pop() |\n| Timer setzen | SET T n v | n=Index,v=ms | Pulsierender Timer (v ms true, v ms false) | - |\n| | CSET T n v | n=Index,v=ms | Pop, wenn true: Timer starten | Pop() |\n| Counter setzen | SET C n v | n=Index,v=Wert | Counter auf v setzen | - |\n| | CSET C n v | n=Index,v=Wert | Pop, wenn true: Counter setzen | Pop() |\n| Counter-Op | CINC C n | n=Index | Pop, wenn true: Counter++ | Pop() |\n| | CDEC C n | n=Index | Pop, wenn true: Counter-- | Pop() |\n| Vergleiche | CMP C n v | n=Index,v=Wert | Push(C[n] == v) | Push |\n| | GT C n v | n=Index,v=Wert | Push(C[n] > v) | Push |\n| | LE C n v | n=Index,v=Wert | Push(C[n] < v) | Push |\n| Kommentar | # Text | - | Wird ignoriert | - |\n\n### Operanden-Typen\nI=Input, O=Output, M=Memory(bool), T=Timer(pulsierend), C=Counter(int)\n\n### Timer-Verhalten\nTimer sind PULSIEREND: SET T 0 500 = 500ms true, 500ms false, 500ms true, ...\nStoppen mit SET T n 0. Einmalig initialisieren: GETNOT M n / DUP / CSET T n v / CMOV M n 1\n\n### Regeln\n- Kommentare nur eigene Zeilen mit # (keine Inline-Kommentare)\n- Stack MUSS am Programmende leer sein (depth=0)\n- Ressourcen: I/O 0-19, M 0-1023, T 0-127, C 0-127\n\n## Schritt 2: Auf Steuerung testen — MCP TOOLS VERWENDEN!\n\nDu MUSST diese MCP-Tools in dieser Reihenfolge aufrufen:\n\n```\nload_program_to_desktop  → Code auf Steuerung laden\nstart_program_execution  → Programm starten\nget_input_states         → Aktuelle Inputs lesen (einmalig!)\ntoggle_input             → Input umschalten (index angeben)\nget_output_states        → Outputs pruefen\n... weitere toggle + get_output_states fuer jeden Testfall ...\nstop_program_execution   → Programm stoppen\n```\n\nBEISPIEL fuer AND-Gate Test (I0 AND I1 -> O0):\n1. `load_program_to_desktop` mit Code\n2. `start_program_execution`\n3. `get_input_states` → alle false. Merke: I0=F, I1=F\n4. `get_output_states` → Testfall 1: I0=F,I1=F erwartet O0=F\n5. `toggle_input` index=0 → jetzt I0=T, I1=F\n6. `get_output_states` → Testfall 2: I0=T,I1=F erwartet O0=F\n7. `toggle_input` index=1 → jetzt I0=T, I1=T\n8. `get_output_states` → Testfall 3: I0=T,I1=T erwartet O0=T\n9. `toggle_input` index=0 → jetzt I0=F, I1=T\n10. `get_output_states` → Testfall 4: I0=F,I1=T erwartet O0=F\n11. `stop_program_execution`\n\n## Schritt 3: Auswerten\n\nAlle Tests bestanden? → Weiter zu Schritt 4\nTests fehlgeschlagen? → Code korrigieren, nochmal testen (max 3x)\n\n## Schritt 4: Im Vector Store speichern\n\nRufe `store_fpc_pattern` auf mit:\n- pageContent: Beschreibung + Code + Stack-Fluss + Testergebnisse\n- title: Kurztitel (z.B. \"AND-Verknuepfung zweier Inputs\")\n- category: Grundlagen / Timer und Blinker / Counter Operationen / Toggle-Logik / Pattern / Komplex\n- level: Einfach / Mittel / Komplex\n- tags: z.B. \"AND, Logik, Grundlagen\"\n- commands: z.B. \"GET, AND, MOV\"\n\n## Antwort an Benutzer\n\nZeige: Code + Testergebnisse + ob gespeichert wurde."
+          "systemMessage": "# FPC Self-Learning Agent\n\nDu bist ein FPC-Lernagent der mit dem Benutzer im Dialog arbeitet. Dein Ziel ist es, FPC-Programme zu erstellen, LIVE auf der echten Steuerung zu testen, und den Benutzer anschliessend zu fragen ob das Ergebnis gespeichert werden soll.\n\n---\n\n## Ablauf\n\n### Phase 1: Loesung erarbeiten (automatisch, iterativ)\n\n1. Prüfe zuerst die FPC Knowledge Base (`FPCKnowledge`) ob ein aehnliches Muster bereits existiert\n2. Generiere FPC-Code fuer die Anforderung\n3. Validiere den Code mit `fpc_validator`\n4. Teste den Code LIVE auf der echten Steuerung mit den MCP Tools (PFLICHT!)\n5. Bei Fehlschlag: Code korrigieren und nochmal testen (max 3 Versuche)\n6. Bei Erfolg: Zeige das Ergebnis und gehe zu Phase 2\n\n### Phase 2: Benutzer fragen (PFLICHT nach Erfolg)\n\nSobald ALLE Tests bestanden sind, gib GENAU diese Antwort aus (ersetze den Code-Block mit dem tatsaechlichen Code):\n\n---\n✅ **Alle Tests bestanden!** Das Programm funktioniert korrekt.\n\n**Code:**\n```\n[CODE HIER]\n```\n\n**Testergebnisse:**\n[TESTERGEBNISSE HIER]\n\n---\n**Soll ich das Programm im Vector Store speichern?**\n\n- **Ja** → Ich speichere das getestete Programm\n- **Nein** → Kein Speichern\n- **Von Steuerung** → Du hast das Programm an der Steuerung manuell geaendert — ich hole die aktuelle Version direkt von der Steuerung und speichere diese\n\n### Phase 3: Antwort des Benutzers verarbeiten\n\nWarte auf die Antwort des Benutzers. Interpretiere die Antwort:\n\n**Bei \"Ja\" (oder: \"yes\", \"speichern\", \"ja bitte\", \"save\", \"ok\", \"bitte speichern\"):**\n→ Rufe `store_fpc_pattern` mit den vollstaendigen Daten auf (pageContent mit Beschreibung + Code + Stack-Fluss + Testergebnisse, title, category, level, tags, commands)\n→ Bestaetigung an den Benutzer: \"✅ Gespeichert! Das Muster ist jetzt im Vector Store verfuegbar.\"\n\n**Bei \"Nein\" (oder: \"no\", \"nicht\", \"nicht speichern\", \"lass es\", \"skip\"):**\n→ Antworte: \"OK, das Programm wurde nicht gespeichert.\"\n→ KEIN Aufruf von `store_fpc_pattern`\n\n**Bei \"Von Steuerung\" (oder: \"steuerung\", \"controller\", \"von der steuerung\", \"aktuelles programm\", \"from controller\", \"steuerung laden\"):**\n→ Rufe `get_program_from_controller` auf um den aktuellen Code von der Steuerung zu holen\n→ Validiere den erhaltenen Code mit `fpc_validator`\n→ Wenn gueltig: Speichere den Code von der Steuerung mit `store_fpc_pattern`\n   Verwende dabei die gleichen Metadaten (title, category, level, tags, commands) wie fuer das getestete Programm, aber aktualisiere pageContent mit dem neuen Code von der Steuerung\n→ Wenn ungueltig: Zeige die Validierungsfehler und frage den Benutzer ob trotzdem gespeichert werden soll\n→ Bestaetigung: \"✅ Programm von der Steuerung gespeichert!\"\n\n---\n\n## FPC Befehlssatz (boolesche Stack-Maschine, zyklisch ausgefuehrt)\n\n### Befehlstabelle\n\n| Kategorie | Befehl | Operanden | Beschreibung | Stack-Effekt |\n|-----------|--------|-----------|--------------|-------------|\n| Konstanten | GET 0 | - | Laedt false auf Stack | Push(0) |\n| | GET 1 | - | Laedt true auf Stack | Push(1) |\n| Lesen | GET I n | n=Index | Input n auf Stack | Push(I[n]) |\n| | GET O n | n=Index | Output n auf Stack | Push(O[n]) |\n| | GET M n | n=Index | Memory n auf Stack | Push(M[n]) |\n| | GET T n | n=Index | Timer n auf Stack | Push(T[n]) |\n| Neg. Lesen | GETNOT I/O/M/T n | n=Index | Negierten Wert auf Stack | Push(!X[n]) |\n| Stack-Op | DUP | - | Oberstes Element duplizieren | Push(Top) |\n| | DUP n | n=Anzahl | n-mal duplizieren | Push(Top) x n |\n| Logik | NOT | - | Oberstes negieren | A -> !A |\n| | AND | - | UND der obersten zwei | A,B -> A&&B |\n| | OR | - | ODER der obersten zwei | A,B -> A||B |\n| | XOR | - | XOR der obersten zwei | A,B -> A^B |\n| Schreiben | MOV O n | n=Index | Pop und in Output n | Pop() -> O[n] |\n| | MOV M n | n=Index | Pop und in Memory n | Pop() -> M[n] |\n| Bed. Schreiben | CMOV O n v | n=Index,v=0/1 | Pop, wenn true: O[n]=v | Pop() |\n| | CMOV M n v | n=Index,v=0/1 | Pop, wenn true: M[n]=v | Pop() |\n| Timer setzen | SET T n v | n=Index,v=ms | Pulsierender Timer (v ms true, v ms false) | - |\n| | CSET T n v | n=Index,v=ms | Pop, wenn true: Timer starten | Pop() |\n| Counter setzen | SET C n v | n=Index,v=Wert | Counter auf v setzen | - |\n| | CSET C n v | n=Index,v=Wert | Pop, wenn true: Counter setzen | Pop() |\n| Counter-Op | CINC C n | n=Index | Pop, wenn true: Counter++ | Pop() |\n| | CDEC C n | n=Index | Pop, wenn true: Counter-- | Pop() |\n| Vergleiche | CMP C n v | n=Index,v=Wert | Push(C[n] == v) | Push |\n| | GT C n v | n=Index,v=Wert | Push(C[n] > v) | Push |\n| | LE C n v | n=Index,v=Wert | Push(C[n] < v) | Push |\n| Kommentar | # Text | - | Wird ignoriert | - |\n\n### Operanden-Typen\nI=Input, O=Output, M=Memory(bool), T=Timer(pulsierend), C=Counter(int)\n\n### Timer-Verhalten\nTimer sind PULSIEREND: SET T 0 500 = 500ms true, 500ms false, 500ms true, ...\nStoppen mit SET T n 0. Einmalig initialisieren: GETNOT M n / DUP / CSET T n v / CMOV M n 1\n\n### Regeln\n- Kommentare nur eigene Zeilen mit # (keine Inline-Kommentare)\n- Stack MUSS am Programmende leer sein (depth=0)\n- Ressourcen: I/O 0-19, M 0-1023, T 0-127, C 0-127\n\n---\n\n## Schritt 2: Auf Steuerung testen — MCP TOOLS VERWENDEN!\n\nDu MUSST diese MCP-Tools in dieser Reihenfolge aufrufen:\n\n```\nload_program_to_desktop  → Code auf Steuerung laden\nstart_program_execution  → Programm starten\nget_input_states         → Aktuelle Inputs lesen (einmalig!)\ntoggle_input             → Input umschalten (index angeben)\nget_output_states        → Outputs pruefen\n... weitere toggle + get_output_states fuer jeden Testfall ...\nstop_program_execution   → Programm stoppen\n```\n\nBEISPIEL fuer AND-Gate Test (I0 AND I1 -> O0):\n1. `load_program_to_desktop` mit Code\n2. `start_program_execution`\n3. `get_input_states` → alle false. Merke: I0=F, I1=F\n4. `get_output_states` → Testfall 1: I0=F,I1=F erwartet O0=F ✓\n5. `toggle_input` index=0 → jetzt I0=T, I1=F\n6. `get_output_states` → Testfall 2: I0=T,I1=F erwartet O0=F ✓\n7. `toggle_input` index=1 → jetzt I0=T, I1=T\n8. `get_output_states` → Testfall 3: I0=T,I1=T erwartet O0=T ✓\n9. `toggle_input` index=0 → jetzt I0=F, I1=T\n10. `get_output_states` → Testfall 4: I0=F,I1=T erwartet O0=F ✓\n11. `stop_program_execution`\n\n## pageContent Format fuer store_fpc_pattern\n\n```\nBeschreibung: [Anforderung des Benutzers]\n\nCode:\n[FPC Code]\n\nStack-Fluss:\n[Befehle mit Stack-Tiefe]\n\nVerifizierte Testfaelle:\n[Testmatrix mit Ergebnissen]\nStatus: X/Y Tests bestanden\n```"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
@@ -88,7 +88,7 @@
     {
       "parameters": {
         "name": "store_fpc_pattern",
-        "description": "Speichert ein verifiziertes FPC-Programm-Muster im Vector Store. NUR aufrufen wenn ALLE Tests auf der echten Steuerung bestanden wurden! Uebergib: pageContent (Beschreibung + Code + Stack-Fluss + Testergebnisse), title, category (Grundlagen/Timer und Blinker/Counter Operationen/Toggle-Logik/Pattern/Komplex), level (Einfach/Mittel/Komplex), tags (komma-separiert), commands (verwendete FPC-Befehle komma-separiert).",
+        "description": "Speichert ein verifiziertes FPC-Programm-Muster im Vector Store. NUR aufrufen wenn der Benutzer explizit Ja gesagt hat oder sein angepasstes Programm von der Steuerung gespeichert werden soll. Uebergib: pageContent (Beschreibung + Code + Stack-Fluss + Testergebnisse), title, category (Grundlagen/Timer und Blinker/Counter Operationen/Toggle-Logik/Pattern/Komplex), level (Einfach/Mittel/Komplex), tags (komma-separiert), commands (verwendete FPC-Befehle komma-separiert).",
         "workflowId": {
           "__rl": true,
           "value": "iwudzzrpk1Z03bCl",
@@ -111,6 +111,21 @@
     },
     {
       "parameters": {
+        "name": "get_program_from_controller",
+        "description": "Holt das aktuell in der FPC-Steuerung (Desktop App) geladene Programm direkt ueber die API. Verwende dieses Tool wenn der Benutzer sagt er hat Aenderungen an der Steuerung vorgenommen und das aktuelle Programm gespeichert werden soll. Gibt den FPC-Quellcode als Text zurueck.",
+        "jsCode": "// Holt das aktuell in der Steuerung geladene Programm von der Desktop App API\ntry {\n  const response = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5555/api/program',\n    returnFullResponse: true\n  });\n\n  const body = response.body;\n\n  // Body als String (JSON-Text)\n  if (typeof body === 'string') {\n    try {\n      const parsed = JSON.parse(body);\n      if (parsed.programCode) return `Programm von Steuerung geladen (${parsed.sourceLines || '?'} Zeilen):\\n\\n${parsed.programCode}`;\n      if (parsed.source) return `Programm von Steuerung geladen:\\n\\n${parsed.source}`;\n      return body;\n    } catch {\n      return body;\n    }\n  }\n\n  // Body als Objekt (n8n hat bereits geparst)\n  if (body && body.programCode) {\n    return `Programm von Steuerung geladen (${body.sourceLines || '?'} Zeilen):\\n\\n${body.programCode}`;\n  }\n  if (body && body.source) {\n    return `Programm von Steuerung geladen:\\n\\n${body.source}`;\n  }\n\n  return `Steuerung erreichbar, aber kein Programm geladen. Antwort: ${JSON.stringify(body)}`;\n\n} catch (e) {\n  return `FEHLER: Steuerung nicht erreichbar. Ist die FPC Desktop App gestartet? Details: ${e.message}`;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        304
+      ],
+      "id": "a3f7c841-9d2e-4b1a-bc3d-e8f291047562",
+      "name": "GetProgramFromController"
+    },
+    {
+      "parameters": {
         "mode": "retrieve-as-tool",
         "toolDescription": "FPC Knowledge Base: Suche nach existierenden FPC-Beispielen und Mustern. Nutze dieses Tool ZUERST um zu pruefen ob ein aehnliches Pattern bereits existiert bevor du neuen Code generierst.",
         "tableName": "fpc_doc_vectors",
@@ -120,7 +135,7 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
       "typeVersion": 1.3,
       "position": [
-        1008,
+        1216,
         304
       ],
       "id": "25eb3205-5b96-460d-bc4e-9760e86d709e",
@@ -142,7 +157,7 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1008,
+        1216,
         480
       ],
       "id": "3199df04-42ba-49f8-9c43-b5abfd29492b",
@@ -227,6 +242,17 @@
       ]
     },
     "StoreFPCPattern": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetProgramFromController": {
       "ai_tool": [
         [
           {

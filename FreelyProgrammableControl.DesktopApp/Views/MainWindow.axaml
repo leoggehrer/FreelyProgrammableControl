@@ -53,6 +53,7 @@
         <MenuItem Header="Save _As...">
           <MenuItem Header="_Local File..." Command="{Binding SaveAsCommand}" HotKey="Ctrl+Shift+S"/>
           <MenuItem Header="Save To Google drive" Command="{Binding SaveToGoogleDriveCommand}"/>
+          <MenuItem Header="In Vector Store speichern" Command="{Binding SaveToVektorCommand}"/>
         </MenuItem>
         <Separator/>
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" HotKey="Alt+F4"/>

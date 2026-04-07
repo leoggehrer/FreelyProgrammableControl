@@ -16,6 +16,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         private readonly string _saveToGoogleDriveWebhookUrl;
         private readonly string _getFPCSampleListWebhookUrl;
         private readonly string _loadFPCSampleWebhookUrl;
+        private readonly string _saveToVectorWebhookUrl;
 
         public N8nWebhookService()
         {
@@ -24,6 +25,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             _saveToGoogleDriveWebhookUrl = settings.N8N.SaveToGoogleDriveWebhookUrl ?? string.Empty;
             _getFPCSampleListWebhookUrl = settings.N8N.GetFPCSampleListWebhookUrl ?? string.Empty;
             _loadFPCSampleWebhookUrl = settings.N8N.LoadFPCSampleWebhookUrl ?? string.Empty;
+            _saveToVectorWebhookUrl = settings.N8N.SaveToVectorWebhookUrl ?? string.Empty;
         }
 
         public async Task SaveToGoogleDriveAsync(string filename, string fpcSource)
@@ -42,6 +44,24 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             using var httpClient = new HttpClient();
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
             using var response = await httpClient.PostAsync(_saveToGoogleDriveWebhookUrl, content);
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        /// <summary>
+        /// Sendet einen POST-Request an den FPCSourceToVector-Webhook.
+        /// Der n8n-Workflow liest das Programm selbst via GET /api/program aus der Steuerung.
+        /// </summary>
+        public async Task SaveToVektorAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_saveToVectorWebhookUrl))
+            {
+                throw new InvalidOperationException("Die SaveToVector Webhook-URL ist nicht konfiguriert (N8N:SaveToVectorWebhookUrl).");
+            }
+
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+            using var response = await httpClient.PostAsync(_saveToVectorWebhookUrl, content);
 
             response.EnsureSuccessStatusCode();
         }
