@@ -17,7 +17,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Status-Informationen der Steuerung.</returns>
         [McpServerTool(Name = "check_desktop_status")]
-        [Description("Prüft die Verbindung zur FPC Desktop-Anwendung und gibt den aktuellen Ausführungsstatus zurück.")]
+        [Description("Checks the connection to the FPC desktop application and returns the current execution status.")]
         public static async Task<DesktopStatusResult> CheckDesktopStatus()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Prüfe Desktop-Status...");
@@ -66,9 +66,9 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// <param name="programCode">Der FPC-Programm-Code.</param>
         /// <returns>Ergebnis des Ladevorgangs.</returns>
         [McpServerTool(Name = "load_program_to_desktop")]
-        [Description("Lädt ein FPC-Programm in die Desktop-Anwendung. Das Programm wird geparst und auf Fehler überprüft.")]
+        [Description("Loads an FPC program into the desktop application. The program is parsed and validated for errors.")]
         public static async Task<ProgramLoadResult> LoadProgramToDesktop(
-            [Description("Der vollständige FPC-Programm-Code, der in die Desktop-Anwendung geladen werden soll.")]
+            [Description("The complete FPC program code to load into the desktop application.")]
             string programCode)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Lade Programm in Desktop-Anwendung...");
@@ -123,7 +123,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Ergebnis des Start-Befehls.</returns>
         [McpServerTool(Name = "start_program_execution")]
-        [Description("Startet die Ausführung des aktuell geladenen FPC-Programms in der Desktop-Anwendung.")]
+        [Description("Starts execution of the currently loaded FPC program in the desktop application.")]
         public static async Task<ExecutionControlResult> StartProgramExecution()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Starte Programmausführung in Desktop-Anwendung...");
@@ -177,7 +177,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Ergebnis des Stopp-Befehls.</returns>
         [McpServerTool(Name = "stop_program_execution")]
-        [Description("Stoppt die Ausführung des FPC-Programms in der Desktop-Anwendung.")]
+        [Description("Stops execution of the FPC program in the desktop application.")]
         public static async Task<ExecutionControlResult> StopProgramExecution()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Stoppe Programmausführung in Desktop-Anwendung...");
@@ -219,7 +219,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Das aktuelle Programm.</returns>
         [McpServerTool(Name = "get_current_program")]
-        [Description("Ruft das aktuell in der Desktop-Anwendung geladene FPC-Programm ab.")]
+        [Description("Retrieves the FPC program currently loaded in the desktop application.")]
         public static async Task<ProgramRetrieveResult> GetCurrentProgram()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe aktuelles Programm aus Desktop-Anwendung ab...");
@@ -261,9 +261,9 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// <param name="enable">True zum Aktivieren, False zum Deaktivieren.</param>
         /// <returns>Ergebnis des Debug-Modus-Befehls.</returns>
         [McpServerTool(Name = "enable_debug_mode")]
-        [Description("Aktiviert oder deaktiviert den Debug-Modus. Im Debug-Modus kann das Programm schrittweise mit 'step_program' ausgeführt werden. Die Steuerung muss gestoppt sein, um den Debug-Modus zu ändern.")]
+        [Description("Enables or disables debug mode. In debug mode, the program can be executed step-by-step with 'step_program'. The controller must be stopped to change debug mode.")]
         public static async Task<DebugModeResult> EnableDebugMode(
-            [Description("True zum Aktivieren des Debug-Modus, False zum Deaktivieren.")]
+            [Description("True to enable debug mode, false to disable it.")]
             bool enable)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Setze Debug-Modus in Desktop-Anwendung: {(enable ? "Aktivieren" : "Deaktivieren")}...");
@@ -317,7 +317,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Ergebnis des Step-Befehls mit aktuellem Zustand.</returns>
         [McpServerTool(Name = "step_program")]
-        [Description("Führt einen einzelnen Programmschritt im Debug-Modus aus. Die Steuerung muss gestartet und im Debug-Modus sein. Nach jedem Schritt wird der aktuelle Ausführungszustand zurückgegeben.")]
+        [Description("Executes a single program step in debug mode. The controller must be running and debug mode must be enabled. After each step, the current execution state is returned.")]
         public static async Task<StepResult> StepProgram()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Führe Programmschritt im Debug-Modus aus...");
@@ -379,7 +379,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// </summary>
         /// <returns>Der detaillierte Ausführungszustand.</returns>
         [McpServerTool(Name = "get_execution_state")]
-        [Description("Ruft den detaillierten Ausführungszustand der Steuerung ab. Im Debug-Modus enthält dies Informationen über Stack, Speicher, Timer, Zähler und die aktuell ausgeführte Zeile.")]
+        [Description("Retrieves the detailed execution state of the controller. In debug mode, this includes information about stack, memory, timers, counters, and the currently executed line.")]
         public static async Task<ExecutionStateResult> GetExecutionState()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Ausführungszustand der Steuerung ab...");

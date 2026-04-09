@@ -199,7 +199,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         public MainWindowViewModel()
         {
             var settings = ConfigurationHelper.GetSettings();
-            
+
             var configuredInputCount = Math.Max(1, settings.Machine.InputCount);
             var configuredOutputCount = Math.Max(1, settings.Machine.OutputCount);
 
@@ -666,7 +666,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                         CurrentLineNumber = executionUnit.CurrentExecutionLine.LineNumber;
                     }
                 }
-                else 
+                else
                 {
                     while (executionUnit.CurrentExecutionLine != null
                            && executionUnit.CurrentExecutionLine.LineNumber != CurrentLineNumber)
@@ -1233,6 +1233,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
 
             lastSourceText = value ?? string.Empty;
+            ParseAndView(SourceText.Split(Environment.NewLine));
         }
 
         partial void OnExecutionStateChanged(string value)

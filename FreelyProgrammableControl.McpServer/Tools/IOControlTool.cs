@@ -21,7 +21,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft die Zustände aller Inputs ab.
         /// </summary>
         [McpServerTool(Name = "get_input_states")]
-        [Description("Ruft die aktuellen Zustände aller Inputs der Steuerung ab. Gibt für jeden Input den Index, den booleschen Wert und das Label zurück.")]
+        [Description("Retrieves the current states of all controller inputs. Returns index, boolean value, and label for each input.")]
         public static async Task<IOResult> GetInputStates()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Input-Zustände ab...");
@@ -46,9 +46,9 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Schaltet einen einzelnen Input um (Toggle).
         /// </summary>
         [McpServerTool(Name = "toggle_input")]
-        [Description("Schaltet einen einzelnen Input der Steuerung um (true→false oder false→true). Nützlich um Eingangssignale zu simulieren und das Programmverhalten zu testen.")]
+        [Description("Toggles a single controller input (true to false or false to true). Useful for simulating input signals and testing program behavior.")]
         public static async Task<IOResult> ToggleInput(
-            [Description("Der Index des umzuschaltenden Inputs (z.B. 0 für I0, 1 für I1).")]
+            [Description("Index of the input to toggle (e.g., 0 for I0, 1 for I1).")]
             int index)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Toggle Input {index}...");
@@ -77,7 +77,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft die Zustände aller Outputs ab.
         /// </summary>
         [McpServerTool(Name = "get_output_states")]
-        [Description("Ruft die aktuellen Zustände aller Outputs der Steuerung ab. Gibt für jeden Output den Index, den booleschen Wert und das Label zurück.")]
+        [Description("Retrieves the current states of all controller outputs. Returns index, boolean value, and label for each output.")]
         public static async Task<IOResult> GetOutputStates()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Output-Zustände ab...");
@@ -102,7 +102,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Setzt alle Outputs auf false zurück.
         /// </summary>
         [McpServerTool(Name = "reset_outputs")]
-        [Description("Setzt alle Outputs der Steuerung auf false zurück. Nützlich um einen definierten Ausgangszustand herzustellen.")]
+        [Description("Resets all controller outputs to false. Useful for restoring a defined initial output state.")]
         public static async Task<IOResult> ResetOutputs()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Setze Outputs zurück...");
@@ -131,11 +131,11 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft Memory-Werte in einem bestimmten Bereich ab.
         /// </summary>
         [McpServerTool(Name = "get_memory_values")]
-        [Description("Ruft die aktuellen booleschen Werte des Memory-Bereichs der Steuerung ab. Gibt für jede Speicherzelle den Index und den Wert zurück. Standard: M0-M63.")]
+        [Description("Retrieves the current boolean values of the controller memory area. Returns index and value for each memory cell. Default: M0-M63.")]
         public static async Task<IOResult> GetMemoryValues(
-            [Description("Start-Index des Memory-Bereichs (Standard: 0).")]
+            [Description("Start index of the memory range (default: 0).")]
             int from = 0,
-            [Description("End-Index des Memory-Bereichs (Standard: 63).")]
+            [Description("End index of the memory range (default: 63).")]
             int to = 63)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Memory ab: {from}-{to}...");
@@ -164,11 +164,11 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft Timer-Zustände in einem bestimmten Bereich ab.
         /// </summary>
         [McpServerTool(Name = "get_timer_states")]
-        [Description("Ruft die aktuellen booleschen Zustände der Timer der Steuerung ab. Timer sind pulsierend (alternieren zwischen true/false). Standard: T0-T15.")]
+        [Description("Retrieves the current boolean states of controller timers. Timers are pulsing (alternating between true and false). Default: T0-T15.")]
         public static async Task<IOResult> GetTimerStates(
-            [Description("Start-Index des Timer-Bereichs (Standard: 0).")]
+            [Description("Start index of the timer range (default: 0).")]
             int from = 0,
-            [Description("End-Index des Timer-Bereichs (Standard: 15).")]
+            [Description("End index of the timer range (default: 15).")]
             int to = 15)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Timer ab: {from}-{to}...");
@@ -197,11 +197,11 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft Counter-Werte in einem bestimmten Bereich ab.
         /// </summary>
         [McpServerTool(Name = "get_counter_values")]
-        [Description("Ruft die aktuellen Integer-Werte der Counter der Steuerung ab. Standard: C0-C15.")]
+        [Description("Retrieves the current integer values of controller counters. Default: C0-C15.")]
         public static async Task<IOResult> GetCounterValues(
-            [Description("Start-Index des Counter-Bereichs (Standard: 0).")]
+            [Description("Start index of the counter range (default: 0).")]
             int from = 0,
-            [Description("End-Index des Counter-Bereichs (Standard: 15).")]
+            [Description("End index of the counter range (default: 15).")]
             int to = 15)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Counter ab: {from}-{to}...");
@@ -230,7 +230,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft die aktuelle Zykluszeit der Steuerung ab.
         /// </summary>
         [McpServerTool(Name = "get_cycle_time")]
-        [Description("Ruft die aktuelle Zykluszeit der Steuerung in Millisekunden ab. Die Zykluszeit bestimmt, wie schnell das Programm wiederholt ausgeführt wird.")]
+        [Description("Retrieves the current controller cycle time in milliseconds. The cycle time determines how fast the program is repeatedly executed.")]
         public static async Task<IOResult> GetCycleTime()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Zykluszeit ab...");
@@ -255,9 +255,9 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Setzt die Zykluszeit der Steuerung.
         /// </summary>
         [McpServerTool(Name = "set_cycle_time")]
-        [Description("Setzt die Zykluszeit der Steuerung in Millisekunden. Kleinere Werte = schnellere Ausführung. Minimum: 1ms, empfohlen: 50-100ms.")]
+        [Description("Sets the controller cycle time in milliseconds. Smaller values mean faster execution. Minimum: 1ms, recommended: 50-100ms.")]
         public static async Task<IOResult> SetCycleTime(
-            [Description("Die gewünschte Zykluszeit in Millisekunden (min. 1ms).")]
+            [Description("Desired cycle time in milliseconds (min. 1ms).")]
             int cycleTimeMs)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Setze Zykluszeit: {cycleTimeMs}ms...");

@@ -18,7 +18,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Ruft einen vollständigen Debug-Snapshot ab mit allen Zustandsinformationen.
         /// </summary>
         [McpServerTool(Name = "debug_snapshot")]
-        [Description("Ruft einen vollständigen Debug-Snapshot der Steuerung ab. Enthält: aktueller Zustand, Stack-Inhalt, Memory-Werte, Timer-Zustände, Counter-Werte, Input/Output-Zustände, aktuelle Ausführungszeile, Parse- und Laufzeitfehler. Ideal für Fehlersuche und Zustandsanalyse.")]
+        [Description("Retrieves a complete debug snapshot of the controller. Includes current state, stack contents, memory values, timer states, counter values, input/output states, current execution line, and parse/runtime errors. Ideal for troubleshooting and state analysis.")]
         public static async Task<DebugSnapshotResult> GetDebugSnapshot()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Rufe Debug-Snapshot ab...");
@@ -58,7 +58,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Kombiniert step_program + debug_snapshot in einem Aufruf.
         /// </summary>
         [McpServerTool(Name = "debug_step_and_inspect")]
-        [Description("Führt einen einzelnen Programmschritt im Debug-Modus aus und gibt anschließend den vollständigen Debug-Snapshot zurück (Stack, Memory, Timer, Counter, I/O, aktuelle Zeile). Die Steuerung muss gestartet und im Debug-Modus sein. Ideal für schrittweises Debugging.")]
+        [Description("Executes a single program step in debug mode and then returns the full debug snapshot (stack, memory, timers, counters, I/O, current line). The controller must be running and debug mode must be enabled. Ideal for step-by-step debugging.")]
         public static async Task<DebugStepResult> StepAndInspect()
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Führe Debug-Schritt mit Inspektion aus...");
@@ -129,9 +129,9 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// Führt mehrere Programmschritte hintereinander aus und gibt den Zustand nach jedem Schritt zurück.
         /// </summary>
         [McpServerTool(Name = "debug_multi_step")]
-        [Description("Führt mehrere Programmschritte im Debug-Modus aus und gibt den Endzustand als Debug-Snapshot zurück. Die Steuerung muss gestartet und im Debug-Modus sein. Nützlich um schnell mehrere Zeilen zu durchlaufen.")]
+        [Description("Executes multiple program steps in debug mode and returns the final state as a debug snapshot. The controller must be running and debug mode must be enabled. Useful for quickly advancing through several lines.")]
         public static async Task<DebugStepResult> MultiStep(
-            [Description("Anzahl der auszuführenden Schritte (1-100).")]
+            [Description("Number of steps to execute (1-100).")]
             int steps = 1)
         {
             System.Diagnostics.Debug.WriteLine($"[Tool] Führe {steps} Debug-Schritte aus...");
