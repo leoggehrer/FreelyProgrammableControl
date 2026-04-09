@@ -1233,7 +1233,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
 
             lastSourceText = value ?? string.Empty;
-            ParseAndView(SourceText.Split(Environment.NewLine));
+            if (executionUnit.IsRunning == false)
+            {
+                ParseAndView(SourceText.Split(Environment.NewLine));
+            }
         }
 
         partial void OnExecutionStateChanged(string value)
