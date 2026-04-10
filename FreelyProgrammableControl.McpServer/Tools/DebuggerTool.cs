@@ -76,14 +76,6 @@ namespace FreelyProgrammableControl.McpServer.Tools
 
                 // Prüfe Status
                 var status = await Client.GetStatusAsync();
-                if (status?.isRunning == false)
-                {
-                    return new DebugStepResult
-                    {
-                        Success = false,
-                        Message = "Die Steuerung muss gestartet sein. Verwende 'start_program_execution' zuerst."
-                    };
-                }
 
                 if (status?.debugEnabled == false)
                 {
@@ -94,8 +86,18 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
+                if (status?.isRunning == false)
+                {
+                    return new DebugStepResult
+                    {
+                        Success = false,
+                        Message = "Die Steuerung muss gestartet sein. Verwende 'start_program_execution' zuerst."
+                    };
+                }
+
                 // Step ausführen
                 var stepResult = await Client.StepAsync();
+                
                 if (stepResult?.success != true)
                 {
                     return new DebugStepResult

@@ -699,6 +699,84 @@ Tags: and, blinker, gating, kombiniert, komplex
 
 ---
 
+### Zeitgesteuerter Output – Abschaltung nach N Timer-Perioden
+
+**Kategorie**: Kombinierte Muster
+**Level**: Komplex
+**Beschreibung**: Output ist AN sobald das Programm startet und schaltet sich automatisch nach einer definierten Anzahl vollständiger Timer-Perioden ab. Ein Perioden-Zähler erfasst je eine steigende und eine fallende Timer-Flanke (M2/M3). Erst wenn beide Flanken einer Periode gesehen wurden, wird der Counter inkrementiert und die Flanken-Merker zurückgesetzt. Sobald der Counter den Schwellenwert erreicht, geht der Output AUS.
+**Anwendung**: Zeitbegrenzte Aktivierung, Ablauf-Steuerung, Einschalt-Verzögerungsabschaltung
+
+```
+# Zeitgesteuerter Output: O0 aktiv für 10 Timer-Perioden (20 Sekunden)
+# Timer 0: 1000 ms → Periode = 2 s → 10 Perioden = 20 s
+# M0 = Initialisierungs-Flag, M2 = T0-AN-Flanke, M3 = T0-AUS-Flanke, C0 = Periodenzähler
+
+# --- Block 1: Timer einmalig initialisieren (verbindliches Muster) ---
+# Stack: [] -> [!M0] -> [!M0,!M0] -> [!M0] -> []
+GETNOT M 0
+DUP
+CSET T 0 1000
+CMOV M 0 1
+
+# --- Block 2: Flanken des Timers erfassen ---
+# Stack: [] -> [T0] -> []  dann  [] -> [!T0] -> []
+GET T 0
+CMOV M 2 1        # T0 war AN → M2 merken
+GETNOT T 0
+CMOV M 3 1        # T0 war AUS → M3 merken
+
+# --- Block 3: Vollständige Periode zählen, Flanken-Merker zurücksetzen ---
+# Stack: [] -> [M2] -> [M2,M3] -> [M2&&M3] -> [M2&&M3,M2&&M3]
+#         -> [M2&&M3] -> [M2&&M3,M2&&M3] -> [M2&&M3] -> []
+GET M 2
+GET M 3
+AND
+DUP
+CINC C 0          # Periode vollständig → Counter erhöhen
+DUP
+CMOV M 2 0        # M2 zurücksetzen
+CMOV M 3 0        # M3 zurücksetzen
+
+# --- Block 4: Output aktiv solange C0 < 10 Perioden ---
+# Stack: [] -> [M0] -> [M0,C0<10] -> [M0&&(C0<10)] -> []
+GET M 0
+LE C 0 10
+AND
+MOV O 0
+```
+
+Stack-Fluss Block 3 (kritischer Pfad, da 3× konsumierend mit DUP-Sicherung):
+1. `GET M 2`: → `[M2]`
+2. `GET M 3`: → `[M2, M3]`
+3. `AND`: → `[M2&&M3]`
+4. `DUP`: → `[M2&&M3, M2&&M3]`
+5. `CINC C 0`: konsumiert Top → `[M2&&M3]`
+6. `DUP`: → `[M2&&M3, M2&&M3]`
+7. `CMOV M 2 0`: konsumiert Top → `[M2&&M3]`
+8. `CMOV M 3 0`: konsumiert Top → `[]`
+
+Funktionsweise (Zeitablauf):
+- Start: M0=0, M2=0, M3=0, C0=0
+- Zyklus 1: Timer initialisiert (M0=1), O0=T (C0=0 < 10)
+- T0 geht AN: M2=1 gesetzt
+- T0 geht AUS (nach 1000 ms): M3=1 gesetzt → M2&&M3=T → C0=1, M2=0, M3=0
+- Nach jeder vollständigen Periode (2000 ms) steigt C0 um 1
+- Nach 10 Perioden (20 s): C0=10, LE C 0 10 = false → O0=F (bleibt AUS)
+
+Testfälle:
+- Nach 0 Perioden (t=0 s): C0=0 → O0=T
+- Nach 5 Perioden (t=10 s): C0=5 → O0=T
+- Nach 10 Perioden (t=20 s): C0=10 → O0=F
+- C0=9, M2=1, M3=0: O0=T (Periode noch nicht komplett)
+
+WICHTIG: Anzahl Perioden und Timer-Intervall sind unabhängig einstellbar:
+- Kürzere Perioden: `CSET T 0 500` → Periode = 1 s → Schwellenwert 10 = 10 s Gesamtlaufzeit
+- Mehr Perioden: `LE C 0 30` → 30 Perioden Gesamtlaufzeit
+
+Tags: timer, periodenzähler, zeitbegrenzt, abschaltung, flanke, M2-M3-muster, CINC, LE, komplex
+
+---
+
 ### FPC Stack-Disziplin (Regeln)
 
 **Kategorie**: Referenz

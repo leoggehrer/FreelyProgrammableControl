@@ -70,7 +70,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 isRunning = _viewModel.IsRunning,
                                 hasParseError = _viewModel.HasParseError,
                                 parseErrorMessage = _viewModel.ParseErrorMessage,
-                                debugEnabled = _viewModel.IsDebugEnabled,
+                                debugEnabled = _viewModel.DebugEnabled,
                                 sourceLines = _viewModel.Source.Length,
                                 executionState = _viewModel.ExecutionState
                             };
@@ -208,7 +208,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                                 var response = new
                                 {
                                     success = true,
-                                    debugEnabled = _viewModel.IsDebugEnabled
+                                    debugEnabled = _viewModel.DebugEnabled
                                 };
                                 await context.Response.WriteAsJsonAsync(response);
                             });
