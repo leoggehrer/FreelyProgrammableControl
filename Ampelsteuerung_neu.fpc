@@ -1,0 +1,76 @@
+# AMPELSTEUERUNG
+# ================================================================
+# T10 = 500ms Oszillator (Periode 1s = 2 × 500ms)
+# M0  = Initialisierungsflag (T10 gestartet)
+# M1  = Flanken-Erkennungsflag für T10 (rising edge)
+# C0  = Sekunden-Zähler (0-24, Gesamtzyklus 25s)
+# Zykluszeit: 50ms
+# ================================================================
+# Phasen:
+#   C0  0- 9 (  0-10s): ROT
+#   C0 10-12 ( 10-13s): ROT + GELB
+#   C0 13-19 ( 13-20s): GRÜN (konstant)
+#   C0 20-22 ( 20-23s): GRÜN blinkt 500ms, startet AUS
+#   C0 23-24 ( 23-25s): GELB → dann Neustart
+# ================================================================
+# I0 = NOTAUS: I0=1 → ROT=1, GELB=0, GRÜN=0
+# ================================================================
+
+# --- EINMALIGE INITIALISIERUNG: T10 starten, M1=1 (erste Flanke überspringen) ---
+GETNOT M 0
+DUP 3
+CSET T 10 500
+CMOV M 0 1
+CMOV M 1 1
+
+# --- FLANKEN-ERKENNUNG: C0 bei jeder steigenden Flanke von T10 um 1 erhöhen ---
+GETNOT M 1
+GET T 10
+AND
+CINC C 0
+GET T 10
+CMOV M 1 1
+GETNOT T 10
+CMOV M 1 0
+
+# --- RESET NACH 25 SEKUNDEN: C0 > 24 → C0 = 0 ---
+GT C 0 24
+CSET C 0 0
+
+# --- AUSGANG 0: ROT ---
+# Aktiv: C0 = 0-12 (ROT-Phase + ROT/GELB-Phase) ODER NOTAUS (I0=1)
+LE C 0 12
+GET I 0
+OR
+MOV O 0
+
+# --- AUSGANG 1: GELB ---
+# Aktiv: C0 = 10-12 (ROT/GELB) ODER C0 = 23-24 (GELB-Phase), kein NOTAUS
+GT C 0 9
+LE C 0 12
+AND
+GT C 0 22
+LE C 0 24
+AND
+OR
+GET I 0
+NOT
+AND
+MOV O 1
+
+# --- AUSGANG 2: GRÜN ---
+# Konstant AN: C0 = 13-19 (kein NOTAUS)
+GT C 0 12
+LE C 0 19
+AND
+# Blinken: C0 = 20-22, T10=true → GRÜN AUS, T10=false → GRÜN AN (startet AUS)
+GT C 0 19
+LE C 0 22
+AND
+GETNOT T 10
+AND
+OR
+GET I 0
+NOT
+AND
+MOV O 2

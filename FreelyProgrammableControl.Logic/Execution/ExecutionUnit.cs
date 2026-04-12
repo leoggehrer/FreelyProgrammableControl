@@ -546,7 +546,6 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// </remarks>
         private void Run()
         {
-            running = true;
             while (running)
             {
                 if (DebugEnabled == false)

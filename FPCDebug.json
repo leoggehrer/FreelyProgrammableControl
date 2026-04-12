@@ -1,0 +1,187 @@
+{
+  "updatedAt": "2026-04-12T00:00:00.000Z",
+  "createdAt": "2026-04-12T00:00:00.000Z",
+  "id": "fpc-debug-workflow-01",
+  "name": "FPCDebug",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "FPCDebugChat",
+      "webhookId": "fpc-debug-chat"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxIterations": 35,
+          "systemMessage": "# FPC Debug Agent\n\nDu bist ein autonomer FPC-Test-Agent. Du empfaengst ein FPC-Programm (und optional eine Verhaltensbeschreibung), testest das Programm systematisch gegen die laufende Steuerung und erstellst ein vollstaendiges Testprotokoll.\n\nDu stellst KEINE Fragen und fragst NICHT nach Bestaetigung. Du erledigst die Aufgabe vollstaendig ohne Unterbrechung.\n\n---\n\n## Ausfuehrungs-Reihenfolge (IMMER in dieser Reihenfolge)\n\n### Schritt 1: Programm-Typ erkennen\nAnalysiere den empfangenen Code:\n- **Logik-Programm**: nur GET/GETNOT/NOT/AND/OR/XOR/MOV/CMOV, kein SET T/CSET T/CINC/CDEC → Debug-Step-Modus\n- **Timer/Counter-Programm**: enthaelt SET T, CSET T, CINC, CDEC, GT C, LE C, CMP C → Snapshot-Modus (Timer laufen nur in Echtzeit)\n\n### Schritt 2: Statische Validierung\n1. Rufe `fpc_validator` auf → Stack-Balance und erlaubte Befehle pruefen\n2. Rufe `load_program_to_desktop` auf → Parse-Fehler der Steuerung pruefen\nBei Fehlern: Fehler ins Protokoll aufnehmen. KEIN automatisches Korrigieren — nur dokumentieren.\n\n### Schritt 3: Dynamisches Testen\n\n**WICHTIG — Atomare Snapshots:**\nNIEMALS Counter und Outputs getrennt lesen. `get_debug_snapshot` liefert alles (Counter, Outputs, Memory, Timer) in einem Request — immer konsistent.\n\n---\n\n**Fuer Logik-Programme (Debug-Step-Modus):**\n```\nstop_program_execution\nenable_debug_mode enable=true\nload_program_to_desktop\nstart_program_execution\n[fuer jede relevante Input-Kombination:]\n  toggle_input index=X   (falls noetig)\n  debug_step_and_inspect → delay_ms milliseconds=2000 (nach JEDEM Step!)\n  ... alle Zeilen durchsteppen ...\n  Outputs aus letztem debug_step_and_inspect notieren\nstop_program_execution\nenable_debug_mode enable=false\n```\nREGEL: Nach JEDEM debug_step_and_inspect MUSS delay_ms milliseconds=2000 folgen.\nTeste alle relevanten Input-Kombinationen (000, 001, 010, 011, 100, 101, 110, 111 usw.).\n\n---\n\n**Fuer Timer/Counter-Programme (Snapshot-Modus):**\nHINWEIS: Timer laufen im Debug-Modus NICHT (Steps werden in Millisekunden ausgefuehrt). Deshalb Snapshot-Modus ohne Debug verwenden.\n```\nstop_program_execution\nenable_debug_mode enable=false\nload_program_to_desktop\nstart_program_execution\n[fuer jeden relevanten Zeitpunkt:]\n  delay_ms milliseconds=<wartezeit>\n  get_debug_snapshot   → Counter-Wert + Outputs + alles atomar\n[nach allen Phasen:]\nstop_program_execution\n```\nLeite die Phasengrenzen aus dem Code ab (GT C / LE C Grenzen).\nStandard-Wartzeiten fuer 500ms-Timer-Programme:\n- 1000ms = ca. 1 Sekunde nach Start\n- Je nach Phasenlaenge entsprechend laenger warten\n\nTeste JEDE Phase an mind. 2 Punkten (Phasenbeginn und Phasenende).\nBei NOTAUS/Sicherheits-Eingaengen: teste auch mit gesetztem Eingang (toggle_input).\n\n### Schritt 4: Testprotokoll erstellen\n\nErstelle ein strukturiertes Testprotokoll in Markdown:\n\n```markdown\n# FPC Testprotokoll\n\n## Programm-Info\n- Typ: [Logik / Timer-Counter]\n- Zeilen: [Anzahl]\n- Ressourcen: Eingaenge I[x], Ausgaenge O[x], Timer T[x], Counter C[x], Memory M[x]\n\n## 1. Statische Pruefung\n| Pruefung | Ergebnis |\n|----------|----------|\n| Stack-Balance | BESTANDEN / FEHLERHAFT: [Fehler] |\n| Parse-Fehler (Steuerung) | KEINE / [Fehler-Liste] |\n\n## 2. Dynamische Testergebnisse\n| # | Zustand/Input | Erwartete Ausgaenge | Tatsaechliche Ausgaenge | Ergebnis |\n|---|--------------|--------------------|-----------------------|----------|\n| 1 | C0=0, I0=0 | O0=1,O1=0,O2=0 | O0=1,O1=0,O2=0 | PASS |\n| 2 | ... | ... | ... | PASS/FAIL |\n\n## 3. Zusammenfassung\n- Getestete Zustaende: X\n- Bestanden: Y\n- Fehlgeschlagen: Z\n- Gesamtergebnis: BESTANDEN / FEHLERHAFT\n\n## 4. Fehlerdetails (falls vorhanden)\n[Beschreibung der gefundenen Fehler]\n```\n\nBei Timer/Counter-Programmen: Counter-Wert aus `countersInfo`, Outputs aus `outputsInfo` des Snapshots lesen.\n\n### Schritt 5: Protokoll ausgeben\nGib das vollstaendige Testprotokoll in Markdown aus. Kein weiterer Text ausser dem Protokoll.\n\n---\n\n## FPC Befehlssatz (Referenz)\n\n| Befehl | Beschreibung | Stack |\n|--------|--------------|-------|\n| GET 0 / GET 1 | Konstante false/true | +1 |\n| GET I/O/M/T n | Wert lesen | +1 |\n| GETNOT I/O/M/T n | Negiert lesen | +1 |\n| DUP | Kopieren (1x) | n→n+1 |\n| DUP k | k-1 Kopien | n→n+(k-1) |\n| NOT | Negieren | 1→1 |\n| AND / OR / XOR | Logik | 2→1 |\n| MOV O/M n | Pop→Ziel | 1→0 |\n| CMOV O/M n v | Cond. Pop→Ziel | 1→0 |\n| SET T n ms | Timer starten | 0→0 |\n| CSET T n ms | Cond. Timer starten | 1→0 |\n| CSET C n v | Cond. Counter setzen | 1→0 |\n| CINC C n | Cond. Counter++ | 1→0 |\n| GT C n v | Push(C[n]>v) | 0→1 |\n| LE C n v | Push(C[n]<=v) | 0→1 |\n| CMP C n v | Push(C[n]==v) | 0→1 |\n\nGET C existiert NICHT. Counter nur mit GT/LE/CMP pruefen.\nTimer-Semantik: 500ms TRUE, 500ms FALSE, Periode=1s. Startet als TRUE."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        304,
+        0
+      ],
+      "id": "a1b2c3d4-0002-0002-0002-000000000002",
+      "name": "FPCDebugAgent"
+    },
+    {
+      "parameters": {
+        "tableName": "fpc_debug_histories",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        304
+      ],
+      "id": "a1b2c3d4-0003-0003-0003-000000000003",
+      "name": "ChatMemory",
+      "credentials": {
+        "postgres": {
+          "id": "iYMqy2OzuA3ajmSK",
+          "name": "Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://localhost:5042/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        304
+      ],
+      "id": "a1b2c3d4-0004-0004-0004-000000000004",
+      "name": "MCPClient"
+    },
+    {
+      "parameters": {
+        "name": "fpc_validator",
+        "description": "Validiert FPC-Code auf korrekte Syntax, erlaubte Befehle und Stack-Balance. Uebergib den reinen FPC-Code (eine Instruktion pro Zeile, ohne Markdown). Gibt zurueck ob der Code gueltig ist und welche Fehler gefunden wurden.",
+        "jsCode": "// Agent-Tool-Input lesen\nconst inp = $input.first().json;\nconst code = inp.query || inp.input || inp.code || inp.programCode || '';\n\nconst VALID_COMMANDS = ['GET','GETNOT','DUP','NOT','AND','OR','XOR','MOV','CMOV','SET','CSET','CINC','CDEC','CMP','GT','LE'];\n\nconst STACK_EFFECTS = {\n  'GET':   { pop: 0, push: 1 }, 'GETNOT': { pop: 0, push: 1 },\n  'NOT': { pop: 1, push: 1 },\n  'AND':   { pop: 2, push: 1 }, 'OR': { pop: 2, push: 1 }, 'XOR': { pop: 2, push: 1 },\n  'MOV':   { pop: 1, push: 0 }, 'CMOV': { pop: 1, push: 0 },\n  'SET':   { pop: 0, push: 0 }, 'CSET': { pop: 1, push: 0 },\n  'CINC':  { pop: 1, push: 0 }, 'CDEC': { pop: 1, push: 0 },\n  'CMP':   { pop: 0, push: 1 }, 'GT': { pop: 0, push: 1 }, 'LE': { pop: 0, push: 1 }\n};\n\nconst LIMITS = { 'I': 64, 'O': 64, 'M': 1024, 'T': 128, 'C': 128 };\n\nconst ALLOWED_SUBJECTS = {\n  'GET':   ['I','O','M','T'],\n  'GETNOT':['I','O','M','T'],\n  'MOV':   ['O','M'],\n  'CMOV':  ['O','M'],\n  'SET':   ['T','C'],\n  'CSET':  ['T','C'],\n  'CINC':  ['C'],\n  'CDEC':  ['C'],\n  'CMP':   ['C'],\n  'GT':    ['C'],\n  'LE':    ['C'],\n};\n\nconst lines = code.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\nconst errors = [];\nconst trace = [];\nlet depth = 0;\nlet lineNum = 0;\n\nfor (const line of lines) {\n  lineNum++;\n  if (line.startsWith('#')) { trace.push({ l: lineNum, i: line, d: depth, comment: true }); continue; }\n  const parts = line.split(/\\s+/);\n  const cmd = parts[0].toUpperCase();\n\n  if (!VALID_COMMANDS.includes(cmd)) {\n    errors.push(`Zeile ${lineNum}: Unbekannter Befehl '${cmd}'`);\n    continue;\n  }\n\n  if (cmd === 'DUP') {\n    const k = parts.length >= 2 ? parseInt(parts[1]) : 2;\n    if (isNaN(k) || k < 0) {\n      errors.push(`Zeile ${lineNum}: DUP-Argument '${parts[1]}' ungueltig`);\n      continue;\n    }\n    if (k === 1) errors.push(`Zeile ${lineNum}: FEHLER: 'DUP 1' ist ein NOP — Stack unveraendert! Verwende DUP ohne Argument.`);\n    if (k > 1 && depth < 1) errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei 'DUP' (braucht 1, hat ${depth})`);\n    const before = depth;\n    const pushCount = Math.max(0, k - 1);\n    depth += pushCount;\n    trace.push({ l: lineNum, i: line, before, after: depth });\n    continue;\n  }\n\n  const fx = STACK_EFFECTS[cmd];\n  const before = depth;\n  const minReq = fx.pop;\n\n  if (depth < minReq)\n    errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei '${cmd}' (braucht ${minReq}, hat ${depth})`);\n\n  if (ALLOWED_SUBJECTS[cmd] && parts.length >= 2) {\n    const subj = parts[1].toUpperCase();\n    const allowed = ALLOWED_SUBJECTS[cmd];\n    const isConstant = (cmd === 'GET') && (parts[1] === '0' || parts[1] === '1');\n    if (!isConstant) {\n      if (!allowed.includes(subj)) {\n        errors.push(`Zeile ${lineNum}: '${cmd} ${subj}' ist ungueltig — ${cmd} erlaubt nur: ${allowed.join('/')}`);\n      } else if (parts.length >= 3) {\n        const addr = parseInt(parts[2]);\n        if (LIMITS[subj] !== undefined && (isNaN(addr) || addr < 0 || addr >= LIMITS[subj]))\n          errors.push(`Zeile ${lineNum}: Adresse ${parts[2]} ungueltig fuer ${subj} (erlaubt: 0-${LIMITS[subj]-1})`);\n      }\n    }\n  }\n\n  depth = Math.max(0, depth - fx.pop + fx.push);\n  trace.push({ l: lineNum, i: line, before, after: depth });\n}\n\nif (depth !== 0) errors.push(`Stack nicht leer am Ende: Tiefe=${depth}`);\n\nconst valid = errors.length === 0;\nlet result = `Validierung: ${valid ? 'GUELTIG' : 'FEHLERHAFT'}\\n`;\nif (!valid) { result += 'Fehler:\\n' + errors.map(e => `- ${e}`).join('\\n') + '\\n'; }\nresult += 'Stack-Trace:\\n' + trace.filter(t => !t.comment).map(t => `  ${t.l}: [${t.before}] ${t.i} [${t.after}]`).join('\\n');\nreturn result;"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        304
+      ],
+      "id": "a1b2c3d4-0005-0005-0005-000000000005",
+      "name": "FPCValidator"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        304
+      ],
+      "id": "a1b2c3d4-0006-0006-0006-000000000006",
+      "name": "ChatModel",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "FPCDebugChat": {
+      "main": [
+        [
+          {
+            "node": "FPCDebugAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatMemory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FPCDebugAgent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCPClient": {
+      "ai_tool": [
+        [
+          {
+            "node": "FPCDebugAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCValidator": {
+      "ai_tool": [
+        [
+          {
+            "node": "FPCDebugAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatModel": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FPCDebugAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "fpc-debug-v1-0000-0000-000000000001",
+  "activeVersionId": null,
+  "triggerCount": 0,
+  "shared": [],
+  "activeVersion": null,
+  "tags": []
+}
