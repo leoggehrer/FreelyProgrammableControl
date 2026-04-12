@@ -93,6 +93,35 @@ namespace FreelyProgrammableControl.Logic.Extensions
             }
             return result.ToString();
         }
+        /// <summary>
+        /// Removes consecutive occurrences of a specified character from a string, leaving only single instances.
+        /// </summary>
+        /// <param name="source">The string to process.</param>
+        /// <param name="redundant">The character to remove redundant occurrences of.</param>
+        /// <returns>A new string with redundant occurrences of the specified character removed.</returns>
+        public static string RemoveRedundant(this string source, char redundant)
+        {
+            var result = new StringBuilder();
+            var lastWasRedundant = false;
+
+            foreach (var item in source)
+            {
+                if (item == redundant)
+                {
+                    if (lastWasRedundant == false)
+                    {
+                        result.Append(item);
+                    }
+                    lastWasRedundant = true;
+                }
+                else
+                {
+                    result.Append(item);
+                    lastWasRedundant = false;
+                }
+            }
+            return result.ToString();
+        }
         ///<summary>
         /// Converts a string to an integer by extracting all digits.
         ///</summary>

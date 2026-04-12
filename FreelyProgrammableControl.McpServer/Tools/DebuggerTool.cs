@@ -207,17 +207,54 @@ namespace FreelyProgrammableControl.McpServer.Tools
 
     #region Result Classes
 
+    /// <summary>
+    /// Result returned by the <c>debug_snapshot</c> MCP tool.
+    /// Contains the full controller state at the moment of the snapshot.
+    /// </summary>
     public class DebugSnapshotResult
     {
+        /// <summary>
+        /// Indicates whether the snapshot was retrieved successfully.
+        /// False if the desktop application is unreachable.
+        /// </summary>
         public bool Success { get; set; }
+
+        /// <summary>
+        /// JSON string with the complete debug snapshot including stack, memory,
+        /// timers, counters, I/O states, current execution line, and any errors.
+        /// Null if <see cref="Success"/> is false.
+        /// </summary>
         public string? SnapshotJson { get; set; }
+
+        /// <summary>
+        /// Human-readable message describing the outcome.
+        /// </summary>
         public string Message { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Result returned by the <c>debug_step_and_inspect</c> and <c>debug_multi_step</c> MCP tools.
+    /// Contains the full controller state after the executed step(s).
+    /// </summary>
     public class DebugStepResult
     {
+        /// <summary>
+        /// Indicates whether the step(s) were executed successfully.
+        /// False if the controller is not running, debug mode is disabled,
+        /// or the desktop application is unreachable.
+        /// </summary>
         public bool Success { get; set; }
+
+        /// <summary>
+        /// JSON string with the complete debug snapshot after the step(s),
+        /// including stack, memory, timers, counters, I/O states, and current execution line.
+        /// Null if <see cref="Success"/> is false.
+        /// </summary>
         public string? SnapshotJson { get; set; }
+
+        /// <summary>
+        /// Human-readable message describing the outcome.
+        /// </summary>
         public string Message { get; set; } = string.Empty;
     }
 

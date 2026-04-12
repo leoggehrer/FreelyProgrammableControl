@@ -1,0 +1,101 @@
+# AMPELSTEUERUNG
+# ================================================================
+# Zykluszeit: 50ms | T10 = 100ms Taktgeber | C0 = Tick-Zähler
+# 1 Tick = 100ms   | Gesamtzyklus: 250 Ticks = 25 Sekunden
+# ================================================================
+# Phasen (Ticks → Sekunden):
+#   Ticks   1-100 (  0-10s): ROT
+#   Ticks 101-130 ( 10-13s): ROT + GELB
+#   Ticks 131-200 ( 13-20s): GRÜN (konstant)
+#   Ticks 201-230 ( 20-23s): GRÜN blinken (startet AUS, 500ms)
+#   Ticks 231-250 ( 23-25s): GELB  →  danach Neustart
+# ================================================================
+# I0 = NOTAUS: wenn I0=1 → nur ROT leuchtet, alle anderen AUS
+# ================================================================
+# Merker:
+#   M10 = Taktgeber T10 initialisiert
+#   M11 = Zähler C0 initialisiert
+#   M12 = Blink-Timer T0 gestartet
+# ================================================================
+
+# --- EINMALIGE INITIALISIERUNG: ZÄHLER C0 AUF 1 SETZEN ---
+GETNOT M 11
+DUP
+CSET C 0 1
+CMOV M 11 1
+
+# --- EINMALIGE INITIALISIERUNG: TAKTGEBER T10 (100ms) STARTEN ---
+GETNOT M 10
+DUP
+CSET T 10 100
+CMOV M 10 1
+
+# --- C0 BEI JEDEM TAKT (100ms) ERHÖHEN ---
+GET T 10
+CINC C 0
+
+# --- RESET NACH 250 TICKS (25 SEKUNDEN) ---
+GT C 0 250
+CSET C 0 1
+
+# --- BLINK-TIMER T0 (500ms): EINMALIG STARTEN BEIM EINTRITT IN BLINKPHASE ---
+GT C 0 200
+LE C 0 230
+AND
+GETNOT M 12
+AND
+DUP
+CSET T 0 500
+CMOV M 12 1
+
+# --- BLINK-TIMER UND FLAG ZURÜCKSETZEN AUSSERHALB DER BLINKPHASE ---
+GT C 0 200
+LE C 0 230
+AND
+NOT
+DUP
+CSET T 0 0
+CMOV M 12 0
+
+# --- AUSGANG 0: ROT ---
+# Ticks 1-130 (0-13s) ODER I0=1 (NOTAUS)
+GT C 0 0
+LE C 0 130
+AND
+GET I 0
+OR
+MOV O 0
+
+# --- AUSGANG 1: GELB ---
+# Ticks 101-130 (10-13s) ODER Ticks 231-250 (23-25s)
+# Nur wenn I0=0 (kein NOTAUS)
+GT C 0 100
+LE C 0 130
+AND
+GT C 0 230
+LE C 0 250
+AND
+OR
+GET I 0
+NOT
+AND
+MOV O 1
+
+# --- AUSGANG 2: GRÜN ---
+# Konstant AN: Ticks 131-200 (13-20s)
+GT C 0 130
+LE C 0 200
+AND
+# Blinken (startet AUS): Ticks 201-230 (20-23s), T0=FALSE → GRÜN AN
+GT C 0 200
+LE C 0 230
+AND
+GET T 0
+NOT
+AND
+# Konstant ODER Blinken, nur wenn I0=0 (kein NOTAUS)
+OR
+GET I 0
+NOT
+AND
+MOV O 2

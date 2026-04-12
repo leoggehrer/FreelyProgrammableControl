@@ -376,7 +376,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Address = Convert.ToInt32(items[2]);
                         Value = Convert.ToInt32(items[3]);
                     }
-                    // e.g.: LE C 10 17 => stack.pop(counters.GetValue(10) < 17)
+                    // e.g.: LE C 10 17 => stack.pop(counters.GetValue(10) <= 17)
                     else if (items.Length == 4 && (items[0] == "LE")
                              && (items[1] == "C"))
                     {
@@ -404,7 +404,7 @@ namespace FreelyProgrammableControl.Logic.Execution
         /// <returns>String representation of the current object.</returns>
         public override string ToString()
         {
-            return $"{LineNumber}: {(IsComment ? Comment : Instruction + " " + Comment)}";
+            return $"{LineNumber:d4}: {Source.RemoveLeftAndRight(' ').RemoveRedundant(' '),-30} {(HasError ? "Error:" : ""),-6} {ErrorMessage}";
         }
     }
 }

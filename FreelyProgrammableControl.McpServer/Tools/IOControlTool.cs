@@ -69,6 +69,33 @@ namespace FreelyProgrammableControl.McpServer.Tools
             }
         }
 
+        /// <summary>
+        /// Setzt das Label eines einzelnen Inputs.
+        /// </summary>
+        [McpServerTool(Name = "set_input_label")]
+        [Description("Sets the display label of a single controller input channel (e.g. 'Start button' for I0).")]
+        public static async Task<IOResult> SetInputLabel(
+            [Description("Index of the input channel (e.g. 0 for I0, 1 for I1).")]
+            int index,
+            [Description("New label text for the input channel.")]
+            string label)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Setze Input-Label {index}: \"{label}\"...");
+            try
+            {
+                var isConnected = await Client.IsConnectedAsync();
+                if (!isConnected)
+                    return new IOResult { Success = false, Message = "Desktop-Anwendung ist nicht erreichbar." };
+
+                var result = await Client.SetInputLabelAsync(index, label);
+                return new IOResult { Success = true, DataJson = result, Message = $"Label von Input {index} auf \"{label}\" gesetzt" };
+            }
+            catch (Exception ex)
+            {
+                return new IOResult { Success = false, Message = $"Fehler: {ex.Message}" };
+            }
+        }
+
         // ====================================================
         // Output Tools
         // ====================================================
@@ -91,6 +118,33 @@ namespace FreelyProgrammableControl.McpServer.Tools
 
                 var result = await Client.GetOutputsAsync();
                 return new IOResult { Success = true, DataJson = result, Message = "Output-Zustände abgerufen" };
+            }
+            catch (Exception ex)
+            {
+                return new IOResult { Success = false, Message = $"Fehler: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Setzt das Label eines einzelnen Outputs.
+        /// </summary>
+        [McpServerTool(Name = "set_output_label")]
+        [Description("Sets the display label of a single controller output channel (e.g. 'Green lamp' for Q0).")]
+        public static async Task<IOResult> SetOutputLabel(
+            [Description("Index of the output channel (e.g. 0 for Q0, 1 for Q1).")]
+            int index,
+            [Description("New label text for the output channel.")]
+            string label)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Tool] Setze Output-Label {index}: \"{label}\"...");
+            try
+            {
+                var isConnected = await Client.IsConnectedAsync();
+                if (!isConnected)
+                    return new IOResult { Success = false, Message = "Desktop-Anwendung ist nicht erreichbar." };
+
+                var result = await Client.SetOutputLabelAsync(index, label);
+                return new IOResult { Success = true, DataJson = result, Message = $"Label von Output {index} auf \"{label}\" gesetzt" };
             }
             catch (Exception ex)
             {

@@ -6,11 +6,22 @@ using FreelyProgrammableControl.Logic.Contracts;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {
+    /// <summary>
+    /// View model for a single output device in the I/O panel.
+    /// Reflects the current output state set by the running FPC program
+    /// and allows the user to rename the device label via a dialog.
+    /// </summary>
     public partial class OutputDeviceViewModel : ViewModelBase
     {
         private readonly IOutputDevice device;
         private readonly Window? ownerWindow;
 
+        /// <summary>
+        /// Initialises the view model and reads the initial state from <paramref name="device"/>.
+        /// </summary>
+        /// <param name="device">The output device to represent.</param>
+        /// <param name="index">Zero-based index used as the radio-button group name.</param>
+        /// <param name="owner">Parent window used as dialog owner. May be null.</param>
         public OutputDeviceViewModel(IOutputDevice device, int index, Window? owner = null)
         {
             this.device = device;
@@ -20,112 +31,44 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             UpdateFromDevice();
         }
 
+        /// <summary>Display label of the output device.</summary>
         [ObservableProperty]
         private string label = string.Empty;
-        
+
+        /// <summary>
+        /// Radio-button group name derived from the device index.
+        /// Ensures each output indicator belongs to its own group.
+        /// </summary>
         public string GroupName { get; }
 
+        /// <summary>Current active state of the output device.</summary>
         [ObservableProperty]
         private bool isChecked;
 
+        /// <summary>
+        /// Refreshes <see cref="IsChecked"/> from the underlying device value.
+        /// Call this after the FPC program has executed a cycle.
+        /// </summary>
         public void UpdateFromDevice()
         {
             IsChecked = device.Value;
         }
 
+        /// <summary>
+        /// Opens a dialog allowing the user to rename this output device.
+        /// No-op if no owner window is available.
+        /// </summary>
         [RelayCommand]
         private async Task EditLabel()
         {
             if (ownerWindow == null)
                 return;
 
-            var dialog = new Window
+            var newLabel = await ShowLabelEditDialogAsync(ownerWindow, Label);
+            if (newLabel != null)
             {
-                Title = "Label ändern",
-                Width = 400,
-                Height = 180,
-                CanResize = false,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            var textBox = new TextBox
-            {
-                Text = Label,
-                Watermark = "Neuer Label",
-                Margin = new Avalonia.Thickness(10)
-            };
-
-            var okButton = new Button
-            {
-                Content = "OK",
-                Width = 100,
-                Margin = new Avalonia.Thickness(5)
-            };
-
-            var cancelButton = new Button
-            {
-                Content = "Abbrechen",
-                Width = 100,
-                Margin = new Avalonia.Thickness(5)
-            };
-
-            bool? result = null;
-
-            okButton.Click += (s, e) => 
-            {
-                result = true;
-                dialog.Close();
-            };
-
-            cancelButton.Click += (s, e) => 
-            {
-                result = false;
-                dialog.Close();
-            };
-
-            textBox.KeyDown += (s, e) =>
-            {
-                if (e.Key == Avalonia.Input.Key.Enter)
-                {
-                    result = true;
-                    dialog.Close();
-                }
-                else if (e.Key == Avalonia.Input.Key.Escape)
-                {
-                    result = false;
-                    dialog.Close();
-                }
-            };
-
-            var buttonPanel = new StackPanel
-            {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Children = { okButton, cancelButton }
-            };
-
-            dialog.Content = new StackPanel
-            {
-                Margin = new Avalonia.Thickness(20),
-                Spacing = 15,
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = "Geben Sie einen neuen Label ein:",
-                        FontSize = 14
-                    },
-                    textBox,
-                    buttonPanel
-                }
-            };
-
-            await dialog.ShowDialog(ownerWindow);
-
-            if (result == true && !string.IsNullOrWhiteSpace(textBox.Text))
-            {
-                Label = textBox.Text;
-                device.Label = textBox.Text;
+                Label = newLabel;
+                device.Label = newLabel;
             }
         }
     }

@@ -20,6 +20,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F → O0=F
 - I0=T → O0=T
 
@@ -44,6 +45,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=F
 - I0=T, I1=F → O0=F
 - I0=F, I1=T → O0=F
@@ -70,6 +72,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=F
 - I0=T, I1=F → O0=T
 - I0=F, I1=T → O0=T
@@ -95,6 +98,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F → O0=T
 - I0=T → O0=F
 
@@ -119,6 +123,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=F
 - I0=T, I1=F → O0=T
 - I0=F, I1=T → O0=T
@@ -146,6 +151,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=T
 - I0=T, I1=F → O0=T
 - I0=F, I1=T → O0=T
@@ -173,6 +179,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=T
 - I0=T, I1=F → O0=F
 - I0=F, I1=T → O0=F
@@ -201,6 +208,7 @@ MOV O 0
 ```
 
 Testfälle (Auswahl):
+
 - I0=F, I1=F, I2=F → O0=F
 - I0=T, I1=T, I2=F → O0=F
 - I0=T, I1=T, I2=T → O0=T
@@ -228,6 +236,7 @@ MOV O 1
 ```
 
 Testfälle:
+
 - I0=T, I1=T → O0=T, O1=T
 - I0=T, I1=F → O0=F, O1=F
 
@@ -335,6 +344,7 @@ CMOV M 0 1
 ```
 
 Stack-Fluss:
+
 1. GETNOT M 0: Prüft ob noch nicht initialisiert → [true] (beim ersten Mal)
 2. DUP: Dupliziert für zwei konsumierende Befehle → [true, true]
 3. CSET T 0 500: Poppt true, startet Timer → [true]
@@ -368,6 +378,7 @@ MOV O 0
 ```
 
 Funktionsweise:
+
 - Zyklus 1: M0=false → Timer wird gestartet, M0 wird gesetzt
 - Zyklus 2+: M0=true → Timer-Init wird übersprungen
 - Timer pulsiert: 500ms true, 500ms false → O0 blinkt
@@ -398,6 +409,7 @@ MOV O 0
 ```
 
 WICHTIG: Timer-Init und Gating sind GETRENNT!
+
 - Timer wird einmalig gestartet und läuft dauerhaft (auch wenn I0=false)
 - Output = I0 AND T0 → blinkt nur wenn I0=true
 - KEIN CSET im I0-Pfad! Das würde den Timer ständig neu triggern.
@@ -510,9 +522,10 @@ MOV O 2
 ```
 
 Vergleichsoperatoren:
+
 - CMP C n v → true wenn C[n] == v (exakt gleich)
 - GT C n v → true wenn C[n] > v (strikt größer)
-- LE C n v → true wenn C[n] < v (strikt kleiner)
+- LE C n v → true wenn C[n] <= v (strikt kleiner)
 
 Tags: counter, CMP, vergleich, schwellenwert
 
@@ -609,6 +622,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=F (Maschine aus)
 - I0=T, I1=F → O0=T (Maschine läuft)
 - I0=T, I1=T → O0=F (Not-Aus! Vorrang!)
@@ -639,6 +653,7 @@ MOV O 0
 ```
 
 Testfälle:
+
 - I0=F, I1=F → O0=letzter Wert (gespeichert!)
 - I0=T, I1=F → O0=T (gesetzt)
 - I0=F, I1=T → O0=F (zurückgesetzt)
@@ -746,6 +761,7 @@ MOV O 0
 ```
 
 Stack-Fluss Block 3 (kritischer Pfad, da 3× konsumierend mit DUP-Sicherung):
+
 1. `GET M 2`: → `[M2]`
 2. `GET M 3`: → `[M2, M3]`
 3. `AND`: → `[M2&&M3]`
@@ -756,6 +772,7 @@ Stack-Fluss Block 3 (kritischer Pfad, da 3× konsumierend mit DUP-Sicherung):
 8. `CMOV M 3 0`: konsumiert Top → `[]`
 
 Funktionsweise (Zeitablauf):
+
 - Start: M0=0, M2=0, M3=0, C0=0
 - Zyklus 1: Timer initialisiert (M0=1), O0=T (C0=0 < 10)
 - T0 geht AN: M2=1 gesetzt
@@ -764,12 +781,14 @@ Funktionsweise (Zeitablauf):
 - Nach 10 Perioden (20 s): C0=10, LE C 0 10 = false → O0=F (bleibt AUS)
 
 Testfälle:
+
 - Nach 0 Perioden (t=0 s): C0=0 → O0=T
 - Nach 5 Perioden (t=10 s): C0=5 → O0=T
 - Nach 10 Perioden (t=20 s): C0=10 → O0=F
 - C0=9, M2=1, M3=0: O0=T (Periode noch nicht komplett)
 
 WICHTIG: Anzahl Perioden und Timer-Intervall sind unabhängig einstellbar:
+
 - Kürzere Perioden: `CSET T 0 500` → Periode = 1 s → Schwellenwert 10 = 10 s Gesamtlaufzeit
 - Mehr Perioden: `LE C 0 30` → 30 Perioden Gesamtlaufzeit
 
@@ -785,11 +804,13 @@ Tags: timer, periodenzähler, zeitbegrenzt, abschaltung, flanke, M2-M3-muster, C
 **Anwendung**: Code-Validierung, Fehlerprüfung
 
 Stack-Änderungen pro Befehl:
+
 - Push (+1): GET, GETNOT, CMP, GT, LE, DUP
 - Neutral (0): NOT, SET, CINC, CDEC
 - Pop (-1): AND, OR, XOR, MOV, CMOV, CSET
 
 Regeln:
+
 1. Vor Ausgabe: Stack-Simulation über jede Zeile
 2. Stack-Tiefe darf nie negativ werden
 3. Für jeden konsumierenden Befehl müssen genug Werte vorhanden sein
@@ -808,12 +829,14 @@ Tags: referenz, regeln, stack, validierung
 **Anwendung**: Timer-Programmierung, Fehlerverständnis
 
 Timer sind PULSIEREND:
+
 - SET T n v / CSET T n v startet pulsierenden Timer
 - v Millisekunden TRUE, dann v Millisekunden FALSE (Periode = 2*v ms)
 - Beispiel: SET T 0 500 → 500ms true, 500ms false, 500ms true, ...
 - SET T n 0 / CSET T n 0 stoppt den Timer
 
 VERBINDLICH: Timer IMMER einmalig initialisieren:
+
 ```
 GETNOT M n
 DUP

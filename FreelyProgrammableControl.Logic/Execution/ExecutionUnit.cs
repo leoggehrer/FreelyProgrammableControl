@@ -552,11 +552,19 @@ namespace FreelyProgrammableControl.Logic.Execution
                 if (DebugEnabled == false)
                 {
                     stack.Clear();
-                    foreach (var line in parsedLines)
+                    try
                     {
-                        var executionLine = line;
+                        foreach (var line in parsedLines)
+                        {
+                            var executionLine = line;
 
-                        Execute(executionLine);
+                            Execute(executionLine);
+                        }
+                    }
+                    catch
+                    {
+                        // Execute() hat bereits running=false, HasExecutionError=true
+                        // und ExecutionErrorMessage gesetzt — hier nur sauber beenden.
                     }
                     NotifyAsync();
                 }
@@ -750,7 +758,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         case "LE":
                             value = counters.GetValue(parsedLine.Address);
 
-                            stack.Push(value < parsedLine.Value);
+                            stack.Push(value <= parsedLine.Value);
                             break;
                         default:
                             throw new Exception($"Unknown instruction: {parsedLine.Instruction}");

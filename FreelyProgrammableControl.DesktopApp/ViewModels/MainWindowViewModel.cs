@@ -12,28 +12,27 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FreelyProgrammableControl.DesktopApp.Services;
 using FreelyProgrammableControl.Logic.Execution;
+using FreelyProgrammableControl.Logic.Extensions;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {
     /// <summary>
-    /// Represents the view model for the main window of the application.
+    /// Main window view model for the FPC desktop application.
+    /// Coordinates the FPC execution engine, the HTTP API service, I/O device panels,
+    /// the source editor (with undo/redo), cloud storage (Google Drive / n8n), and debug stepping.
     /// </summary>
-    /// <remarks>
-    /// This class inherits from <see cref="ViewModelBase"/> and provides data and
-    /// functionality for the main window's user interface.
-    /// </remarks>
     public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
-        private const int IoPageSize = 20;
+        private const int IOPageSize = 20;
 
         #region fields
+        private bool isInitialized;
         private IClipboard? clipboard;
         private IStorageProvider? storageProvider;
         private Window? ownerWindow;
         private ApiService? apiService;
         private readonly string fpcSampleListFolderName;
         private readonly N8nWebhookService n8nWebhookService;
-        private bool isInitialized;
         private string? selectedFile;
         private readonly Stack<string> undoStack = new();
         private readonly Stack<string> redoStack = new();
@@ -43,78 +42,129 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         #endregion fields
 
         #region properties
+        /// <summary>All input device view models (full list, independent of paging).</summary>
         public ObservableCollection<InputDeviceViewModel> Inputs { get; } = new();
+
+        /// <summary>All output device view models (full list, independent of paging).</summary>
         public ObservableCollection<OutputDeviceViewModel> Outputs { get; } = new();
+
+        /// <summary>The subset of <see cref="Inputs"/> shown on the currently selected input page.</summary>
         public ObservableCollection<InputDeviceViewModel> VisibleInputs { get; } = new();
+
+        /// <summary>The subset of <see cref="Outputs"/> shown on the currently selected output page.</summary>
         public ObservableCollection<OutputDeviceViewModel> VisibleOutputs { get; } = new();
+
+        /// <summary>Page-range labels for the input pager (e.g. "1-20", "21-40").</summary>
         public ObservableCollection<string> InputPageLabels { get; } = new();
+
+        /// <summary>Page-range labels for the output pager (e.g. "1-20", "21-40").</summary>
         public ObservableCollection<string> OutputPageLabels { get; } = new();
 
+        /// <summary>FPC source code shown in the editor. Automatically uppercased on change.</summary>
         [ObservableProperty]
         private string sourceText = string.Empty;
 
+        /// <summary>Parse result or execution output text shown in the output panel.</summary>
         [ObservableProperty]
         private string outputText = string.Empty;
 
+        /// <summary>Full raw execution state string from the engine (split into Parts 1-5 for display).</summary>
         [ObservableProperty]
         private string executionState = string.Empty;
 
+        /// <summary>General execution state info (registers, current line). Panel 1 of 5.</summary>
         [ObservableProperty]
         private string executionStatePart1 = string.Empty;
 
+        /// <summary>Boolean stack state. Panel 2 of 5. Empty when debug mode is off.</summary>
         [ObservableProperty]
         private string executionStatePart2 = string.Empty;
 
+        /// <summary>Memory (M0-M63) state. Panel 3 of 5. Empty when debug mode is off.</summary>
         [ObservableProperty]
         private string executionStatePart3 = string.Empty;
 
+        /// <summary>Counter values. Panel 4 of 5. Empty when debug mode is off.</summary>
         [ObservableProperty]
         private string executionStatePart4 = string.Empty;
 
+        /// <summary>Timer states. Panel 5 of 5. Empty when debug mode is off.</summary>
         [ObservableProperty]
         private string executionStatePart5 = string.Empty;
 
+        /// <summary>Status bar text (current file path, API port, error messages).</summary>
         [ObservableProperty]
         private string statusText = string.Empty;
 
+        /// <summary><c>true</c> while the program is running — makes the source editor read-only.</summary>
         [ObservableProperty]
         private bool isSourceReadOnly;
 
+        /// <summary>
+        /// Controls whether the debug-mode toggle button is enabled in the UI.
+        /// Set to <c>true</c> only when the engine is stopped (you cannot switch debug mode while running).
+        /// </summary>
         [ObservableProperty]
         private bool isDebugEnabled = true;
 
+        /// <summary>
+        /// Whether debug mode is currently active in the execution engine.
+        /// Toggling this writes through to <see cref="ExecutionUnit.DebugEnabled"/>.
+        /// </summary>
         [ObservableProperty]
         private bool debugEnabled;
 
+        /// <summary>Label shown on the debug toggle button ("Debug: ON" / "Debug: OFF").</summary>
         [ObservableProperty]
         private string debugButtonText = "Debug: OFF";
 
+        /// <summary>Zero-based line index the source-editor scrolls to (used for debug stepping).</summary>
         [ObservableProperty]
         private int currentLineNumber = 0;
+
+        /// <summary>Highest valid line index in the current source text.</summary>
         [ObservableProperty]
         private int maxLineNumber = 0;
+
+        /// <summary>Lowest valid line index (always 0).</summary>
         [ObservableProperty]
         private int minLineNumber = 0;
 
+        /// <summary>Zero-based index of the currently selected input page.</summary>
         [ObservableProperty]
         private int selectedInputPageIndex;
 
+        /// <summary>Zero-based index of the currently selected output page.</summary>
         [ObservableProperty]
         private int selectedOutputPageIndex;
 
+        /// <summary><c>true</c> when the input list spans more than one page.</summary>
         [ObservableProperty]
         private bool hasMultipleInputPages;
 
+        /// <summary><c>true</c> when the output list spans more than one page.</summary>
         [ObservableProperty]
         private bool hasMultipleOutputPages;
 
+        /// <summary>Number of input channels configured for the execution engine.</summary>
         public int InputCount => executionUnit.Inputs.Length;
+
+        /// <summary>Number of output channels configured for the execution engine.</summary>
         public int OutputCount => executionUnit.Outputs.Length;
 
+        /// <summary><c>true</c> while the FPC program is executing.</summary>
         public bool IsRunning => executionUnit.IsRunning;
+
+        /// <summary><c>true</c> when the last loaded source contained parse errors.</summary>
         public bool HasParseError => executionUnit.HasParseError;
+
+        /// <summary>Parse error message from the last load attempt, or <c>null</c> if none.</summary>
         public string? ParseErrorMessage => executionUnit.ParseErrorMessage;
+
+        /// <summary>The source lines currently loaded in the execution engine.</summary>
         public string[] Source => executionUnit.Source;
+
+        /// <summary>Human-readable engine state summary string.</summary>
         public string State => executionUnit.State;
 
         /// <summary>
@@ -196,6 +246,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         #endregion properties
 
         #region constructors
+        /// <summary>
+        /// Creates the view model, wires up the execution engine callbacks,
+        /// loads the last-used program file from disk, and starts the HTTP API service.
+        /// </summary>
         public MainWindowViewModel()
         {
             var settings = ConfigurationHelper.GetSettings();
@@ -232,6 +286,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         #endregion constructors
 
         #region methods
+        /// <summary>
+        /// Starts the Kestrel HTTP API service on the configured port.
+        /// Updates <see cref="StatusText"/> on success or failure.
+        /// </summary>
         private async void StartApiService(AppSettings settings)
         {
             try
@@ -245,6 +303,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 StatusText = $"API-Server konnte nicht gestartet werden: {ex.Message}";
             }
         }
+        /// <summary>
+        /// Binds platform-specific services (file picker, clipboard) to this view model.
+        /// Must be called once from the code-behind after the window is loaded.
+        /// Subsequent calls are no-ops.
+        /// </summary>
+        /// <param name="provider">Avalonia storage provider for file dialogs.</param>
+        /// <param name="owner">The main application window.</param>
         public void Initialize(IStorageProvider? provider, Window owner)
         {
             if (isInitialized)
@@ -262,6 +327,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CreateOutputItems();
         }
 
+        /// <summary>Clears the editor and resets the current file to the default new-program path.</summary>
         [RelayCommand]
         private void New()
         {
@@ -270,12 +336,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             StatusText = selectedFile;
         }
 
+        /// <summary>Opens a file picker and loads the selected .fpc file into the editor.</summary>
         [RelayCommand(CanExecute = nameof(CanOpen))]
         private async Task OpenAsync()
         {
             if (storageProvider is null)
             {
-                await ShowErrorDialogAsync("Fehler", "Dateisystem nicht verfügbar.");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler", "Dateisystem nicht verfügbar.");
                 return;
             }
 
@@ -300,7 +367,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
             catch (Exception ex)
             {
-                await ShowErrorDialogAsync("Fehler beim Öffnen", $"Die Datei konnte nicht geöffnet werden:\n{ex.Message}");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler beim Öffnen", $"Die Datei konnte nicht geöffnet werden:\n{ex.Message}");
             }
         }
         private bool CanOpen()
@@ -308,6 +375,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>Saves the current source text to the current file path (no dialog).</summary>
         [RelayCommand(CanExecute = nameof(CanSave))]
         private async Task SaveAsync()
         {
@@ -320,7 +388,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    await ShowErrorDialogAsync("Fehler beim Speichern", $"Die Datei konnte nicht gespeichert werden:\n{ex.Message}");
+                    await ShowErrorDialogAsync(ownerWindow, "Fehler beim Speichern", $"Die Datei konnte nicht gespeichert werden:\n{ex.Message}");
                 }
             }
         }
@@ -330,18 +398,19 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>Opens a Save As dialog and saves the source to the chosen path.</summary>
         [RelayCommand(CanExecute = nameof(CanSave))]
         private async Task SaveAsAsync()
         {
             if (storageProvider is null)
             {
-                await ShowErrorDialogAsync("Fehler", "Dateisystem nicht verfügbar.");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler", "Dateisystem nicht verfügbar.");
                 return;
             }
 
             if (!storageProvider.CanSave)
             {
-                await ShowErrorDialogAsync("Nicht unterstützt", "Speichern wird auf dieser Plattform nicht unterstützt.");
+                await ShowErrorDialogAsync(ownerWindow, "Nicht unterstützt", "Speichern wird auf dieser Plattform nicht unterstützt.");
                 return;
             }
 
@@ -371,7 +440,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
             catch (Exception ex)
             {
-                await ShowErrorDialogAsync("Fehler beim Speichern", $"Die Datei konnte nicht gespeichert werden:\n{ex.Message}");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler beim Speichern", $"Die Datei konnte nicht gespeichert werden:\n{ex.Message}");
             }
         }
 
@@ -380,6 +449,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false && !string.IsNullOrWhiteSpace(SourceText);
         }
 
+        /// <summary>Prompts for a filename and uploads the current source to Google Drive via n8n webhook.</summary>
         [RelayCommand(CanExecute = nameof(CanSaveToGoogleDrive))]
         private async Task SaveToGoogleDriveAsync()
         {
@@ -402,14 +472,15 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
             catch (InvalidOperationException ex)
             {
-                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+                await ShowErrorDialogAsync(ownerWindow, "n8n Konfiguration fehlt", ex.Message);
             }
             catch (Exception ex)
             {
-                await ShowErrorDialogAsync("Fehler beim n8n-Aufruf", $"Der Webhook konnte nicht aufgerufen werden:\n{ex.Message}");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler beim n8n-Aufruf", $"Der Webhook konnte nicht aufgerufen werden:\n{ex.Message}");
             }
         }
 
+        /// <summary>Saves the current source to the n8n PGVector store for AI retrieval.</summary>
         [RelayCommand(CanExecute = nameof(CanSaveToVektor))]
         private async Task SaveToVektorAsync()
         {
@@ -418,15 +489,15 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 StatusText = "Programm wird in Vector Store gespeichert...";
                 await n8nWebhookService.SaveToVektorAsync();
                 StatusText = "Programm erfolgreich im Vector Store gespeichert";
-                await ShowInfoDialogAsync("Vector Store", "Das Programm wurde erfolgreich im Vector Store gespeichert.");
+                await ShowInfoDialogAsync(ownerWindow, "Vector Store", "Das Programm wurde erfolgreich im Vector Store gespeichert.");
             }
             catch (InvalidOperationException ex)
             {
-                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+                await ShowErrorDialogAsync(ownerWindow, "n8n Konfiguration fehlt", ex.Message);
             }
             catch (Exception ex)
             {
-                await ShowErrorDialogAsync("Fehler beim Speichern", $"Programm konnte nicht im Vector Store gespeichert werden:\n{ex.Message}");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler beim Speichern", $"Programm konnte nicht im Vector Store gespeichert werden:\n{ex.Message}");
             }
         }
 
@@ -440,6 +511,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>Fetches the file list from Google Drive and loads the user-selected program into the editor.</summary>
         [RelayCommand(CanExecute = nameof(CanLoadFromGoogleDrive))]
         private async Task LoadFromGoogleDriveAsync()
         {
@@ -476,14 +548,15 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
             catch (InvalidOperationException ex)
             {
-                await ShowErrorDialogAsync("n8n Konfiguration fehlt", ex.Message);
+                await ShowErrorDialogAsync(ownerWindow, "n8n Konfiguration fehlt", ex.Message);
             }
             catch (Exception ex)
             {
-                await ShowErrorDialogAsync("Fehler beim Laden", $"Datei konnte nicht aus Google Drive geladen werden:\n{ex.Message}");
+                await ShowErrorDialogAsync(ownerWindow, "Fehler beim Laden", $"Datei konnte nicht aus Google Drive geladen werden:\n{ex.Message}");
             }
         }
 
+        /// <summary>Disposes the API service and closes the main window.</summary>
         [RelayCommand]
         private void Exit()
         {
@@ -494,6 +567,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             ownerWindow?.Close();
         }
 
+        /// <summary>Reverts the source editor to the previous text in the undo history.</summary>
         [RelayCommand(CanExecute = nameof(CanUndo))]
         private void Undo()
         {
@@ -510,6 +584,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private bool CanUndo() => undoStack.Count > 0 && !IsSourceReadOnly;
 
+        /// <summary>Reapplies the most recently undone source edit.</summary>
         [RelayCommand(CanExecute = nameof(CanRedo))]
         private void Redo()
         {
@@ -526,6 +601,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private bool CanRedo() => redoStack.Count > 0 && !IsSourceReadOnly;
 
+        /// <summary>Copies the entire source text to the system clipboard.</summary>
         [RelayCommand(CanExecute = nameof(CanCopyOrCut))]
         private async Task CopyAsync()
         {
@@ -537,6 +613,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private bool CanCopyOrCut() => !string.IsNullOrEmpty(SourceText);
 
+        /// <summary>Replaces the source text with the clipboard contents.</summary>
         [RelayCommand(CanExecute = nameof(CanPasteCommand))]
         private async Task PasteAsync()
         {
@@ -552,6 +629,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
         private bool CanPasteCommand() => !IsSourceReadOnly;
 
+        /// <summary>Copies the source to the clipboard and then clears the editor.</summary>
         [RelayCommand(CanExecute = nameof(CanCopyOrCut))]
         private async Task CutAsync()
         {
@@ -562,6 +640,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
+        /// <summary>Parses the source, loads it into the engine, and starts execution. Shows an error dialog on parse failure.</summary>
         [RelayCommand(CanExecute = nameof(CanStart))]
         private async Task StartAsync()
         {
@@ -582,16 +661,17 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                                                   .Select((i, l) => $"{l:d4}: {i}")
                                                   .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
 
+                        CurrentLineNumber = executionUnit.CurrentExecutionLine?.LineNumber ?? 0;
                         UpdateRunState();
                     }
                     else
                     {
-                        await ShowErrorDialogAsync("Parse-Fehler", $"Das Programm enthält {errors} Fehler und kann nicht gestartet werden.");
+                        await ShowErrorDialogAsync(ownerWindow, "Parse-Fehler", $"Das Programm enthält {errors} Fehler und kann nicht gestartet werden.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    await ShowErrorDialogAsync("Fehler beim Start", $"Das Programm konnte nicht gestartet werden:\n{ex.Message}");
+                    await ShowErrorDialogAsync(ownerWindow, "Fehler beim Start", $"Das Programm konnte nicht gestartet werden:\n{ex.Message}");
                 }
             }
         }
@@ -601,6 +681,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>Parses and loads the current source into the engine without starting execution.</summary>
         [RelayCommand(CanExecute = nameof(CanLoadSource))]
         private void LoadSource()
         {
@@ -623,6 +704,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>Stops the running program and restores the editable source text in the editor.</summary>
         [RelayCommand(CanExecute = nameof(CanStop))]
         private void Stop()
         {
@@ -640,6 +722,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning;
         }
 
+        /// <summary>Parses the current source and shows the annotated result in the output panel.</summary>
         [RelayCommand(CanExecute = nameof(CanParse))]
         private void Parse()
         {
@@ -651,6 +734,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning == false;
         }
 
+        /// <summary>
+        /// Advances execution by one instruction in debug mode.
+        /// If the engine has jumped past <see cref="CurrentLineNumber"/>, steps forward until it catches up.
+        /// </summary>
         [RelayCommand(CanExecute = nameof(CanStep))]
         private void Step()
         {
@@ -683,6 +770,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning && executionUnit.DebugEnabled;
         }
 
+        /// <summary>Shows the About dialog with version and API status information.</summary>
         [RelayCommand]
         private async Task AboutAsync()
         {
@@ -753,15 +841,14 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Parses <paramref name="lines"/> and writes the annotated result to <see cref="OutputText"/>.
+        /// </summary>
+        /// <returns>Number of parse errors found.</returns>
         private int ParseAndView(string[] lines)
         {
             var parsedLines = executionUnit.Parse(lines);
-            var parsedText = parsedLines.Select(pl =>
-            {
-                var result = $"{pl.LineNumber:d4}: {pl.Source,-30} {(pl.HasError ? "Error:" : ""),-6} {pl.ErrorMessage}";
-
-                return result;
-            }).ToList();
+            var parsedText = parsedLines.Select(pl => pl.ToString()).ToList();
             var errorCount = parsedLines.Count(pl => pl.HasError);
 
             parsedText.Insert(0, $"Text has {errorCount} Error(s)");
@@ -771,6 +858,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return errorCount;
         }
 
+        /// <summary>
+        /// Syncs UI-state properties with the engine state and notifies all commands
+        /// that their <c>CanExecute</c> result may have changed.
+        /// Call this after any operation that starts or stops the engine.
+        /// </summary>
         public void UpdateRunState()
         {
             IsSourceReadOnly = executionUnit.IsRunning;
@@ -782,10 +874,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             SaveToGoogleDriveCommand.NotifyCanExecuteChanged();
             LoadFromGoogleDriveCommand.NotifyCanExecuteChanged();
             LoadSourceCommand.NotifyCanExecuteChanged();
+
             ParseCommand.NotifyCanExecuteChanged();
             StartCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
             StepCommand.NotifyCanExecuteChanged();
+            
             UndoCommand?.NotifyCanExecuteChanged();
             RedoCommand?.NotifyCanExecuteChanged();
             CopyCommand?.NotifyCanExecuteChanged();
@@ -793,6 +887,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CutCommand?.NotifyCanExecuteChanged();
         }
 
+        /// <summary>Callback invoked by the engine when input device values change. Refreshes all input view models on the UI thread.</summary>
         private void OnUpdateInputs(object sender, EventArgs e)
         {
             Dispatcher.UIThread.InvokeAsync(() =>
@@ -804,6 +899,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             });
         }
 
+        /// <summary>Callback invoked by the engine when output device values change. Refreshes all output view models on the UI thread.</summary>
         private void OnUpdateOutputs(object sender, EventArgs e)
         {
             Dispatcher.UIThread.InvokeAsync(() =>
@@ -815,11 +911,25 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             });
         }
 
+        /// <summary>Callback invoked after each execution cycle. Updates <see cref="ExecutionState"/> from the engine.
+        /// When a runtime error stops the execution, also updates <see cref="StatusText"/> and refreshes command states on the UI thread.</summary>
         private void UpdateExecutionState(object sender, EventArgs e)
         {
             ExecutionState = executionUnit.State;
+
+            if (executionUnit.HasExecutionError)
+            {
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    SourceText = saveUserinput;
+                    StatusText = $"Laufzeitfehler: {executionUnit.ExecutionErrorMessage}";
+                    saveUserinput = string.Empty;
+                    UpdateRunState();
+                });
+            }
         }
 
+        /// <summary>Builds the <see cref="Inputs"/> collection from the execution engine and rebuilds the input pages.</summary>
         private void CreateInputItems()
         {
             Inputs.Clear();
@@ -831,6 +941,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             RebuildInputPages();
         }
 
+        /// <summary>Builds the <see cref="Outputs"/> collection from the execution engine and rebuilds the output pages.</summary>
         private void CreateOutputItems()
         {
             Outputs.Clear();
@@ -842,15 +953,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             RebuildOutputPages();
         }
 
+        /// <summary>Regenerates <see cref="InputPageLabels"/> and resets paging state after the input list changes.</summary>
         private void RebuildInputPages()
         {
             InputPageLabels.Clear();
 
-            var pageCount = Math.Max(1, (Inputs.Count + IoPageSize - 1) / IoPageSize);
+            var pageCount = Math.Max(1, (Inputs.Count + IOPageSize - 1) / IOPageSize);
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             {
-                var start = pageIndex * IoPageSize + 1;
-                var end = Math.Min((pageIndex + 1) * IoPageSize, Inputs.Count);
+                var start = pageIndex * IOPageSize + 1;
+                var end = Math.Min((pageIndex + 1) * IOPageSize, Inputs.Count);
                 InputPageLabels.Add($"{start}-{end}");
             }
 
@@ -864,15 +976,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             RefreshVisibleInputs();
         }
 
+        /// <summary>Regenerates <see cref="OutputPageLabels"/> and resets paging state after the output list changes.</summary>
         private void RebuildOutputPages()
         {
             OutputPageLabels.Clear();
 
-            var pageCount = Math.Max(1, (Outputs.Count + IoPageSize - 1) / IoPageSize);
+            var pageCount = Math.Max(1, (Outputs.Count + IOPageSize - 1) / IOPageSize);
             for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             {
-                var start = pageIndex * IoPageSize + 1;
-                var end = Math.Min((pageIndex + 1) * IoPageSize, Outputs.Count);
+                var start = pageIndex * IOPageSize + 1;
+                var end = Math.Min((pageIndex + 1) * IOPageSize, Outputs.Count);
                 OutputPageLabels.Add($"{start}-{end}");
             }
 
@@ -886,6 +999,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             RefreshVisibleOutputs();
         }
 
+        /// <summary>Repopulates <see cref="VisibleInputs"/> with the items for the current input page.</summary>
         private void RefreshVisibleInputs()
         {
             VisibleInputs.Clear();
@@ -896,8 +1010,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
 
             var safeIndex = Math.Clamp(SelectedInputPageIndex, 0, Math.Max(0, InputPageLabels.Count - 1));
-            var start = safeIndex * IoPageSize;
-            var endExclusive = Math.Min(start + IoPageSize, Inputs.Count);
+            var start = safeIndex * IOPageSize;
+            var endExclusive = Math.Min(start + IOPageSize, Inputs.Count);
 
             for (int i = start; i < endExclusive; i++)
             {
@@ -906,6 +1020,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
 
+        /// <summary>Repopulates <see cref="VisibleOutputs"/> with the items for the current output page.</summary>
         private void RefreshVisibleOutputs()
         {
             VisibleOutputs.Clear();
@@ -916,8 +1031,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
 
             var safeIndex = Math.Clamp(SelectedOutputPageIndex, 0, Math.Max(0, OutputPageLabels.Count - 1));
-            var start = safeIndex * IoPageSize;
-            var endExclusive = Math.Min(start + IoPageSize, Outputs.Count);
+            var start = safeIndex * IOPageSize;
+            var endExclusive = Math.Min(start + IOPageSize, Outputs.Count);
 
             for (int i = start; i < endExclusive; i++)
             {
@@ -1078,94 +1193,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             await dialog.ShowDialog(ownerWindow);
             return result;
-        }
-
-        /// <summary>
-        /// Shows an error dialog to the user
-        /// </summary>
-        private async Task ShowErrorDialogAsync(string title, string message)
-        {
-            if (ownerWindow != null)
-            {
-                var errorDialog = new Window
-                {
-                    Title = title,
-                    Width = 450,
-                    Height = 200,
-                    CanResize = false,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                var okButton = new Button
-                {
-                    Content = "OK",
-                    Width = 100,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-                };
-                okButton.Click += (s, e) => errorDialog.Close();
-
-                errorDialog.Content = new StackPanel
-                {
-                    Margin = new Avalonia.Thickness(20),
-                    Spacing = 15,
-                    Children =
-                    {
-                        new TextBlock
-                        {
-                            Text = message,
-                            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                            FontSize = 14
-                        },
-                        okButton
-                    }
-                };
-
-                await errorDialog.ShowDialog(ownerWindow);
-            }
-        }
-
-        /// <summary>
-        /// Shows an info dialog to the user
-        /// </summary>
-        private async Task ShowInfoDialogAsync(string title, string message)
-        {
-            if (ownerWindow != null)
-            {
-                var infoDialog = new Window
-                {
-                    Title = title,
-                    Width = 450,
-                    Height = 180,
-                    CanResize = false,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-
-                var okButton = new Button
-                {
-                    Content = "OK",
-                    Width = 100,
-                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-                };
-                okButton.Click += (s, e) => infoDialog.Close();
-
-                infoDialog.Content = new StackPanel
-                {
-                    Margin = new Avalonia.Thickness(20),
-                    Spacing = 15,
-                    Children =
-                    {
-                        new TextBlock
-                        {
-                            Text = message,
-                            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                            FontSize = 14
-                        },
-                        okButton
-                    }
-                };
-
-                await infoDialog.ShowDialog(ownerWindow);
-            }
         }
 
         /// <summary>

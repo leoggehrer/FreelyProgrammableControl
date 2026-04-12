@@ -7,12 +7,22 @@ using FreelyProgrammableControl.Logic.Input;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {
+    /// <summary>
+    /// View model for a single input device in the I/O panel.
+    /// Synchronises the UI checkbox with the underlying <see cref="IInputDevice"/>
+    /// and allows the user to rename the device label via a dialog.
+    /// </summary>
     public partial class InputDeviceViewModel : ViewModelBase
     {
         private readonly IInputDevice device;
         private readonly Window? ownerWindow;
         private bool isUpdating;
 
+        /// <summary>
+        /// Initialises the view model and reads the initial state from <paramref name="device"/>.
+        /// </summary>
+        /// <param name="device">The input device to represent.</param>
+        /// <param name="owner">Parent window used as dialog owner. May be null.</param>
         public InputDeviceViewModel(IInputDevice device, Window? owner = null)
         {
             this.device = device;
@@ -22,27 +32,33 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             UpdateFromDevice();
         }
 
+        /// <summary>Display label of the input device.</summary>
         [ObservableProperty]
         private string label = string.Empty;
-        
+
+        /// <summary>
+        /// Whether the input can be toggled interactively.
+        /// False for non-modifiable devices such as <see cref="Blinker"/>.
+        /// </summary>
         public bool IsEnabled { get; }
 
+        /// <summary>Current checked (active) state of the input device.</summary>
         [ObservableProperty]
         private bool isChecked;
 
         partial void OnIsCheckedChanged(bool value)
         {
             if (isUpdating)
-            {
                 return;
-            }
 
             if (device is Switch sw && sw.Value != value)
-            {
                 sw.Toggle();
-            }
         }
 
+        /// <summary>
+        /// Refreshes <see cref="IsChecked"/> from the underlying device value.
+        /// Call this after the FPC program has executed a cycle.
+        /// </summary>
         public void UpdateFromDevice()
         {
             isUpdating = true;
@@ -50,99 +66,21 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             isUpdating = false;
         }
 
+        /// <summary>
+        /// Opens a dialog allowing the user to rename this input device.
+        /// No-op if no owner window is available.
+        /// </summary>
         [RelayCommand]
         private async Task EditLabel()
         {
             if (ownerWindow == null)
                 return;
 
-            var dialog = new Window
+            var newLabel = await ShowLabelEditDialogAsync(ownerWindow, Label);
+            if (newLabel != null)
             {
-                Title = "Label ändern",
-                Width = 400,
-                Height = 180,
-                CanResize = false,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            var textBox = new TextBox
-            {
-                Text = Label,
-                Watermark = "Neuer Label",
-                Margin = new Avalonia.Thickness(10)
-            };
-
-            var okButton = new Button
-            {
-                Content = "OK",
-                Width = 100,
-                Margin = new Avalonia.Thickness(5)
-            };
-
-            var cancelButton = new Button
-            {
-                Content = "Abbrechen",
-                Width = 100,
-                Margin = new Avalonia.Thickness(5)
-            };
-
-            bool? result = null;
-
-            okButton.Click += (s, e) => 
-            {
-                result = true;
-                dialog.Close();
-            };
-
-            cancelButton.Click += (s, e) => 
-            {
-                result = false;
-                dialog.Close();
-            };
-
-            textBox.KeyDown += (s, e) =>
-            {
-                if (e.Key == Avalonia.Input.Key.Enter)
-                {
-                    result = true;
-                    dialog.Close();
-                }
-                else if (e.Key == Avalonia.Input.Key.Escape)
-                {
-                    result = false;
-                    dialog.Close();
-                }
-            };
-
-            var buttonPanel = new StackPanel
-            {
-                Orientation = Avalonia.Layout.Orientation.Horizontal,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-                Children = { okButton, cancelButton }
-            };
-
-            dialog.Content = new StackPanel
-            {
-                Margin = new Avalonia.Thickness(20),
-                Spacing = 15,
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = "Geben Sie einen neuen Label ein:",
-                        FontSize = 14
-                    },
-                    textBox,
-                    buttonPanel
-                }
-            };
-
-            await dialog.ShowDialog(ownerWindow);
-
-            if (result == true && !string.IsNullOrWhiteSpace(textBox.Text))
-            {
-                Label = textBox.Text;
-                device.Label = textBox.Text;
+                Label = newLabel;
+                device.Label = newLabel;
             }
         }
     }
