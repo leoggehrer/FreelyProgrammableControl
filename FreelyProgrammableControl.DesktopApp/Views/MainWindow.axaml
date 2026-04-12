@@ -353,6 +353,7 @@
               Background="LightGray"
               BorderBrush="Gray"
               BorderThickness="0,1,0,0"
+              MinHeight="30"
               Padding="10,5">
         <Grid>
           <Grid.ColumnDefinitions>

@@ -556,6 +556,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         foreach (var line in parsedLines)
                         {
                             var executionLine = line;
+                            currentExecutionLine = executionLine;
 
                             Execute(executionLine);
                         }
@@ -768,7 +769,7 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 running = false;
                 HasExecutionError = true;
-                ExecutionErrorMessage = ex.Message;
+                ExecutionErrorMessage = $"Zeile {parsedLine.LineNumber:d4}: {ex.Message}";
                 throw;
             }
         }

@@ -135,9 +135,15 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         /// <summary>GET /api/program — returns the currently loaded source code.</summary>
         private async Task HandleGetProgramAsync(HttpContext ctx)
         {
+            var sourceText = _viewModel.SourceText;
+            if (string.IsNullOrWhiteSpace(sourceText) && _viewModel.Source.Length > 0)
+            {
+                sourceText = string.Join(Environment.NewLine, _viewModel.Source);
+            }
+
             await ctx.Response.WriteAsJsonAsync(new
             {
-                programCode = _viewModel.SourceText,
+                programCode = sourceText,
                 sourceLines = _viewModel.Source.Length
             });
         }
@@ -145,43 +151,44 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         /// <summary>POST /api/program — loads new source code; stops the controller first.</summary>
         private async Task HandlePostProgramAsync(HttpContext ctx)
         {
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            using var reader = new StreamReader(ctx.Request.Body);
+            var programCode = await reader.ReadToEndAsync();
+
+            if (string.IsNullOrWhiteSpace(programCode))
+            {
+                ctx.Response.StatusCode = 400;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Programm-Code darf nicht leer sein" });
+                return;
+            }
+
+            var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+            List<string> parseErrors = [];
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 _viewModel.StopCommand?.Execute(null);
-
-                using var reader = new StreamReader(ctx.Request.Body);
-                var programCode = await reader.ReadToEndAsync();
-
-                if (string.IsNullOrWhiteSpace(programCode))
-                {
-                    ctx.Response.StatusCode = 400;
-                    await ctx.Response.WriteAsJsonAsync(new { error = "Programm-Code darf nicht leer sein" });
-                    return;
-                }
-
-                var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
                 _viewModel.SourceText = programCode;
                 _viewModel.LoadSourceCommand?.Execute(null);
 
                 var eu = _viewModel.GetExecutionUnit();
                 var parsedLines = eu.Parse(lines);
-                var parseErrors = parsedLines
+                parseErrors = parsedLines
                     .Where(pl => pl.HasError)
                     .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
                     .ToList();
-
-                var response = new
-                {
-                    success           = parseErrors.Count == 0,
-                    hasParseError     = parseErrors.Count > 0,
-                    parseErrorMessage = parseErrors.FirstOrDefault(),
-                    parseErrors       = parseErrors,
-                    sourceLines       = lines.Length
-                };
-
-                if (!response.success) ctx.Response.StatusCode = 400;
-                await ctx.Response.WriteAsJsonAsync(response);
             });
+
+            var response = new
+            {
+                success = parseErrors.Count == 0,
+                hasParseError = parseErrors.Count > 0,
+                parseErrorMessage = parseErrors.FirstOrDefault(),
+                parseErrors = parseErrors,
+                sourceLines = lines.Length
+            };
+
+            if (!response.success) ctx.Response.StatusCode = 400;
+            await ctx.Response.WriteAsJsonAsync(response);
         }
 
         /// <summary>POST /api/start — starts program execution.</summary>

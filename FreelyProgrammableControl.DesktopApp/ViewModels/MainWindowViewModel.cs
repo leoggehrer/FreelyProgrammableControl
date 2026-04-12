@@ -12,7 +12,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FreelyProgrammableControl.DesktopApp.Services;
 using FreelyProgrammableControl.Logic.Execution;
-using FreelyProgrammableControl.Logic.Extensions;
 
 namespace FreelyProgrammableControl.DesktopApp.ViewModels
 {
@@ -178,15 +177,20 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <returns>Tuple mit Erfolg und optionaler Fehlermeldung.</returns>
         public (bool Success, string? ErrorMessage) StartForApi()
         {
+            StatusText = selectedFile ?? string.Empty;
+
             if (executionUnit.IsRunning)
                 return (false, "Programm läuft bereits.");
 
-            if (string.IsNullOrWhiteSpace(SourceText))
-                return (false, "Kein Programm geladen (SourceText ist leer).");
-
             try
             {
-                var source = SourceText.Split(Environment.NewLine);
+                var source = string.IsNullOrWhiteSpace(SourceText)
+                    ? executionUnit.Source
+                    : SourceText.Split(Environment.NewLine);
+
+                if (source == null || source.Length == 0)
+                    return (false, "Kein Programm geladen (SourceText ist leer).");
+
                 var parsedLines = executionUnit.Parse(source);
                 var errorCount = parsedLines.Count(pl => pl.HasError);
 
@@ -260,7 +264,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             executionUnit = new ExecutionUnit(configuredInputCount, configuredOutputCount);
             //            executionUnit.Inputs[0] = new Blinker(new TimeSpan(0, 0, 0, 0, 1000)) { Label = "Flasher 0" };
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
-            StatusText = selectedFile;
+            StatusText = selectedFile ?? string.Empty;
 
             if (File.Exists(selectedFile))
             {
@@ -644,6 +648,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [RelayCommand(CanExecute = nameof(CanStart))]
         private async Task StartAsync()
         {
+            StatusText = selectedFile ?? string.Empty;
+
             if (executionUnit.IsRunning == false && string.IsNullOrWhiteSpace(SourceText) == false)
             {
                 try
