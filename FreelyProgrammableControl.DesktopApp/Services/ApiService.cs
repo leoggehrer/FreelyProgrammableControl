@@ -93,6 +93,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             endpoints.MapGet("/api/status",               HandleGetStatusAsync);
             endpoints.MapGet("/api/program",              HandleGetProgramAsync);
             endpoints.MapPost("/api/program",             HandlePostProgramAsync);
+            endpoints.MapPost("/api/program/clear",       HandleClearProgramAsync);
             endpoints.MapPost("/api/start",               HandleStartAsync);
             endpoints.MapPost("/api/stop",                HandleStopAsync);
             endpoints.MapPost("/api/debug",               HandleSetDebugModeAsync);
@@ -189,6 +190,31 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
             if (!response.success) ctx.Response.StatusCode = 400;
             await ctx.Response.WriteAsJsonAsync(response);
+        }
+
+        /// <summary>POST /api/program/clear — clears editor source and unloaded program state.</summary>
+        private async Task HandleClearProgramAsync(HttpContext ctx)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                if (_viewModel.IsRunning)
+                {
+                    _viewModel.StopForApi();
+                }
+
+                _viewModel.SourceText = string.Empty;
+                _viewModel.GetExecutionUnit().LoadSource(Array.Empty<string>());
+
+                await ctx.Response.WriteAsJsonAsync(new
+                {
+                    success = true,
+                    sourceLines = 0,
+                    hasParseError = false,
+                    parseErrorMessage = (string?)null
+                });
+            });
+
+            System.Diagnostics.Debug.WriteLine("[API] POST /api/program/clear");
         }
 
         /// <summary>POST /api/start — starts program execution.</summary>

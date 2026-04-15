@@ -184,36 +184,32 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             try
             {
-                var source = string.IsNullOrWhiteSpace(SourceText)
-                    ? executionUnit.Source
-                    : SourceText.Split(Environment.NewLine);
-
-                if (source == null || source.Length == 0)
+                if (string.IsNullOrWhiteSpace(SourceText))
                     return (false, "Kein Programm geladen (SourceText ist leer).");
 
-                var parsedLines = executionUnit.Parse(source);
-                var errorCount = parsedLines.Count(pl => pl.HasError);
+                var source = SourceText.Split(Environment.NewLine);
+                var errors = ParseAndView(source);
 
-                if (errorCount > 0)
+                if (errors > 0)
                 {
-                    var errors = parsedLines.Where(pl => pl.HasError)
+                    var parsedLines = executionUnit.Parse(source);
+                    var errorMessages = parsedLines.Where(pl => pl.HasError)
                         .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
                         .ToList();
-                    return (false, $"{errorCount} Parse-Fehler: {string.Join("; ", errors)}");
+
+                    return (false, $"{errors} Parse-Fehler: {string.Join("; ", errorMessages)}");
                 }
 
+                saveUserinput = SourceText;
+
                 executionUnit.LoadSource(source);
-
-                if (executionUnit.HasParseError)
-                    return (false, $"Parse-Fehler beim Laden: {executionUnit.ParseErrorMessage}");
-
                 executionUnit.Start();
 
-                saveUserinput = SourceText;
                 SourceText = ExecutionUnit.PrepareSource(source)
-                    .Select((i, l) => $"{l:d4}: {i}")
-                    .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+                                          .Select((i, l) => $"{l:d4}: {i}")
+                                          .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
 
+                CurrentLineNumber = executionUnit.CurrentExecutionLine?.LineNumber ?? 0;
                 UpdateRunState();
 
                 return executionUnit.IsRunning
@@ -659,10 +655,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
                     if (errors == 0)
                     {
+                        saveUserinput = SourceText;
+
                         executionUnit.LoadSource(source);
                         executionUnit.Start();
 
-                        saveUserinput = SourceText;
                         SourceText = ExecutionUnit.PrepareSource(source)
                                                   .Select((i, l) => $"{l:d4}: {i}")
                                                   .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");

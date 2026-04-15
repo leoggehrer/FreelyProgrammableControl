@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text.Json;
 using FreelyProgrammableControl.McpServer.Services;
 using ModelContextProtocol.Server;
 
@@ -415,6 +416,126 @@ namespace FreelyProgrammableControl.McpServer.Tools
                 };
             }
         }
+
+        /// <summary>
+        /// Setzt die Steuerung in den Ausgangszustand:
+        /// Stoppt die Ausführung, deaktiviert Debug, löscht den Sourcecode
+        /// und setzt alle Input-/Output-Labels auf Standardwerte zurück.
+        /// </summary>
+        [McpServerTool(Name = "reset_controller_to_initial_state")]
+        [Description("Resets the controller to its initial state: stops execution, disables debug mode, clears loaded source code, and resets all input/output labels to defaults (Input n / Output n).")]
+        public static async Task<ControllerResetResult> ResetControllerToInitialState()
+        {
+            System.Diagnostics.Debug.WriteLine("[Tool] Setze Steuerung auf Ausgangszustand zurück...");
+
+            try
+            {
+                var isConnected = await Client.IsConnectedAsync();
+                if (!isConnected)
+                {
+                    return new ControllerResetResult
+                    {
+                        Success = false,
+                        Message = "Desktop-Anwendung ist nicht erreichbar."
+                    };
+                }
+
+                var statusBefore = await Client.GetStatusAsync();
+
+                if (statusBefore?.isRunning == true)
+                {
+                    await Client.StopExecutionAsync();
+                }
+
+                var debugResult = await Client.SetDebugModeAsync(false);
+                if (debugResult?.success != true)
+                {
+                    return new ControllerResetResult
+                    {
+                        Success = false,
+                        Message = "Debug-Modus konnte nicht deaktiviert werden. Stelle sicher, dass die Steuerung gestoppt ist."
+                    };
+                }
+
+                await Client.ClearProgramAsync();
+
+                var inputPayload = await Client.GetInputsAsync();
+                var outputPayload = await Client.GetOutputsAsync();
+                var inputIndexes = ExtractIndexes(inputPayload, "inputs");
+                var outputIndexes = ExtractIndexes(outputPayload, "outputs");
+
+                var inputsReset = 0;
+                foreach (var index in inputIndexes)
+                {
+                    var labelResult = await Client.SetInputLabelAsync(index, $"Input {index}");
+                    if (labelResult != null && labelResult.Contains("\"success\":true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        inputsReset++;
+                    }
+                }
+
+                var outputsReset = 0;
+                foreach (var index in outputIndexes)
+                {
+                    var labelResult = await Client.SetOutputLabelAsync(index, $"Output {index}");
+                    if (labelResult != null && labelResult.Contains("\"success\":true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        outputsReset++;
+                    }
+                }
+
+                var statusAfter = await Client.GetStatusAsync();
+
+                return new ControllerResetResult
+                {
+                    Success = true,
+                    DebugEnabled = statusAfter?.debugEnabled ?? false,
+                    IsRunning = statusAfter?.isRunning ?? false,
+                    SourceLines = statusAfter?.sourceLines ?? 0,
+                    InputsReset = inputsReset,
+                    OutputsReset = outputsReset,
+                    Message = "Steuerung wurde auf Ausgangszustand zurückgesetzt."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ControllerResetResult
+                {
+                    Success = false,
+                    Message = $"Fehler beim Zurücksetzen: {ex.Message}"
+                };
+            }
+        }
+
+        private static List<int> ExtractIndexes(string payload, string arrayName)
+        {
+            var indexes = new List<int>();
+
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return indexes;
+            }
+
+            using var json = JsonDocument.Parse(payload);
+
+            if (!json.RootElement.TryGetProperty(arrayName, out var arrayElement)
+                || arrayElement.ValueKind != JsonValueKind.Array)
+            {
+                return indexes;
+            }
+
+            foreach (var item in arrayElement.EnumerateArray())
+            {
+                if (item.TryGetProperty("index", out var indexElement)
+                    && indexElement.ValueKind == JsonValueKind.Number
+                    && indexElement.TryGetInt32(out var index))
+                {
+                    indexes.Add(index);
+                }
+            }
+
+            return indexes;
+        }
     }
     #region Result Classes
 
@@ -474,6 +595,17 @@ namespace FreelyProgrammableControl.McpServer.Tools
         public string? ExecutionState { get; set; }
         public bool IsRunning { get; set; }
         public bool DebugEnabled { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class ControllerResetResult
+    {
+        public bool Success { get; set; }
+        public bool IsRunning { get; set; }
+        public bool DebugEnabled { get; set; }
+        public int SourceLines { get; set; }
+        public int InputsReset { get; set; }
+        public int OutputsReset { get; set; }
         public string Message { get; set; } = string.Empty;
     }
 

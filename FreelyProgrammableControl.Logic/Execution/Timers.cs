@@ -104,7 +104,15 @@ namespace FreelyProgrammableControl.Logic.Execution
             {
                 throw new ArgumentOutOfRangeException(nameof(position), "Position is out of the bounds of the timers array.");
             }
-            timers[position] = new Timer(DateTime.Now, durationInMs);
+
+            if (durationInMs <= 0)
+            {
+                timers[position] = default;
+            }
+            else
+            {
+                timers[position] = new Timer(DateTime.Now, durationInMs);
+            }
         }
 
         /// <summary>

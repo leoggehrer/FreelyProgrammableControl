@@ -83,6 +83,12 @@ namespace FreelyProgrammableControl.McpServer.Services
             => GetJsonAsync<ProgramResponse>("/api/program");
 
         /// <summary>
+        /// Clears the currently loaded source code and unloads program lines.
+        /// </summary>
+        public Task<string> ClearProgramAsync()
+            => PostStringAsync("/api/program/clear");
+
+        /// <summary>
         /// Starts program execution.
         /// Does not throw on HTTP 400 — the caller should inspect <c>success</c> in the response.
         /// </summary>

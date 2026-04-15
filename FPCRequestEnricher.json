@@ -8,7 +8,10 @@
       "name": "FPCEnricherChat",
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "parameters": {
         "options": {}
       },
@@ -19,7 +22,10 @@
       "name": "ChatModel",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [112, 304],
+      "position": [
+        112,
+        304
+      ],
       "parameters": {
         "model": {
           "__rl": true,
@@ -42,10 +48,13 @@
       "name": "EnricherChain",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.4,
-      "position": [304, 0],
+      "position": [
+        304,
+        0
+      ],
       "parameters": {
         "promptType": "define",
-        "text": "=Du bist ein FPC-Anfrage-Aufbereiter. Deine einzige Aufgabe ist es, die Benutzeranfrage zu analysieren und in eine strukturierte, praezise Spezifikation umzuwandeln, die ein FPC-Lernagent direkt verwenden kann.\n\nFPC ist eine boolesche Stack-Maschine fuer SPS-Steuerungen mit diesen Befehlen:\n- Lesen: GET I/O/M/T/C n, GETNOT I/O/M/T n\n- Stack: DUP, DUP n\n- Logik: NOT, AND, OR, XOR\n- Schreiben: MOV O/M n, CMOV O/M n v\n- Timer (pulsierend!): SET T n ms, CSET T n ms\n- Counter: SET C n v, CINC C n, CDEC C n, CMP/GT/LE C n v\n\nGib GENAU dieses Format aus (kein Markdown ausserhalb des Blocks):\n\n---\n## Originale Anfrage\n{originale Anfrage des Benutzers unveraendert}\n\n## Programmtyp\n{eines von: Grundlagen-Logik | Timer/Blinker | Counter | Toggle-Logik | Kombiniert}\n\n## Verhaltensbeschreibung\n{Schritt-fuer-Schritt Beschreibung des gewuenschten Programmverhaltens. Bei kombinierten Programmen jeden Zustand und Uebergang beschreiben.}\n\n## Eingaenge (Inputs)\n{Liste der benotigten Inputs mit sinnvollen Standardwerten falls nicht angegeben}\n- I[0]: {z.B. Taster EIN}\n- I[1]: {z.B. Taster AUS}\n\n## Ausgaenge (Outputs)\n{Liste der benotigten Outputs}\n- O[0]: {z.B. Lampe gruen}\n- O[1]: {z.B. Lampe rot}\n\n## Timing-Anforderungen\n{\"Keine\" oder konkrete Werte: z.B. \"Einschaltverzögerung: 3000ms\", \"Blinkfrequenz: 500ms (500ms an, 500ms aus)\"}\n{Wenn der Benutzer eine Angabe wie 3 Sekunden macht, umrechnen in: 3000ms}\n\n## Benoetigte FPC-Befehle\n{Befehle kommagetrennt, z.B.: GET, GETNOT, MOV, AND, DUP, SET T, CSET, CMOV M}\n\n## Suchbegriffe fuer Knowledge Base\n{3-6 praezise FPC-Fachbegriffe fuer die Vektordatenbank-Suche, z.B.: Einschaltverzögerung, Timer, CSET, Selbsthaltung}\n\n## Spezielle Bedingungen\n{\"Keine\" oder konkrete Anforderungen: z.B. NOT-AUS, Verriegelung, Selbsthaltung, Flankendetektierung}\n\n## Randbedingungen\n{Stack muss am Ende leer sein. Timer sind PULSIEREND (nicht one-shot). Ressourcen: I/O 0-63, M 0-1023, T 0-127, C 0-127.}\n{Empfehlungen zur Umsetzung falls sinnvoll}\n---\n\nBenutzeranfrage: {{ $json.chatInput }}"
+        "text": "=Du bist ein FPC-Anfrage-Aufbereiter. Deine einzige Aufgabe ist es, die Benutzeranfrage zu analysieren und in eine strukturierte, praezise Spezifikation umzuwandeln, die ein FPC-Lernagent direkt verwenden kann.\n\nFPC ist eine boolesche Stack-Maschine fuer SPS-Steuerungen mit diesen Befehlen:\n- Lesen: GET 0/1, GET I/O/M/T n, GETNOT I/O/M/T n\n- Stack: DUP, DUP n\n- Logik: NOT, AND, OR, XOR\n- Schreiben: MOV O/M n, CMOV O/M n v\n- Timer (pulsierend!): SET T n ms, CSET T n ms\n- Counter: SET C n v, CSET C n v, CINC C n [v], CDEC C n [v], CMP/GT/LE C n v\n\nWICHTIG:\n- GET C existiert NICHT. Counter werden nur mit CMP, GT, LE gelesen.\n- MOV hat genau 3 Teile: MOV O n oder MOV M n.\n- CMOV hat genau 4 Teile: CMOV O/M n v.\n- CINC und CDEC sind bedingt und benoetigen eine Bedingung auf dem Stack.\n\nWICHTIG:\n- GET C existiert NICHT. Counter werden nur mit CMP, GT, LE gelesen.\n- MOV hat genau 3 Teile: MOV O n oder MOV M n.\n- CMOV hat genau 4 Teile: CMOV O/M n v.\n- CINC und CDEC sind bedingt und benoetigen eine Bedingung auf dem Stack.\n\nGib GENAU dieses Format aus (kein Markdown ausserhalb des Blocks):\n\n---\n## Originale Anfrage\n{originale Anfrage des Benutzers unveraendert}\n\n## Programmtyp\n{eines von: Grundlagen-Logik | Timer/Blinker | Counter | Toggle-Logik | Kombiniert}\n\n## Verhaltensbeschreibung\n{Schritt-fuer-Schritt Beschreibung des gewuenschten Programmverhaltens. Bei kombinierten Programmen jeden Zustand und Uebergang beschreiben.}\n\n## Eingaenge (Inputs)\n{Liste der benotigten Inputs mit sinnvollen Standardwerten falls nicht angegeben}\n- I[0]: {z.B. Taster EIN}\n- I[1]: {z.B. Taster AUS}\n\n## Ausgaenge (Outputs)\n{Liste der benotigten Outputs}\n- O[0]: {z.B. Lampe gruen}\n- O[1]: {z.B. Lampe rot}\n\n## Timing-Anforderungen\n{\"Keine\" oder konkrete Werte: z.B. \"Einschaltverzögerung: 3000ms\", \"Blinkfrequenz: 500ms (500ms an, 500ms aus)\"}\n{Wenn der Benutzer eine Angabe wie 3 Sekunden macht, umrechnen in: 3000ms}\n\n## Benoetigte FPC-Befehle\n{Befehle kommagetrennt, z.B.: GET, GETNOT, MOV, AND, DUP, SET T, CSET, CMOV M}\n\n## Suchbegriffe fuer Knowledge Base\n{3-6 praezise FPC-Fachbegriffe fuer die Vektordatenbank-Suche, z.B.: Einschaltverzögerung, Timer, CSET, Selbsthaltung}\n\n## Spezielle Bedingungen\n{\"Keine\" oder konkrete Anforderungen: z.B. NOT-AUS, Verriegelung, Selbsthaltung, Flankendetektierung}\n\n## Randbedingungen\n{Stack muss am Ende leer sein. Timer sind PULSIEREND (nicht one-shot). Ressourcen: I/O 0-63, M 0-1023, T 0-127, C 0-127.}\n{Empfehlungen zur Umsetzung falls sinnvoll}\n---\n\nBenutzeranfrage: {{ $json.chatInput }}"
       }
     },
     {
@@ -53,7 +62,10 @@
       "name": "BuildForwardRequest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [512, 0],
+      "position": [
+        512,
+        0
+      ],
       "parameters": {
         "jsCode": "// Urspruengliche Nachricht und Session-ID aus dem Enricher-Chat holen\nconst enricherInput = $('FPCEnricherChat').first().json;\nconst originalRequest = enricherInput.chatInput || '';\nconst sessionId = enricherInput.sessionId || ('enricher-' + Date.now());\n\n// Aufbereitete Spezifikation aus der LLM Chain\nconst enrichedSpec = $input.first().json.text || '';\n\n// Anreicherungs-Header + Spezifikation zusammenbauen\nconst forwardMessage = `[AUFBEREITETE ANFRAGE vom FPCRequestEnricher]\n\n${enrichedSpec}\n\n---\n[Bitte verwende die obige strukturierte Spezifikation als Grundlage. Suche ZUERST in der Knowledge Base nach passenden Mustern mit den angegebenen Suchbegriffen, bevor du Code generierst.]`;\n\nreturn [{\n  json: {\n    action: 'sendMessage',\n    sessionId: sessionId,\n    chatInput: forwardMessage,\n    _meta: {\n      originalRequest: originalRequest,\n      sessionId: sessionId\n    }\n  }\n}];"
       }
@@ -63,7 +75,10 @@
       "name": "ForwardToFPCSelfLearning",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 0],
+      "position": [
+        720,
+        0
+      ],
       "parameters": {
         "method": "POST",
         "url": "http://localhost:5678/webhook/fpc-self-learning-chat",
@@ -94,7 +109,10 @@
       "name": "FormatFinalResponse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [928, 0],
+      "position": [
+        928,
+        0
+      ],
       "parameters": {
         "jsCode": "// Antwort vom FPCSelfLearning extrahieren und weiterleiten\nconst response = $input.first().json;\n\n// n8n Chat-Trigger antwortet mit { output: '...' }\nconst agentOutput = response.output\n  || response.text\n  || response.message\n  || response.response\n  || JSON.stringify(response, null, 2);\n\nreturn [{\n  json: {\n    output: agentOutput\n  }\n}];"
       }
@@ -104,35 +122,55 @@
     "FPCEnricherChat": {
       "main": [
         [
-          { "node": "EnricherChain", "type": "main", "index": 0 }
+          {
+            "node": "EnricherChain",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "ChatModel": {
       "ai_languageModel": [
         [
-          { "node": "EnricherChain", "type": "ai_languageModel", "index": 0 }
+          {
+            "node": "EnricherChain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
         ]
       ]
     },
     "EnricherChain": {
       "main": [
         [
-          { "node": "BuildForwardRequest", "type": "main", "index": 0 }
+          {
+            "node": "BuildForwardRequest",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "BuildForwardRequest": {
       "main": [
         [
-          { "node": "ForwardToFPCSelfLearning", "type": "main", "index": 0 }
+          {
+            "node": "ForwardToFPCSelfLearning",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "ForwardToFPCSelfLearning": {
       "main": [
         [
-          { "node": "FormatFinalResponse", "type": "main", "index": 0 }
+          {
+            "node": "FormatFinalResponse",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
