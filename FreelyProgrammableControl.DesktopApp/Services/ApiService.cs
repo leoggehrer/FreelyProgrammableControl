@@ -414,6 +414,13 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             if (!TryParseIndex(ctx, eu.Inputs.Length, out var index))
                 return;
 
+            if (eu.IsRunning)
+            {
+                ctx.Response.StatusCode = 409;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Label kann nur im gestoppten Zustand geändert werden." });
+                return;
+            }
+
             using var reader = new StreamReader(ctx.Request.Body);
             var newLabel = (await reader.ReadToEndAsync()).Trim();
 
@@ -441,6 +448,13 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             var eu = _viewModel.GetExecutionUnit();
             if (!TryParseIndex(ctx, eu.Outputs.Length, out var index))
                 return;
+
+            if (eu.IsRunning)
+            {
+                ctx.Response.StatusCode = 409;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Label kann nur im gestoppten Zustand geändert werden." });
+                return;
+            }
 
             using var reader = new StreamReader(ctx.Request.Body);
             var newLabel = (await reader.ReadToEndAsync()).Trim();

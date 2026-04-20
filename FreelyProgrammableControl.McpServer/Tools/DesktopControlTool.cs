@@ -152,6 +152,16 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
+                if ((status?.sourceLines ?? 0) == 0)
+                {
+                    return new ExecutionControlResult
+                    {
+                        Success = false,
+                        IsRunning = false,
+                        Message = "Kein Programm geladen. Möglicherweise wurde die Steuerung zuvor zurückgesetzt (reset_controller_to_initial_state)."
+                    };
+                }
+
                 var result = await Client.StartExecutionAsync();
 
                 return new ExecutionControlResult

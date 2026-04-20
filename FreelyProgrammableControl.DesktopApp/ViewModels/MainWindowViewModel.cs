@@ -184,10 +184,14 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             try
             {
-                if (string.IsNullOrWhiteSpace(SourceText))
+                var sourceTextToRun = string.IsNullOrWhiteSpace(SourceText)
+                    ? string.Join(Environment.NewLine, executionUnit.Source ?? Array.Empty<string>())
+                    : SourceText;
+
+                if (string.IsNullOrWhiteSpace(sourceTextToRun))
                     return (false, "Kein Programm geladen (SourceText ist leer).");
 
-                var source = SourceText.Split(Environment.NewLine);
+                var source = sourceTextToRun.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
                 var errors = ParseAndView(source);
 
                 if (errors > 0)
@@ -200,14 +204,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     return (false, $"{errors} Parse-Fehler: {string.Join("; ", errorMessages)}");
                 }
 
-                saveUserinput = SourceText;
+                saveUserinput = sourceTextToRun;
 
                 executionUnit.LoadSource(source);
                 executionUnit.Start();
-
-                SourceText = ExecutionUnit.PrepareSource(source)
-                                          .Select((i, l) => $"{l:d4}: {i}")
-                                          .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
 
                 CurrentLineNumber = executionUnit.CurrentExecutionLine?.LineNumber ?? 0;
                 UpdateRunState();
@@ -888,6 +888,16 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CopyCommand?.NotifyCanExecuteChanged();
             PasteCommand?.NotifyCanExecuteChanged();
             CutCommand?.NotifyCanExecuteChanged();
+
+            foreach (var input in Inputs)
+            {
+                input.NotifyCanExecuteChanged();
+            }
+
+            foreach (var output in Outputs)
+            {
+                output.NotifyCanExecuteChanged();
+            }
         }
 
         /// <summary>Callback invoked by the engine when input device values change. Refreshes all input view models on the UI thread.</summary>
@@ -938,7 +948,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             Inputs.Clear();
             for (int i = 0; i < executionUnit.Inputs.Length; i++)
             {
-                Inputs.Add(new InputDeviceViewModel(executionUnit.Inputs[i], ownerWindow));
+                Inputs.Add(new InputDeviceViewModel(executionUnit.Inputs[i], ownerWindow, () => !executionUnit.IsRunning));
             }
 
             RebuildInputPages();
@@ -950,7 +960,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             Outputs.Clear();
             for (int i = 0; i < executionUnit.Outputs.Length; i++)
             {
-                Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow));
+                Outputs.Add(new OutputDeviceViewModel(executionUnit.Outputs[i], i, ownerWindow, () => !executionUnit.IsRunning));
             }
 
             RebuildOutputPages();

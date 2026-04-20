@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,6 +16,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
     {
         private readonly IOutputDevice device;
         private readonly Window? ownerWindow;
+        private readonly Func<bool>? canEditLabel;
 
         /// <summary>
         /// Initialises the view model and reads the initial state from <paramref name="device"/>.
@@ -22,10 +24,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <param name="device">The output device to represent.</param>
         /// <param name="index">Zero-based index used as the radio-button group name.</param>
         /// <param name="owner">Parent window used as dialog owner. May be null.</param>
-        public OutputDeviceViewModel(IOutputDevice device, int index, Window? owner = null)
+        public OutputDeviceViewModel(IOutputDevice device, int index, Window? owner = null, Func<bool>? canEditLabel = null)
         {
             this.device = device;
             this.ownerWindow = owner;
+            this.canEditLabel = canEditLabel;
             Label = device.Label;
             GroupName = index.ToString();
             UpdateFromDevice();
@@ -58,10 +61,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// Opens a dialog allowing the user to rename this output device.
         /// No-op if no owner window is available.
         /// </summary>
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanEditLabel))]
         private async Task EditLabel()
         {
-            if (ownerWindow == null)
+            if (!CanEditLabel() || ownerWindow == null)
                 return;
 
             var newLabel = await ShowLabelEditDialogAsync(ownerWindow, Label);
@@ -70,6 +73,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 Label = newLabel;
                 device.Label = newLabel;
             }
+        }
+
+        private bool CanEditLabel() => canEditLabel?.Invoke() ?? true;
+
+        public void NotifyCanExecuteChanged()
+        {
+            EditLabelCommand.NotifyCanExecuteChanged();
         }
     }
 }

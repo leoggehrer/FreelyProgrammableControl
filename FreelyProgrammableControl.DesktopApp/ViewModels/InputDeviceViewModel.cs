@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,6 +17,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
     {
         private readonly IInputDevice device;
         private readonly Window? ownerWindow;
+        private readonly Func<bool>? canEditLabel;
         private bool isUpdating;
 
         /// <summary>
@@ -23,10 +25,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// </summary>
         /// <param name="device">The input device to represent.</param>
         /// <param name="owner">Parent window used as dialog owner. May be null.</param>
-        public InputDeviceViewModel(IInputDevice device, Window? owner = null)
+        public InputDeviceViewModel(IInputDevice device, Window? owner = null, Func<bool>? canEditLabel = null)
         {
             this.device = device;
             this.ownerWindow = owner;
+            this.canEditLabel = canEditLabel;
             Label = device.Label;
             IsEnabled = device.Modifiable;
             UpdateFromDevice();
@@ -70,10 +73,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// Opens a dialog allowing the user to rename this input device.
         /// No-op if no owner window is available.
         /// </summary>
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanEditLabel))]
         private async Task EditLabel()
         {
-            if (ownerWindow == null)
+            if (!CanEditLabel() || ownerWindow == null)
                 return;
 
             var newLabel = await ShowLabelEditDialogAsync(ownerWindow, Label);
@@ -82,6 +85,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 Label = newLabel;
                 device.Label = newLabel;
             }
+        }
+
+        private bool CanEditLabel() => canEditLabel?.Invoke() ?? true;
+
+        public void NotifyCanExecuteChanged()
+        {
+            EditLabelCommand.NotifyCanExecuteChanged();
         }
     }
 }

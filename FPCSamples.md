@@ -488,6 +488,76 @@ Tags: timer, stoppen, deaktivieren, CSET
 
 ---
 
+### Einschaltverzögerung (TON – Timer On Delay)
+
+**Kategorie**: Timer und Blinker
+**Level**: Mittel
+**Beschreibung**: Ausgang wird erst nach einer Verzögerung gesetzt wenn der Eingang aktiv wird. Wenn der Eingang wieder inaktiv wird, wird alles zurückgesetzt.
+**Anwendung**: Entprellung, verzögertes Einschalten, Anlaufverzögerung
+
+```
+# Ausgang 1 wird nach 5 Sekunden gesetzt, wenn Eingang 1 aktiv ist
+# Alles zurücksetzen wenn Eingang 1 inaktiv
+GETNOT I 1
+DUP
+CMOV M 0 0
+CMOV M 1 0
+# Timer starten bei steigender Flanke von I1
+GET I 1
+GETNOT M 0
+AND
+DUP
+CMOV M 0 1
+CSET T 0 5000
+# Nach Ablauf: Merker 1 setzen
+GET M 0
+GETNOT T 0
+AND
+CMOV M 1 1
+# Ausgang folgt Merker 1
+GET M 1
+MOV O 1
+```
+
+Tags: timer, verzoegerung, einschaltverzoegerung, TON, flanke
+
+---
+
+### Ausschaltverzögerung (TOF – Timer Off Delay)
+
+**Kategorie**: Timer und Blinker
+**Level**: Mittel
+**Beschreibung**: Ausgang bleibt nach Abschalten des Eingangs noch eine bestimmte Zeit aktiv.
+**Anwendung**: Nachlaufsteuerung, Treppenhauslicht, Lüfternachlauf
+
+```
+# Ausgang 1 bleibt nach Abschalten von Eingang 1 noch 5 Sekunden aktiv
+# Merker setzen wenn Eingang aktiv
+GET I 1
+CMOV M 0 1
+# Timer-Reset wenn kein Merker und kein Timer
+GETNOT M 0
+GETNOT T 0
+AND
+CSET T 0 0
+# Timer starten bei fallender Flanke
+GETNOT I 1
+GET M 0
+AND
+DUP
+CMOV M 0 0
+CSET T 0 5000
+# Ausgang = Eingang ODER Timer aktiv
+GET I 1
+GET T 0
+OR
+MOV O 1
+```
+
+Tags: timer, verzoegerung, ausschaltverzoegerung, TOF, nachlauf
+
+---
+
 ### Counter inkrementieren bei Bedingung
 
 **Kategorie**: Counter Operationen
