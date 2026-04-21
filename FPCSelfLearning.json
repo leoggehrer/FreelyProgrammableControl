@@ -1,10 +1,5 @@
 {
-  "updatedAt": "2026-03-30T00:00:00.000Z",
-  "createdAt": "2026-03-29T19:23:22.615Z",
-  "id": "bsI9xk9DT3MPiW3q",
   "name": "FPCSelfLearning",
-  "active": false,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -13,43 +8,75 @@
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
       "position": [
-        0,
-        0
+        7200,
+        2672
       ],
-      "id": "e01a92a2-55e3-43ab-aa3b-aa3746f8ffe6",
+      "id": "474f7017-1320-4e3d-a6ae-d4c04674a3aa",
       "name": "FPCLearningChat",
       "webhookId": "fpc-self-learning-chat"
     },
     {
       "parameters": {
-        "options": {
-          "maxIterations": 40,
-          "systemMessage": "# FPC Solution Developer (Self-Learning)\n\nDu bist Agent 2 in einer 2-Agenten-Pipeline.\nDu erhaeltst als Eingabe den Analyse-JSON von Agent 1.\n\n## Mode-Regel\n- mode=knowledge_only: gib nur die Trefferliste aus.\n- mode=implementation: entwickle die komplette Loesung end-to-end nach dem unten definierten Protokoll.\n\n## Wissens-Beschaffung (VERPFLICHTEND)\n- Rufe FPCKnowledge fuer JEDES in selectedPatterns gelistete Muster auf und lade den konkreten Code-Body inkl. Stack-Fluss und Testfaelle.\n- Die im JSON gelieferten Titel/keyCommands sind nur Hinweise, NICHT der Code selbst.\n- Bei Unsicherheit oder fehlendem Pattern: bis zu 3 zusaetzliche Suchen in FPCKnowledge, gezielt nach Opcodes oder Teilmustern.\n- Keine Stack-Muster aus dem Gedaechtnis rekonstruieren.\n\n## FPC-Befehlsreferenz (Operand-Typ-Matrix – KRITISCH!)\nDiese Tabelle ist verbindlich. Jede Abweichung wird vom Parser abgelehnt.\n\n| Befehl | Erlaubte Subjekte | Beispiel | Typische Verwechslung |\n|---|---|---|---|\n| GET | I, O, M, T (oder Konstante 0/1) | `GET I 0`, `GET T 2`, `GET 1` | – |\n| GETNOT | I, O, M, T | `GETNOT M 0` | NICHT fuer Counter! |\n| MOV | O, M | `MOV O 0` | NICHT fuer T/C! |\n| CMOV | **O, M** (Boolean-Ziele) | `CMOV M 0 1` | **NICHT fuer C! Counter-Zuweisung = CSET C** |\n| SET | **T, C** (Zeit/Zahl-Ziele, unbedingt) | `SET T 0 500`, `SET C 0 0` | – |\n| CSET | **T, C** (Zeit/Zahl-Ziele, bedingt) | `CSET T 0 500`, `CSET C 0 0` | **Counter ruecksetzen = CSET C n 0, NIE CMOV C** |\n| CINC/CDEC | nur C | `CINC C 0` | – |\n| CMP/GT/LE | nur C | `GT C 0 5` | – |\n\nMerksatz:\n- **Boolean schreiben (O/M)** → MOV / CMOV\n- **Timer/Counter setzen (T/C)** → SET / CSET\n- Counter zuruecksetzen IMMER mit `CSET C n 0` (bedingt) oder `SET C n 0` (unbedingt), NIE mit CMOV.\n\nStack-Effekte: Push(+1): GET, GETNOT, CMP, GT, LE. Neutral: NOT, SET, DUP(+1). Pop(-1): AND, OR, XOR, MOV, CMOV, CSET, CINC, CDEC.\nStack-Regel: Am Programmende MUSS die Tiefe 0 sein.\n\n## Zwei-Stufen-Validierung (VERPFLICHTEND vor Ausgabe)\nKein finaler Code darf ausgegeben werden, bevor BEIDE Stufen gruen sind. Max. 5 Iterationen.\n\n### Stufe 1 – fpc_validator (statisch)\n1. fpc_validator mit dem aktuellen Code aufrufen.\n2. Bei Fehler: Fehler analysieren, Code gezielt korrigieren, erneut validieren.\n3. Erst wenn Stufe 1 'GUELTIG' meldet → weiter zu Stufe 2.\n\n### Stufe 2 – MCP parse (autoritativ, echter Parser)\n1. MCPClient → parse mit dem vollstaendigen Code aufrufen.\n2. Bei Parser-Fehler: Fehlermeldung exakt lesen, Code korrigieren, ZURUECK ZU STUFE 1.\n3. Erst wenn Stufe 2 fehlerfrei → Code gilt als verifiziert.\n\nAbbruch nach 5 erfolglosen Iterationen → melde klar: \"Validierung nach 5 Versuchen nicht moeglich\" und liste die verbleibenden Fehler auf. KEINE Halbloesung praesentieren.\n\n## Weitere Regeln\n- Nutze MCP-Tools (load/start/stop/tests) nur nach erfolgreicher Zwei-Stufen-Validierung und nur wenn die Aufgabe ein Deployment verlangt.\n- Kein Zwischenstopp wie \"Ich werde jetzt ...\" ohne Ergebnis. Handle direkt.\n- Wenn get_program_from_controller verwendet wurde: der geladene Code ist Ausgangsbasis, nicht die finale Loesung.\n\n## Ausgabe bei implementation (exakt diese Struktur)\n1) Gefundene FPCKnowledge-Beispiele (mit Kurzreferenz auf geladenen Code)\n2) Finaler FPC-Code\n3) Validierungsnachweis:\n   - Stufe 1 (fpc_validator): Ergebnis + ggf. Anzahl Iterationen\n   - Stufe 2 (MCP parse): Ergebnis + ggf. Anzahl Iterationen\n4) Testmatrix (Ist/Erwartet)\n5) Kurzer Hinweis zu verwendeten Patterns."
-        },
+        "httpMethod": "POST",
+        "path": "fpc-self-learning-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        7200,
+        2848
+      ],
+      "id": "a67cdf21-6024-4309-a044-ccb9d9a91387",
+      "name": "Webhook",
+      "webhookId": "eb3730d8-d4f2-427e-a885-16c6bc9b1686"
+    },
+    {
+      "parameters": {
+        "jsCode": "let chatInput = $json.chatInput || $input.first().json.body.chatInput;\nlet sessionId = $json.sessionId || $input.first().json.body.sessionId;\n\nreturn [{ json: { chatInput, sessionId } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7440,
+        2768
+      ],
+      "id": "cbb9b2d5-1ea3-4aac-827b-c97204022d85",
+      "name": "PrepareData"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
         "text": "={{$json.chatInput || $json.input || $json.query || $json.requestSummary || $json.output || JSON.stringify($json)}}",
-        "promptType": "define"
+        "options": {
+          "systemMessage": "# FPC Solution Developer v2 — STRICT\n\nDu bist Agent 2 in einer 2-Agenten-Pipeline. Eingabe: Analyse-JSON von Agent 1.\n\n## Mode\n- mode=knowledge_only  -> nur Trefferliste ausgeben, keine Code-Generierung.\n- mode=implementation  -> Pipeline komplett durchlaufen.\n\n## PIPELINE (8 Schritte, keine Abkuerzung!)\n\n### 1. Wissen laden\nFuer JEDES Element in selectedPatterns: FPCKnowledgeDev aufrufen, Code-Body merken. Kein Code aus dem Gedaechtnis.\n\n### 2. Plan\nPro Ausgang genau 1 Zeile: \"Ox = <Formel in Worten>\". Pro Hilfsmerker/Timer/Counter: 1 Zeile Zweck.\n\n### 3. Code schreiben\nNUR via Template-Bibliothek (siehe Templates). Jeder Ausgang erhaelt GENAU EIN MOV.\n\n### 4. Stack-Trace (mechanisch)\nTabelle: Zeile | Befehl | Tiefe vor | Tiefe nach.\nRegel: alle Tiefen >= 0, Endtiefe = 0. Sonst zurueck zu 3.\n\n### 5. Static-Validator\nTool `fpc_validator` aufrufen, gesamten Code uebergeben.\nAntwort WOERTLICH in einem Code-Block zitieren.\nBei \"FEHLERHAFT\" -> zurueck zu 3. Deploy strikt VERBOTEN.\n\n### 6. MCP-Parse\nMCP-Tool `parse_fpc_program` aufrufen.\nAntwort woertlich zitieren. Fehler -> zurueck zu 3.\n\n### 7. Deploy (nur wenn Aufgabe es verlangt!)\nExakte Reihenfolge:\na. `stop_program_execution`\nb. `load_program_to_desktop` (validierter Code)\nc. Fuer jeden im Code genutzten `I n`: `set_input_label` (index, label)\nd. Fuer jeden im Code genutzten `O n`: `set_output_label` (index, label)\ne. `start_program_execution`\nf. `check_desktop_status` -> zitieren, muss `isRunning: true` zeigen.\n\n\n### 7a. VERIFIZIEREN (PFLICHT bei Zeit-/Matrix-Aufgaben!)\nNach erfolgreichem Deploy das Tool `TestRunner` aufrufen mit einem JSON-Testplan, der ALLE Zeitphasen der urspruenglichen Tabelle abdeckt. Pro Phase genau EIN Sample in der Mitte der Phase (Phasenrand meiden wegen Timer-Jitter).\n\nBeispiel-Testplan fuer Ampel 25s mit 500ms Raster:\n```json\n{\n  \"cycleLengthMs\": 25000,\n  \"resetInputs\": [{\"index\":0,\"value\":false}],\n  \"samples\": [\n    {\"tMs\": 3000,  \"outputs\":[1,0,0], \"label\":\"0..10s ROT\"},\n    {\"tMs\": 8000,  \"outputs\":[1,0,0], \"label\":\"0..10s ROT\"},\n    {\"tMs\": 11500, \"outputs\":[1,1,0], \"label\":\"10..13s ROT+GELB\"},\n    {\"tMs\": 15000, \"outputs\":[0,0,1], \"label\":\"13..20s GRUEN\"},\n    {\"tMs\": 19000, \"outputs\":[0,0,1], \"label\":\"13..20s GRUEN\"},\n    {\"tMs\": 24000, \"outputs\":[0,1,0], \"label\":\"23..25s GELB\"}\n  ],\n  \"notausTest\": {\"index\":0, \"expected\":[1,0,0], \"label\":\"NOTAUS\"}\n}\n```\n\nRueckgabe woertlich zitieren. Bei `passed:false` MUSST du:\n1. Code-Fehler aus den Mismatches ableiten (z.B. 'bei tMs=15000 erwartet O2=1, actual=0' -> GRUEN-Bereich falsch).\n2. Zurueck zu Pipeline-Schritt 3, Code korrigieren.\n3. Erneut validieren, deployen, testen.\nMax. 4 Korrektur-Iterationen. Bei >4: ehrlich als unvollstaendig melden.\nFertigmeldung an den Nutzer nur bei `passed:true`.\n### 8. Testmatrix (optional)\nDebug-Modus (siehe Abschnitt Debug). Als Tabelle Ist/Erwartet ausweisen.\n\n## ANTI-HALLUZINATION — HART\n\nEine Formulierung wie \"Validator: GUELTIG\" oder \"MCP Parse ok\" ist NUR erlaubt, wenn du die vollstaendige Tool-Antwort UNMITTELBAR DAVOR in einem Code-Block zitiert hast. Sonst gilt die Antwort als gefaelscht und ist zu verwerfen.\n\nKeine Zwischenstopps wie \"Ich werde jetzt...\", \"Bitte einen Moment...\" ohne direkt folgenden Tool-Aufruf. Keine Behauptungen ueber MCP-Ergebnisse ohne Tool-Call.\n\n## FPC OPERAND-MATRIX (BINDEND)\n\n| Befehl | Form | Subjekte | Netto-Stack | Merke |\n|---|---|---|---|---|\n| GET | `GET I 0`, `GET M 3`, `GET T 0`, `GET 0`, `GET 1` | I, O, M, T, Konst. | +1 | KEIN `GET C`! Counter nur via GT/LE/CMP lesen. |\n| GETNOT | `GETNOT M 0` | I, O, M, T | +1 | Kein C. |\n| NOT | `NOT` |  | 0 | |\n| AND / OR / XOR | `AND` |  | -1 | braucht 2 TOS |\n| DUP | `DUP` |  | +1 | braucht 1 TOS |\n| MOV | `MOV O 0` | O, M | -1 | Kein T/C. |\n| CMOV | `CMOV M 5 1` | O, M | -1 | Kein `CMOV C`! |\n| SET | `SET T 0 500` | T, C | 0 | unbedingt |\n| CSET | `CSET C 0 0` | T, C | -1 | bedingt; Counter-Reset-Befehl! |\n| CINC / CDEC | `CINC C 0` | C | -1 | |\n| CMP / GT / LE | `GT C 0 9` | C | +1 | KEIN `GET C` davor! |\n\n### Drei Todsuenden (haeufigste Fehlerquellen!)\n1. `GET C 0` — existiert NICHT. Counter lesen nur durch `GT`, `LE`, `CMP`.\n2. `CMOV C 0 0` — existiert NICHT. Counter-Reset = `CSET C 0 0`.\n3. Zwei konsumierende Befehle (MOV, CMOV, AND, OR, CINC ...) hintereinander ohne einen neu gepushten Wert dazwischen -> Stack-Unterlauf zur Laufzeit.\n\n## TEMPLATES (verbindlich verwenden)\n\n### T1 — Timer-Init (einmalig, erzeugt pulsierendes T<n> mit Periode <ms>)\n```\nGETNOT M <flag>\nDUP\nCSET T <n> <ms>\nCMOV M <flag> 1\n```\nStack-Netto: 0.\n\n### T2 — Periodenzaehler (zaehlt steigende Flanken von T<n> in C<c>, Vormerker M<prev>)\n```\nGET T <n>\nGETNOT M <prev>\nAND\nCINC C <c>\nGET T <n>\nMOV M <prev>\n```\nStack-Netto: 0.\n\n### T3 — Counter-Reset nach Ueberlauf\n```\nGT C <c> <maxIndex>\nCSET C <c> 0\n```\nStack-Netto: 0.\n\n### T4 — Range-Check C in [a..b] (inklusiv)\n```\nGT C <c> <a-1>\nLE C <c> <b>\nAND\n```\nHinterlaesst Boolean auf Stack (+1).\n\n### T5 — Einzelwert-Check C == v\n```\nGT C <c> <v-1>\nLE C <c> <v>\nAND\n```\nHinterlaesst Boolean (+1).\n\n### T6 — Input -> Merker\n```\nGET I <i>\nMOV M <m>\n```\nStack-Netto: 0.\n\n### T7 — Ausgang setzen (IMMER Expression -> MOV; EINE MOV-Zeile je Ausgang!)\n```\n<boolean expression, netto +1>\nMOV O <n>\n```\n\n### T8 — NOTAUS erzwingt O=1 (ROT-Pattern)\n```\nGET I <notaus>\n<normal-formel>\nOR\nMOV O <n>\n```\n\n### T9 — NOTAUS sperrt O (O=0 wenn NOTAUS aktiv)\n```\nGETNOT I <notaus>\n<normal-formel>\nAND\nMOV O <n>\n```\n\n### T10 — Blinken: Output waehrend Bedingung, gepulst durch T<blink>\n```\n<bedingung>\nGET T <blink>\nAND\nMOV O <n>\n```\n\n## ZEIT-TABELLEN (Ablauf-/Ampelsteuerung)\n\nWenn die Anforderung eine Zeit-Tabelle enthaelt:\n1. Kleinstes benoetigtes Zeitraster bestimmen (z. B. 0.5 s -> Timer T0 = 500 ms).\n2. Counter C0 zaehlt Perioden (z. B. Halbsekunden).\n3. Gesamtzyklus = letzte Sekunde / Raster = maxIndex+1. C-Reset via `GT C 0 <maxIndex>` + `CSET C 0 0`.\n4. Pro Ausgang: EINE Expression als OR-Verknuepfung aller Zeitbereiche, ggf. kombiniert mit NOTAUS.\n5. Blink-Phasen: einzelne ungerade Halbsekunden-Slots als OR-verknuepfte Range-Checks.\n\n## DEBUG-MODUS (optional, fuer Tests)\nStrikte Reihenfolge:\n1. `stop_program_execution`\n2. `enable_debug_mode` (enable=true)\n3. `start_program_execution`   <- ohne das sind Snapshots leer!\n4. Pro Testfall: Inputs setzen (`toggle_input`) -> `delay_ms` (200 ms) -> `debug_snapshot` -> vergleichen\n5. `stop_program_execution` zum Abschluss\n6. optional `enable_debug_mode` (enable=false) + erneuter `start_program_execution` fuer Normalbetrieb\n\n## AUSGABE-STRUKTUR (exakt!)\n\n1) Geladene Pattern (Titel + 1-Zeilen-Zusammenfassung aus FPCKnowledgeDev)\n2) Plan (Ausgang -> Formel)\n3) Finaler FPC-Code (in Code-Block)\n4) Stack-Trace-Tabelle (Endtiefe 0 nachweisbar)\n5) Validierungs-Zitate (fpc_validator + parse_fpc_program — beide woertlich)\n6) Deploy-Log (MCP-Antworten woertlich, inkl. check_desktop_status)\n7) Testmatrix (nur wenn getestet wurde)\n\n## SELBST-CHECK vor jeder Antwort\n- [ ] Habe ich fpc_validator aufgerufen UND die Antwort woertlich zitiert?\n- [ ] Steht dort \"Validierung: GUELTIG\"?\n- [ ] Habe ich parse_fpc_program aufgerufen und zitiert?\n- [ ] Bei Deploy: Reihenfolge stop->load->labels->start durchgezogen? isRunning=true?\n- [ ] Jeder Ausgang exakt 1x via MOV gesetzt?\n- [ ] Keinerlei `GET C` oder `CMOV C` im Code?\n\nWenn ein Punkt offen ist: NICHT antworten — Schritt wiederholen oder ehrlich als unvollstaendig melden.\n\n\n### EINE-ANTWORT-REGEL (ABSOLUT)\nDiese Pipeline laeuft in EINER einzigen Antwort komplett durch. Formulierungen wie 'in der naechsten Antwort', 'ausfuehrlich folgt', 'Deploy/Test folgt gleich' sind VERBOTEN und zaehlen als Halluzination. Wenn du Deploy planst, MUSST du JETZT in dieser Antwort: stop->load->labels->start->check_desktop_status->TestRunner aufrufen und die Tool-Antworten woertlich zitieren. Nur wenn das alles in dieser Antwort steht, gilt die Aufgabe als erledigt. Du hast maxIterations Tool-Calls zur Verfuegung - nutze sie, staatt zu vertagen.",
+          "maxIterations": 80
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        304,
-        0
+        8016,
+        2768
       ],
-      "id": "5c25f530-e5a7-4c95-8e51-398bcf39faf4",
+      "id": "0dc8bbcd-6e01-4259-b39d-1e44761ffaa0",
       "name": "LearningAgent"
     },
     {
       "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('PrepareData').item.json.sessionId }}",
         "tableName": "fpc_learning_histories",
         "contextWindowLength": 25
       },
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        288,
-        304
+        7712,
+        3168
       ],
-      "id": "9f18c181-7c7c-4ece-9d45-dbeacccefb05",
+      "id": "bbe07119-4e35-4ff8-b1f1-5c903dba3c81",
       "name": "ChatMemory",
       "credentials": {
         "postgres": {
@@ -66,25 +93,24 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.2,
       "position": [
-        464,
-        304
+        7888,
+        3168
       ],
-      "id": "7ce8ca5a-78e6-4759-ba42-bfaf5c4c5993",
+      "id": "7973a2d2-552f-4875-b9af-ba511070e8b2",
       "name": "MCPClient"
     },
     {
       "parameters": {
-        "name": "fpc_validator",
-        "description": "Validiert FPC-Code auf korrekte Syntax, erlaubte Befehle und Stack-Balance. Uebergib den reinen FPC-Code (eine Instruktion pro Zeile, ohne Markdown). Gibt zurueck ob der Code gueltig ist und welche Fehler gefunden wurden.",
-        "jsCode": "// Agent-Tool-Input lesen\nconst inp = $input.first().json;\nconst code = inp.query || inp.input || inp.code || inp.programCode || '';\n\nconst VALID_COMMANDS = ['GET','GETNOT','DUP','NOT','AND','OR','XOR','MOV','CMOV','SET','CSET','CINC','CDEC','CMP','GT','LE'];\n\nconst STACK_EFFECTS = {\n  'GET':   { pop: 0, push: 1 }, 'GETNOT': { pop: 0, push: 1 },\n  'NOT': { pop: 1, push: 1 },\n  'AND':   { pop: 2, push: 1 }, 'OR': { pop: 2, push: 1 }, 'XOR': { pop: 2, push: 1 },\n  'MOV':   { pop: 1, push: 0 }, 'CMOV': { pop: 1, push: 0 },\n  'SET':   { pop: 0, push: 0 }, 'CSET': { pop: 1, push: 0 },\n  'CINC':  { pop: 1, push: 0 }, 'CDEC': { pop: 1, push: 0 },\n  'CMP':   { pop: 0, push: 1 }, 'GT': { pop: 0, push: 1 }, 'LE': { pop: 0, push: 1 }\n};\n\nconst LIMITS = { 'I': 64, 'O': 64, 'M': 1024, 'T': 128, 'C': 128 };\n\n// Erlaubte Operand-Typen pro Befehl (erster Operand nach dem Befehlsnamen)\nconst ALLOWED_SUBJECTS = {\n  'GET':   ['I','O','M','T'],      // GET C existiert NICHT\n  'GETNOT':['I','O','M','T'],      // GETNOT C existiert NICHT\n  'MOV':   ['O','M'],              // MOV C existiert NICHT\n  'CMOV':  ['O','M'],              // CMOV C existiert NICHT\n  'SET':   ['T','C'],              // SET I/O/M existiert NICHT\n  'CSET':  ['T','C'],              // CSET I/O/M existiert NICHT\n  'CINC':  ['C'],                  // nur Counter\n  'CDEC':  ['C'],                  // nur Counter\n  'CMP':   ['C'],                  // nur Counter\n  'GT':    ['C'],                  // nur Counter\n  'LE':    ['C'],                  // nur Counter\n};\n\nconst lines = code.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\nconst errors = [];\nconst trace = [];\nlet depth = 0;\nlet lineNum = 0;\n\nfor (const line of lines) {\n  lineNum++;\n  if (line.startsWith('#')) { trace.push({ l: lineNum, i: line, d: depth, comment: true }); continue; }\n  const parts = line.split(/\\s+/);\n  const cmd = parts[0].toUpperCase();\n\n  if (!VALID_COMMANDS.includes(cmd)) {\n    errors.push(`Zeile ${lineNum}: Unbekannter Befehl '${cmd}'`);\n    continue;\n  }\n\n  // DUP-Sonderbehandlung: DUP ohne Arg = Value 2, Loop laeuft k-1 mal\n  if (cmd === 'DUP') {\n    const k = parts.length >= 2 ? parseInt(parts[1]) : 2;\n    if (isNaN(k) || k < 0) {\n      errors.push(`Zeile ${lineNum}: DUP-Argument '${parts[1]}' ungueltig`);\n      continue;\n    }\n    if (k === 1) errors.push(`Zeile ${lineNum}: FEHLER: 'DUP 1' ist ein NOP (0 Pushes) — Stack unveraendert! Verwende DUP ohne Argument.`);\n    if (k > 1 && depth < 1) errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei 'DUP' (braucht 1, hat ${depth})`);\n    const beforeDup = depth;\n    const pushCount = Math.max(0, k - 1);\n    depth += pushCount;\n    trace.push({ l: lineNum, i: line, before: beforeDup, after: depth });\n    continue;\n  }\n\n  const fx = STACK_EFFECTS[cmd];\n  const before = depth;\n  const minReq = fx.needsMin || fx.pop;\n\n  if (depth < minReq)\n    errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei '${cmd}' (braucht ${minReq}, hat ${depth})`);\n\n  // Operand-Typ und Adresse pruefen (fuer Befehle mit Subjekt + Adresse)\n  if (ALLOWED_SUBJECTS[cmd] && parts.length >= 2) {\n    const subj = parts[1].toUpperCase();\n    const allowed = ALLOWED_SUBJECTS[cmd];\n\n    // Sonderfall GET/GETNOT: GET 0 / GET 1 sind Konstanten (kein Subjekt)\n    const isConstant = (cmd === 'GET') && (parts[1] === '0' || parts[1] === '1');\n\n    if (!isConstant) {\n      if (!allowed.includes(subj)) {\n        errors.push(`Zeile ${lineNum}: '${cmd} ${subj}' ist ungueltig — ${cmd} erlaubt nur: ${allowed.join('/')}`);\n      } else if (parts.length >= 3) {\n        const addr = parseInt(parts[2]);\n        if (LIMITS[subj] !== undefined && (isNaN(addr) || addr < 0 || addr >= LIMITS[subj]))\n          errors.push(`Zeile ${lineNum}: Adresse ${parts[2]} ungueltig fuer ${subj} (erlaubt: 0-${LIMITS[subj]-1})`);\n      }\n    }\n  }\n\n  depth = Math.max(0, depth - fx.pop + fx.push);\n  trace.push({ l: lineNum, i: line, before, after: depth });\n}\n\nif (depth !== 0) errors.push(`Stack nicht leer am Ende: Tiefe=${depth}`);\n\nconst valid = errors.length === 0;\nlet result = `Validierung: ${valid ? 'GUELTIG' : 'FEHLERHAFT'}\\n`;\nif (!valid) { result += 'Fehler:\\n' + errors.map(e => `- ${e}`).join('\\n') + '\\n'; }\nresult += 'Stack-Trace:\\n' + trace.filter(t => !t.comment).map(t => `  ${t.l}: [${t.before}] ${t.i} [${t.after}]`).join('\\n');\nreturn result;"
+        "description": "Validiert FPC-Code auf Syntax, erlaubte Operand-Typen und Stack-Balance. PFLICHT vor jedem Deploy. Uebergib den reinen FPC-Code (eine Instruktion pro Zeile, ohne Markdown-Fences). Bei Antwort 'FEHLERHAFT' ist Deploy VERBOTEN; Code erst korrigieren. Stack-Trace gibt dir Zeile fuer Zeile die Tiefe vor/nach — Endtiefe MUSS 0 sein.",
+        "jsCode": "// Agent-Tool-Input lesen\nconst inp = $input.first().json;\nconst code = inp.query || inp.input || inp.code || inp.programCode || '';\n\nconst VALID_COMMANDS = ['GET','GETNOT','DUP','NOT','AND','OR','XOR','MOV','CMOV','SET','CSET','CINC','CDEC','CMP','GT','LE'];\n\nconst STACK_EFFECTS = {\n  'GET':   { pop: 0, push: 1 }, 'GETNOT': { pop: 0, push: 1 },\n  'NOT': { pop: 1, push: 1 },\n  'AND':   { pop: 2, push: 1 }, 'OR': { pop: 2, push: 1 }, 'XOR': { pop: 2, push: 1 },\n  'MOV':   { pop: 1, push: 0 }, 'CMOV': { pop: 1, push: 0 },\n  'SET':   { pop: 0, push: 0 }, 'CSET': { pop: 1, push: 0 },\n  'CINC':  { pop: 1, push: 0 }, 'CDEC': { pop: 1, push: 0 },\n  'CMP':   { pop: 0, push: 1 }, 'GT': { pop: 0, push: 1 }, 'LE': { pop: 0, push: 1 }\n};\n\nconst LIMITS = { 'I': 64, 'O': 64, 'M': 1024, 'T': 128, 'C': 128 };\n\n// Erlaubte Operand-Typen pro Befehl (erster Operand nach dem Befehlsnamen)\nconst ALLOWED_SUBJECTS = {\n  'GET':   ['I','O','M','T'],      // GET C existiert NICHT\n  'GETNOT':['I','O','M','T'],      // GETNOT C existiert NICHT\n  'MOV':   ['O','M'],              // MOV C existiert NICHT\n  'CMOV':  ['O','M'],              // CMOV C existiert NICHT\n  'SET':   ['T','C'],              // SET I/O/M existiert NICHT\n  'CSET':  ['T','C'],              // CSET I/O/M existiert NICHT\n  'CINC':  ['C'],                  // nur Counter\n  'CDEC':  ['C'],                  // nur Counter\n  'CMP':   ['C'],                  // nur Counter\n  'GT':    ['C'],                  // nur Counter\n  'LE':    ['C'],                  // nur Counter\n};\n\nconst lines = code.split('\\n').map(l => l.trim()).filter(l => l.length > 0);\nconst errors = [];\nconst trace = [];\nlet depth = 0;\nlet lineNum = 0;\n\nfor (const line of lines) {\n  lineNum++;\n  if (line.startsWith('#')) { trace.push({ l: lineNum, i: line, d: depth, comment: true }); continue; }\n  const parts = line.split(/\\s+/);\n  const cmd = parts[0].toUpperCase();\n\n  if (!VALID_COMMANDS.includes(cmd)) {\n    errors.push(`Zeile ${lineNum}: Unbekannter Befehl '${cmd}'`);\n    continue;\n  }\n\n  // DUP-Sonderbehandlung: DUP ohne Arg = Value 2, Loop laeuft k-1 mal\n  if (cmd === 'DUP') {\n    const k = parts.length >= 2 ? parseInt(parts[1]) : 2;\n    if (isNaN(k) || k < 0) {\n      errors.push(`Zeile ${lineNum}: DUP-Argument '${parts[1]}' ungueltig`);\n      continue;\n    }\n    if (k === 1) errors.push(`Zeile ${lineNum}: FEHLER: 'DUP 1' ist ein NOP (0 Pushes) — Stack unveraendert! Verwende DUP ohne Argument.`);\n    if (k > 1 && depth < 1) errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei 'DUP' (braucht 1, hat ${depth})`);\n    const beforeDup = depth;\n    const pushCount = Math.max(0, k - 1);\n    depth += pushCount;\n    trace.push({ l: lineNum, i: line, before: beforeDup, after: depth });\n    continue;\n  }\n\n  const fx = STACK_EFFECTS[cmd];\n  const before = depth;\n  const minReq = fx.needsMin || fx.pop;\n\n  if (depth < minReq)\n    errors.push(`Zeile ${lineNum}: Stack-Unterlauf bei '${cmd}' (braucht ${minReq}, hat ${depth})`);\n\n  // Operand-Typ und Adresse pruefen (fuer Befehle mit Subjekt + Adresse)\n  if (ALLOWED_SUBJECTS[cmd] && parts.length >= 2) {\n    const subj = parts[1].toUpperCase();\n    const allowed = ALLOWED_SUBJECTS[cmd];\n\n    // Sonderfall GET/GETNOT: GET 0 / GET 1 sind Konstanten (kein Subjekt)\n    const isConstant = (cmd === 'GET') && (parts[1] === '0' || parts[1] === '1');\n\n    if (!isConstant) {\n      if (!allowed.includes(subj)) {\n        errors.push(`Zeile ${lineNum}: '${cmd} ${subj}' ist ungueltig — ${cmd} erlaubt nur: ${allowed.join('/')}`);\n      } else if (parts.length >= 3) {\n        const addr = parseInt(parts[2]);\n        if (LIMITS[subj] !== undefined && (isNaN(addr) || addr < 0 || addr >= LIMITS[subj]))\n          errors.push(`Zeile ${lineNum}: Adresse ${parts[2]} ungueltig fuer ${subj} (erlaubt: 0-${LIMITS[subj]-1})`);\n      }\n    }\n  }\n\n  depth = Math.max(0, depth - fx.pop + fx.push);\n  trace.push({ l: lineNum, i: line, before, after: depth });\n}\n\nif (depth !== 0) errors.push(`Stack nicht leer am Ende: Tiefe=${depth}`);\n\nconst valid = errors.length === 0;\nlet result = `Validierung: ${valid ? 'GUELTIG' : 'FEHLERHAFT — DEPLOY VERBOTEN, ERST CODE KORRIGIEREN!'}\\n`;\nif (!valid) { result += 'Fehler:\\n' + errors.map(e => `- ${e}`).join('\\n') + '\\n'; }\nresult += 'Stack-Trace:\\n' + trace.filter(t => !t.comment).map(t => `  ${t.l}: [${t.before}] ${t.i} [${t.after}]`).join('\\n');\nreturn result;"
       },
       "type": "@n8n/n8n-nodes-langchain.toolCode",
       "typeVersion": 1.2,
       "position": [
-        640,
-        304
+        8064,
+        3168
       ],
-      "id": "891bde31-a327-4751-8e32-3973588a92b0",
+      "id": "9886069e-8430-441d-a5e7-69a0bddeadb5",
       "name": "FPCValidator"
     },
     {
@@ -105,25 +131,24 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        832,
-        304
+        8256,
+        3168
       ],
-      "id": "91625b76-5edc-40cc-b20e-12eb8b6e2f01",
+      "id": "4910e112-5636-469e-b543-179be1589d4e",
       "name": "StoreFPCPattern"
     },
     {
       "parameters": {
-        "name": "get_program_from_controller",
         "description": "Holt das aktuell in der FPC-Steuerung (Desktop App) geladene Programm direkt ueber die API. Verwende dieses Tool wenn der Benutzer sagt er hat Aenderungen an der Steuerung vorgenommen und das aktuelle Programm gespeichert werden soll. Gibt den FPC-Quellcode als Text zurueck.",
         "jsCode": "// Holt das aktuell in der Steuerung geladene Programm von der Desktop App API\ntry {\n  const response = await $http.request({\n    method: 'GET',\n    url: 'http://localhost:5555/api/program',\n    returnFullResponse: true\n  });\n\n  const body = response.body;\n\n  // Body als String (JSON-Text)\n  if (typeof body === 'string') {\n    try {\n      const parsed = JSON.parse(body);\n      if (parsed.programCode) return `Programm von Steuerung geladen (${parsed.sourceLines || '?'} Zeilen):\\n\\n${parsed.programCode}`;\n      if (parsed.source) return `Programm von Steuerung geladen:\\n\\n${parsed.source}`;\n      return body;\n    } catch {\n      return body;\n    }\n  }\n\n  // Body als Objekt (n8n hat bereits geparst)\n  if (body && body.programCode) {\n    return `Programm von Steuerung geladen (${body.sourceLines || '?'} Zeilen):\\n\\n${body.programCode}`;\n  }\n  if (body && body.source) {\n    return `Programm von Steuerung geladen:\\n\\n${body.source}`;\n  }\n\n  return `Steuerung erreichbar, aber kein Programm geladen. Antwort: ${JSON.stringify(body)}`;\n\n} catch (e) {\n  return `FEHLER: Steuerung nicht erreichbar. Ist die FPC Desktop App gestartet? Details: ${e.message}`;\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.toolCode",
       "typeVersion": 1.2,
       "position": [
-        1024,
-        304
+        8448,
+        3168
       ],
-      "id": "a3f7c841-9d2e-4b1a-bc3d-e8f291047562",
+      "id": "29b2b3f3-4104-4063-b3fb-3fe571d54e5a",
       "name": "GetProgramFromController"
     },
     {
@@ -137,11 +162,34 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
       "typeVersion": 1.3,
       "position": [
-        1216,
-        304
+        8896,
+        3168
       ],
-      "id": "25eb3205-5b96-460d-bc4e-9760e86d709e",
+      "id": "07123c6b-240d-4250-a7ae-beb0df730ec5",
       "name": "FPCKnowledge",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "FPC Knowledge Base (Developer Access): Suche nach FPC-Beispielen und Mustern waehrend der Implementierung. Rufe dieses Tool fuer jedes in selectedPatterns gelistete Muster auf, um den konkreten Code-Body zu laden. Bei Unsicherheit gezielt nach Opcodes oder Teilmustern suchen.",
+        "tableName": "fpc_doc_vectors",
+        "topK": 5,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        8608,
+        3168
+      ],
+      "id": "7b50240d-d229-4b26-b238-c015d8224cb0",
+      "name": "FPCKnowledgeDev",
       "credentials": {
         "postgres": {
           "id": "UoqszLjcmzlEQ1H5",
@@ -159,10 +207,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1216,
-        480
+        8608,
+        3424
       ],
-      "id": "3199df04-42ba-49f8-9c43-b5abfd29492b",
+      "id": "f57a6ff3-792d-4c1c-94f7-6870efff53ed",
       "name": "Embeddings",
       "credentials": {
         "openAiApi": {
@@ -175,9 +223,9 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gpt-4.1-mini",
+          "value": "gpt-4.1",
           "mode": "list",
-          "cachedResultName": "gpt-4.1-mini"
+          "cachedResultName": "gpt-4.1"
         },
         "builtInTools": {},
         "options": {}
@@ -185,10 +233,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        112,
-        304
+        7536,
+        3168
       ],
-      "id": "5e2a2f70-cc9a-4b0a-b393-dd9e4a8877c3",
+      "id": "2cfa15a7-74a5-4fe2-b4f9-c5d196bf1157",
       "name": "ChatModel",
       "credentials": {
         "openAiApi": {
@@ -199,25 +247,63 @@
     },
     {
       "parameters": {
-        "options": {
-          "maxIterations": 20,
-          "systemMessage": "# FPC Requirement Analyzer (Self-Learning)\n\nDu bist Agent 1 in einer 2-Agenten-Pipeline.\nDeine Aufgabe: Benutzeranforderung analysieren und passende FPCKnowledge-Bausteine ermitteln.\n\nRegeln:\n- Rufe bei jeder technischen Anfrage zuerst FPCKnowledge auf.\n- Bei Bedarf max. 2 verfeinerte Nachsuchen.\n- Erzeuge KEINEN finalen FPC-Code.\n- Nutze weder fpc_validator noch MCP-Deploy-Operationen.\n- Gib NUR JSON aus, kein Freitext ausserhalb von JSON.\n\nJSON-Ausgabeformat:\n{\n  \"mode\": \"knowledge_only | implementation\",\n  \"requestSummary\": \"...\",\n  \"intent\": \"code|debug|explain|deploy|validate|knowledge|general\",\n  \"channelLabels\": {\"inputs\": [], \"outputs\": []},\n  \"constraints\": [],\n  \"selectedPatterns\": [\n    {\"title\":\"...\",\"whyRelevant\":\"...\",\"keyCommands\":[\"...\"]}\n  ],\n  \"acceptanceTests\": [\"...\"],\n  \"openQuestions\": []\n}\n\nMode-Regel:\n- knowledge_only nur bei expliziter Anfrage nach Beispielen/Trefferliste ohne Implementierung.\n- sonst implementation."
-        },
+        "promptType": "define",
         "text": "={{$json.chatInput || $json.input || $json.query || $json.requestSummary || $json.output || JSON.stringify($json)}}",
-        "promptType": "define"
+        "options": {
+          "systemMessage": "# FPC Requirement Analyzer (Self-Learning)\n\nDu bist Agent 1 in einer 2-Agenten-Pipeline.\nDeine Aufgabe: Benutzeranforderung analysieren und passende FPCKnowledge-Bausteine ermitteln.\n\nRegeln:\n- Rufe bei jeder technischen Anfrage zuerst FPCKnowledge auf.\n- Bei Bedarf max. 2 verfeinerte Nachsuchen.\n- Erzeuge KEINEN finalen FPC-Code.\n- Nutze weder fpc_validator noch MCP-Deploy-Operationen.\n- Gib NUR JSON aus, kein Freitext ausserhalb von JSON.\n\nJSON-Ausgabeformat:\n{\n  \"mode\": \"knowledge_only | implementation\",\n  \"requestSummary\": \"...\",\n  \"intent\": \"code|debug|explain|deploy|validate|knowledge|general\",\n  \"channelLabels\": {\"inputs\": [], \"outputs\": []},\n  \"constraints\": [],\n  \"selectedPatterns\": [\n    {\"title\":\"...\",\"whyRelevant\":\"...\",\"keyCommands\":[\"...\"]}\n  ],\n  \"acceptanceTests\": [\"...\"],\n  \"openQuestions\": []\n}\n\nMode-Regel:\n- knowledge_only nur bei expliziter Anfrage nach Beispielen/Trefferliste ohne Implementierung.\n- sonst implementation.",
+          "maxIterations": 20
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        304,
-        -180
+        7664,
+        2768
       ],
-      "id": "d8bde9db-90f8-4866-85f2-0bd30f165096",
+      "id": "f7157910-0053-47b4-ad5b-93a925947aeb",
       "name": "RequirementAnalyzer"
+    },
+    {
+      "parameters": {
+        "name": "TestRunner",
+        "description": "PFLICHT nach jedem Deploy bei zeit-/matrix-basierten Aufgaben (z.B. Ampel). Faehrt das deployte Programm durch einen realen Zyklus und vergleicht Outputs gegen die Testmatrix. Input als JSON: { cycleLengthMs, resetInputs:[{index,value}], samples:[{tMs, outputs:[1,0,0], label}], notausTest:{index, expected:[1,0,0], label} }. tMs = Millisekunden seit start_program_execution. Samples sollten MITTEN in stabilen Phasen liegen (nicht am Phasenrand, wg. 500ms Timer-Jitter). Die Rueckgabe enthaelt passed:bool, summary, cycleResults, notausResult. Bei passed=false MUSST du zurueck zu Schritt 3 (Code korrigieren), neu validieren, neu deployen, neu testen. KEINE Erfolgsmeldung an den Nutzer ohne passed=true!",
+        "jsCode": "// TestRunner v2 - robust HTTP + diagnostic\nconst REST = 'http://localhost:5555';\n\nasync function getJson(path) {\n  try {\n    const r = await $http.request({ method: 'GET', url: REST + path, returnFullResponse: true });\n    let b = (r && typeof r === 'object' && 'body' in r) ? r.body : r;\n    if (typeof b === 'string') { try { b = JSON.parse(b); } catch {} }\n    return b;\n  } catch (e) { return { _httpError: e.message, _at: 'GET ' + path }; }\n}\n\nasync function postJson(path, body) {\n  try {\n    const opts = { method: 'POST', url: REST + path, returnFullResponse: true };\n    if (body !== undefined) {\n      opts.headers = { 'Content-Type': 'application/json' };\n      opts.body = typeof body === 'string' ? body : JSON.stringify(body);\n    }\n    const r = await $http.request(opts);\n    let b = (r && typeof r === 'object' && 'body' in r) ? r.body : r;\n    if (typeof b === 'string') { try { b = JSON.parse(b); } catch {} }\n    return b;\n  } catch (e) { return { _httpError: e.message, _at: 'POST ' + path }; }\n}\n\nasync function getOutputs() {\n  const r = await getJson('/api/outputs');\n  const arr = Array(20).fill(0);\n  if (r && Array.isArray(r.outputs)) {\n    for (const o of r.outputs) if (o.index < arr.length) arr[o.index] = o.value ? 1 : 0;\n    return { arr, ok: true };\n  }\n  return { arr, ok: false, raw: r };\n}\n\nasync function getInputs() {\n  const r = await getJson('/api/inputs');\n  const arr = Array(20).fill(0);\n  if (r && Array.isArray(r.inputs)) {\n    for (const o of r.inputs) if (o.index < arr.length) arr[o.index] = o.value ? 1 : 0;\n    return arr;\n  }\n  return arr;\n}\n\nasync function setInput(idx, val) {\n  const inputs = await getInputs();\n  const target = val ? 1 : 0;\n  if (inputs[idx] !== target) await postJson('/api/inputs/' + idx + '/toggle');\n}\n\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\n\n// === main ===\nconst inp = $input.first().json;\nlet params = inp;\nif (inp && (inp.query || inp.input)) {\n  const raw = inp.query || inp.input;\n  if (typeof raw === 'string') {\n    try { params = JSON.parse(raw); } catch {\n      return 'FEHLER: Input konnte nicht als JSON geparst werden. Erwartet: { cycleLengthMs, samples:[...], notausTest:{...} }';\n    }\n  } else params = raw;\n}\n\n// Diagnostic: first HTTP call shape\nconst _diag = await getJson('/api/outputs');\nconst _diagSummary = {\n  ok: !!(_diag && Array.isArray(_diag.outputs)),\n  typeof: typeof _diag,\n  snippet: JSON.stringify(_diag).slice(0, 300)\n};\n\nconst samples = params.samples || [];\nconst notausTest = params.notausTest;\nconst resetInputs = params.resetInputs || [];\nconst stabiliseMs = params.stabiliseMs ?? 200;\n\n// Phase 0: stop, reset inputs, start\nawait postJson('/api/stop');\nfor (const ri of resetInputs) await setInput(ri.index, ri.value);\nawait postJson('/api/start');\nconst startTime = Date.now();\n\n// Phase 1: cycle samples\nconst sorted = [...samples].sort((a, b) => a.tMs - b.tMs);\nconst results = [];\nfor (const s of sorted) {\n  const wait = s.tMs - (Date.now() - startTime);\n  if (wait > 0) await sleep(wait);\n  const { arr: actual, ok } = await getOutputs();\n  const expected = s.outputs || s.expected || [];\n  const diffs = [];\n  for (let i = 0; i < expected.length; i++) {\n    if (actual[i] !== expected[i]) diffs.push({ O: i, expected: expected[i], actual: actual[i] });\n  }\n  results.push({\n    label: s.label || ('t=' + s.tMs + 'ms'),\n    tMs: s.tMs,\n    actualElapsedMs: Date.now() - startTime,\n    expected,\n    actual: actual.slice(0, Math.max(expected.length, 3)),\n    httpOk: ok,\n    pass: ok && diffs.length === 0,\n    diffs\n  });\n}\n\n// Phase 2: NOTAUS\nlet notausResult = null;\nif (notausTest) {\n  await postJson('/api/stop');\n  const idx = notausTest.index ?? 0;\n  await setInput(idx, true);\n  await postJson('/api/start');\n  await sleep(stabiliseMs + 300);\n  const { arr: actual, ok } = await getOutputs();\n  const expected = notausTest.expected || [];\n  const diffs = [];\n  for (let i = 0; i < expected.length; i++) {\n    if (actual[i] !== expected[i]) diffs.push({ O: i, expected: expected[i], actual: actual[i] });\n  }\n  notausResult = {\n    label: notausTest.label || 'NOTAUS',\n    expected,\n    actual: actual.slice(0, Math.max(expected.length, 3)),\n    httpOk: ok,\n    pass: ok && diffs.length === 0,\n    diffs\n  };\n  await postJson('/api/stop');\n  await setInput(idx, false);\n}\n\nconst passCycle = results.filter((r) => r.pass).length;\nconst total = results.length + (notausTest ? 1 : 0);\nconst passed = (passCycle === results.length) && (notausTest ? notausResult.pass : true);\n\nreturn JSON.stringify({\n  passed,\n  summary: passed\n    ? ('ALLE ' + total + ' TESTS BESTANDEN')\n    : ((total - passCycle - (notausResult && notausResult.pass ? 1 : 0)) + ' von ' + total + ' FEHLGESCHLAGEN - CODE KORRIGIEREN UND NEU DEPLOYEN+TESTEN'),\n  cycleResults: results,\n  notausResult,\n  _diagnostic: _diagSummary\n}, null, 2);"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        8648,
+        3368
+      ],
+      "id": "e4f6a7c8-1122-4455-8899-aabbccddeeff",
+      "name": "TestRunner"
     }
   ],
+  "pinData": {},
   "connections": {
     "FPCLearningChat": {
+      "main": [
+        [
+          {
+            "node": "PrepareData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PrepareData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareData": {
       "main": [
         [
           {
@@ -295,7 +381,13 @@
             "node": "RequirementAnalyzer",
             "type": "ai_tool",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "FPCKnowledgeDev": {
+      "ai_tool": [
+        [
           {
             "node": "LearningAgent",
             "type": "ai_tool",
@@ -309,6 +401,11 @@
         [
           {
             "node": "FPCKnowledge",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "FPCKnowledgeDev",
             "type": "ai_embedding",
             "index": 0
           }
@@ -341,29 +438,29 @@
           }
         ]
       ]
+    },
+    "TestRunner": {
+      "ai_tool": [
+        [
+          {
+            "node": "LearningAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "staticData": null,
+  "versionId": "b3cd73ff-5e0b-4303-9670-e2906da04f7d",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "templateCredsSetupCompleted": true,
+    "instanceId": "22bd81bfa1a72323630d7407aff8a80689ded5a00bef479364b80aa6bab2f598"
   },
-  "pinData": {},
-  "versionId": "2b353df3-69c9-448b-afe2-0288fac7bc10",
-  "activeVersionId": null,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-03-29T19:23:22.616Z",
-      "createdAt": "2026-03-29T19:23:22.616Z",
-      "role": "workflow:owner",
-      "workflowId": "bsI9xk9DT3MPiW3q",
-      "projectId": "NGVmW0kzxTFQBNsK"
-    }
-  ],
-  "activeVersion": null,
+  "id": "bsI9xk9DT3MPiW3q",
   "tags": []
 }

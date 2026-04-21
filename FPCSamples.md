@@ -876,8 +876,10 @@ Tags: timer, periodenzähler, zeitbegrenzt, abschaltung, flanke, M2-M3-muster, C
 Stack-Änderungen pro Befehl:
 
 - Push (+1): GET, GETNOT, CMP, GT, LE, DUP
-- Neutral (0): NOT, SET, CINC, CDEC
-- Pop (-1): AND, OR, XOR, MOV, CMOV, CSET
+- Neutral (0): NOT, SET
+- Pop (-1): AND, OR, XOR, MOV, CMOV, CSET, CINC, CDEC
+
+WICHTIG: CINC und CDEC sind bedingte Befehle und POPPEN jeweils einen Wert vom Stack (siehe ExecutionUnit.cs). Vor jedem CINC/CDEC muss ein Boolean auf dem Stack liegen (z.B. per `GET I n` oder Flankenbedingung).
 
 Regeln:
 

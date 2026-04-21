@@ -166,6 +166,10 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <summary>Human-readable engine state summary string.</summary>
         public string State => executionUnit.State;
 
+        #endregion properties
+
+        #region api methods
+
         /// <summary>
         /// Gibt die ExecutionUnit für API-Zugriffe zurück.
         /// </summary>
@@ -228,7 +232,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         public (bool Success, string? ErrorMessage) StopForApi()
         {
             if (!executionUnit.IsRunning)
-                return (false, "Programm läuft nicht.");
+                return (true, null);
 
             try
             {
@@ -243,7 +247,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 return (false, $"Fehler beim Stoppen: {ex.Message}");
             }
         }
-        #endregion properties
+        #endregion api methods
 
         #region constructors
         /// <summary>
@@ -326,6 +330,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CreateInputItems();
             CreateOutputItems();
         }
+
+        #region commands
 
         /// <summary>Clears the editor and resets the current file to the default new-program path.</summary>
         [RelayCommand]
@@ -695,6 +701,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
                 if (errors == 0)
                 {
+                    saveUserinput = SourceText;
                     executionUnit.LoadSource(source);
 
                     UpdateRunState();
@@ -843,6 +850,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 await aboutDialog.ShowDialog(ownerWindow);
             }
         }
+        #endregion commands
 
         /// <summary>
         /// Parses <paramref name="lines"/> and writes the annotated result to <see cref="OutputText"/>.

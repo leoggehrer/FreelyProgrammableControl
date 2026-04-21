@@ -67,7 +67,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
         /// <param name="programCode">Der FPC-Programm-Code.</param>
         /// <returns>Ergebnis des Ladevorgangs.</returns>
         [McpServerTool(Name = "load_program_to_desktop")]
-        [Description("Loads an FPC program into the desktop application. The program is parsed and validated for errors.")]
+        [Description("Loads an FPC program into the desktop application. The program is parsed and validated for errors. If the controller is running, it is stopped automatically before loading.")]
         public static async Task<ProgramLoadResult> LoadProgramToDesktop(
             [Description("The complete FPC program code to load into the desktop application.")]
             string programCode)
@@ -85,17 +85,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
                     };
                 }
 
-                // Prüfe ob Steuerung läuft
-                var status = await Client.GetStatusAsync();
-                if (status?.isRunning == true)
-                {
-                    return new ProgramLoadResult
-                    {
-                        Success = false,
-                        Message = "Die Steuerung läuft noch. Bitte stoppe die Steuerung zuerst mit 'stop_program_execution', bevor ein neues Programm geladen wird."
-                    };
-                }
-
+                // Steuerung wird automatisch gestoppt, falls sie läuft (Desktop-API-Verhalten).
                 var result = await Client.LoadProgramAsync(programCode);
                 
                 return new ProgramLoadResult
