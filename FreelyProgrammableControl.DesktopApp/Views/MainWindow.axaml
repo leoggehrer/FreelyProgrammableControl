@@ -79,9 +79,9 @@
         <RowDefinition Height="30" />
       </Grid.RowDefinitions>
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="140" />
+        <ColumnDefinition Width="150" />
         <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="140" />
+        <ColumnDefinition Width="150" />
       </Grid.ColumnDefinitions>
 
       <!-- Inputs -->

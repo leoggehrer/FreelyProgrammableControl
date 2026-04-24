@@ -36,7 +36,6 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private readonly Stack<string> undoStack = new();
         private readonly Stack<string> redoStack = new();
         private string lastSourceText = string.Empty;
-        private string saveUserinput = string.Empty;
         private readonly ExecutionUnit executionUnit;
         #endregion fields
 
@@ -166,6 +165,18 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// <summary>Human-readable engine state summary string.</summary>
         public string State => executionUnit.State;
 
+        /// <summary>The source text split into lines, with line numbers added for display in the editor. This is not the raw source text used by the engine (see <see cref="Source"/>).</summary>
+        public string[] SourceLines
+        {
+            get => SourceText.Split(Environment.NewLine);
+            set => SourceText = value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+        }
+        /// <summary>The output text split into lines for display in the output panel. This is not the raw output from the engine, but rather the annotated parse result or execution output shown to the user.</summary>
+        public string[] OutputLines
+        {
+            get => OutputText.Split(Environment.NewLine);
+            set => OutputText = value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+        }
         #endregion properties
 
         #region api methods
@@ -188,31 +199,25 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
 
             try
             {
-                var sourceTextToRun = string.IsNullOrWhiteSpace(SourceText)
-                    ? string.Join(Environment.NewLine, executionUnit.Source ?? Array.Empty<string>())
-                    : SourceText;
-
-                if (string.IsNullOrWhiteSpace(sourceTextToRun))
+                if (string.IsNullOrWhiteSpace(SourceText))
                     return (false, "Kein Programm geladen (SourceText ist leer).");
 
-                var source = sourceTextToRun.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
-                var errors = ParseAndView(source);
+                var source = SourceLines;
+                var errors = ParseAndViewOutput(source);
 
                 if (errors > 0)
                 {
                     var parsedLines = executionUnit.Parse(source);
                     var errorMessages = parsedLines.Where(pl => pl.HasError)
-                        .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
-                        .ToList();
+                                                   .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
+                                                   .ToList();
 
                     return (false, $"{errors} Parse-Fehler: {string.Join("; ", errorMessages)}");
                 }
 
-                saveUserinput = sourceTextToRun;
-
                 executionUnit.LoadSource(source);
                 executionUnit.Start();
-
+                ViewExecutionNumberedSource();
                 CurrentLineNumber = executionUnit.CurrentExecutionLine?.LineNumber ?? 0;
                 UpdateRunState();
 
@@ -231,14 +236,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         /// </summary>
         public (bool Success, string? ErrorMessage) StopForApi()
         {
-            if (!executionUnit.IsRunning)
+            if (executionUnit.IsRunning == false)
                 return (true, null);
 
             try
             {
                 executionUnit.Stop();
-                SourceText = saveUserinput;
-                saveUserinput = string.Empty;
+                ViewExecutionSource();
                 UpdateRunState();
                 return (true, null);
             }
@@ -656,20 +660,19 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 try
                 {
-                    var source = SourceText.Split(Environment.NewLine);
-                    var errors = ParseAndView(source);
+                    var sourceLines = SourceLines;
+                    var errors = ParseAndViewOutput(sourceLines);
 
                     if (errors == 0)
                     {
-                        saveUserinput = SourceText;
-
-                        executionUnit.LoadSource(source);
+                        executionUnit.LoadSource(sourceLines);
                         executionUnit.Start();
 
-                        SourceText = ExecutionUnit.PrepareSource(source)
+                        SourceText = ExecutionUnit.PrepareSource(sourceLines)
                                                   .Select((i, l) => $"{l:d4}: {i}")
                                                   .Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
 
+                        ViewExecutionNumberedSource();
                         CurrentLineNumber = executionUnit.CurrentExecutionLine?.LineNumber ?? 0;
                         UpdateRunState();
                     }
@@ -697,13 +700,12 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             if (executionUnit.IsRunning == false && string.IsNullOrWhiteSpace(SourceText) == false)
             {
                 var source = SourceText.Split(Environment.NewLine);
-                var errors = ParseAndView(source);
+                var errors = ParseAndViewOutput(source);
 
                 if (errors == 0)
                 {
-                    saveUserinput = SourceText;
                     executionUnit.LoadSource(source);
-
+                    ViewExecutionSource();
                     UpdateRunState();
                 }
             }
@@ -721,8 +723,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             if (executionUnit.IsRunning)
             {
                 executionUnit.Stop();
-                SourceText = saveUserinput;
-                saveUserinput = string.Empty;
+                ViewExecutionSource();
             }
             UpdateRunState();
         }
@@ -736,7 +737,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [RelayCommand(CanExecute = nameof(CanParse))]
         private void Parse()
         {
-            ParseAndView(SourceText.Split(Environment.NewLine));
+            ParseAndViewOutput(SourceText.Split(Environment.NewLine));
         }
 
         private bool CanParse()
@@ -851,21 +852,38 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             }
         }
         #endregion commands
+        /// <summary>
+        /// Sets <see cref="SourceLines"/> to the current source from the execution engine without line numbers (used when loading source or stopping execution).
+        /// </summary>
+        private void ViewExecutionSource()
+        {
+            SourceLines = executionUnit.Source ?? [];
+        }
+        /// <summary>
+        /// Formats the current source from the execution engine with line numbers and sets <see cref="SourceText"/> for display in the editor.
+        /// </summary>
+        private void ViewExecutionNumberedSource()
+        {
+            var executionLines = executionUnit.Source ?? [];
+
+            SourceLines = executionLines.Select((line, index) => $"{index:d4}: {line}").ToArray();
+        }
 
         /// <summary>
-        /// Parses <paramref name="lines"/> and writes the annotated result to <see cref="OutputText"/>.
+        /// Parses <paramref name="sourceLines"/> and writes the annotated result to <see cref="OutputText"/>.
         /// </summary>
         /// <returns>Number of parse errors found.</returns>
-        private int ParseAndView(string[] lines)
+        private int ParseAndViewOutput(string[] sourceLines)
         {
-            var parsedLines = executionUnit.Parse(lines);
-            var parsedText = parsedLines.Select(pl => pl.ToString()).ToList();
+            var parsedLines = executionUnit.Parse(sourceLines);
+            var outputLines = new List<string>();
             var errorCount = parsedLines.Count(pl => pl.HasError);
 
-            parsedText.Insert(0, $"Text has {errorCount} Error(s)");
-            parsedText.Insert(1, string.Empty);
+            outputLines.Insert(0, $"Source has {errorCount} Error(s)");
+            outputLines.Insert(1, string.Empty);
+            outputLines.AddRange(parsedLines.Select(pl => $"{pl.LineNumber:d4}: {pl.Source, -20}  {pl.ErrorMessage}"));
 
-            OutputText = string.Join(Environment.NewLine, parsedText);
+            OutputLines = [.. outputLines];
             return errorCount;
         }
 
@@ -890,7 +908,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             StartCommand.NotifyCanExecuteChanged();
             StopCommand.NotifyCanExecuteChanged();
             StepCommand.NotifyCanExecuteChanged();
-            
+
             UndoCommand?.NotifyCanExecuteChanged();
             RedoCommand?.NotifyCanExecuteChanged();
             CopyCommand?.NotifyCanExecuteChanged();
@@ -942,9 +960,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             {
                 Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    SourceText = saveUserinput;
                     StatusText = $"Laufzeitfehler: {executionUnit.ExecutionErrorMessage}";
-                    saveUserinput = string.Empty;
+                    ViewExecutionSource();
                     UpdateRunState();
                 });
             }
@@ -1283,7 +1300,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             lastSourceText = value ?? string.Empty;
             if (executionUnit.IsRunning == false)
             {
-                ParseAndView(SourceText.Split(Environment.NewLine));
+                ParseAndViewOutput(SourceText.Split(Environment.NewLine));
             }
         }
 
