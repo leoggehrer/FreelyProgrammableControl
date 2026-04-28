@@ -1,0 +1,435 @@
+{
+  "name": "FPCDevelopPipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dp-chat-0001-0001-000000000001",
+      "name": "FPCDevelopChat",
+      "webhookId": "fpc-develop-pipeline-chat"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fpc-develop-pipeline-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        192
+      ],
+      "id": "dp-webhook-0002-0002-000000000002",
+      "name": "Webhook",
+      "webhookId": "dp-webhook-fpc-develop-pipeline"
+    },
+    {
+      "parameters": {
+        "jsCode": "let chatInput = $json.chatInput || $input.first().json.body?.chatInput;\nlet sessionId = $json.sessionId || $input.first().json.body?.sessionId;\n\nreturn [{ json: { chatInput, sessionId } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        96
+      ],
+      "id": "dp-prepare-0003-0003-000000000003",
+      "name": "PrepareData"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json.chatInput || $json.input || $json.query || JSON.stringify($json)}}",
+        "options": {
+          "maxIterations": 50,
+          "systemMessage": "# FPC Develop Pipeline Orchestrator v3 (mit Retry-Loop)\n\nDu orchestrierst eine FPC-Entwicklungs-Pipeline ueber Sub-Workflows (SWFs).\nJede SWF wird als Tool aufgerufen. Du steuerst NUR die Reihenfolge und reichst Daten weiter — du erzeugst SELBST KEINEN FPC-Code, fuehrst KEINE Validierung/Deploy/Tests durch.\n\nNeu in v3: Wenn Validation/Deploy/Tests fehlschlagen, rufst du den Developer in einer weiteren Runde mit dem konkreten Fehlerlog auf, bis es klappt oder max. 3 Runden vorbei sind.\n\n## Verfuegbare Sub-Workflows (Tools)\n- `FPCRequirementAnalyzer` — Eingabe: chatInput, userPrompt. Ausgabe: Analyse-JSON.\n- `FPCDeveloper` — Eingabe: analysis, userPrompt. Ausgabe: validierter Code + Endblock JSON `{status:\"ready_for_deploy\", finalCode, inputLabels, outputLabels, testPlan, summary}`.\n- `FPCDeployer` — Eingabe: programCode, inputLabels, outputLabels, testPlan. **Deterministischer JS-Schritt:** stop -> Labels setzen -> POST /api/program -> verify -> start -> Sample-Tests -> NOTAUS-Test -> stop. Ausgabe: `{deployed, passed, summary, cycleResults, notausResult, log}`. KEINE Halluzination moeglich, das ist purer Code.\n- `FPCDebugger` — Eingabe: programCode, userPrompt. Ausgabe: Markdown-Tieftestprotokoll.\n- `FPCPatternStorer` — Eingabe: finalCode, userPrompt, summary, passed. Ausgabe: `{stored, reason|title, ...}`.\n\n## Pipeline-Phasen\n\n### Phase 0: Modus-Erkennung (PFLICHT — ZUERST)\n\nBevor du irgendeinen SWF aufrufst, klassifiziere die User-Nachricht in genau EINEN dieser vier Modi:\n\n1. **`storage_only`** — Die User-Nachricht ist NUR ein Speicher-Befehl auf das vorherige Pipeline-Ergebnis. Indikatoren:\n   - Phrases wie \"speichere das (eben entwickelte / letzte) Programm als Pattern\", \"merke das als Vorlage\".\n   - KEINE neue Anforderungstabelle, kein neuer FPC-Code, keine neue Beschreibung.\n   - Im Chat-Verlauf existiert ein vorhergehender erfolgreicher Pipeline-Lauf (Phase 4 `passed:true`) mit bekanntem `finalCode` und `summary`.\n   \n   Ablauf bei `storage_only`: ueberspringe Phasen 1-5 KOMPLETT. Springe direkt zu Phase 6. Verwende `finalCode`, `userPrompt` (= ORIGINAL-Prompt aus dem Chat-Verlauf), `summary` aus dem Chat-Verlauf.\n   \n   Wenn KEIN passender Lauf im Verlauf existiert: melde dem User den Hinweis und beende.\n\n2. **`storage_from_controller`** — Der User will das aktuell auf der Steuerung geladene Programm in den Vector Store speichern, OHNE dass es vorher durch die Pipeline lief. Indikatoren:\n   - Phrases wie \"Programm von der Steuerung in den Vektor Store\", \"Speichere das Programm aus der Steuerung\", \"Aktives Steuerungsprogramm speichern\", \"Steuerungsprogramm als Pattern\".\n   - Optional kann der User einen Aufgaben-Beschreibungs-Suffix mitgeben, z. B. nach Doppelpunkt: \"Programm von der Steuerung in den Vektor Store: Ampelsteuerung mit NOTAUS\".\n   \n   Ablauf bei `storage_from_controller`:\n   1. Rufe das Tool `GetProgramFromController` auf (KEINE Eingaben — der Tool-Code ist parameterlos, gib einen leeren Eingabe-String).\n   2. Zitiere die JSON-Antwort woertlich. Auswertung:\n      - Bei `error: \"controller_unreachable\"` -> User-Meldung \"Steuerung nicht erreichbar.\" + beende.\n      - Bei `error: \"no_program_loaded\"` -> User-Meldung \"Kein Programm auf der Steuerung geladen.\" + beende.\n      - Bei `error: \"parse_error\"` -> User-Meldung \"Programm hat Parse-Fehler — wird nicht gespeichert.\" + beende.\n      - Sonst: Programm-Code, sourceLines, Labels stehen bereit.\n   3. Bestimme `userPrompt` und `summary`:\n      - Wenn der User nach Doppelpunkt eine Beschreibung mitgegeben hat: `userPrompt` = diese Beschreibung, `summary` = ebenfalls diese Beschreibung.\n      - Wenn nicht: generiere eine SACHLICHE 1-2-Zeilen-Beschreibung des Programms basierend auf erkennbaren Strukturen (Labels, Counter, Timer, Anzahl Ein-/Ausgaenge). Beispiele: \"Ampelsteuerung mit 1 Eingang (NOTAUS) und 3 Ausgaengen (ROT/GELB/GRUEN), 25-s-Zyklus.\", \"Counter-basierte Phasensteuerung ueber T0/C0.\". KEINE erfundenen Eigenschaften wie \"sicher\", \"universell\", \"getestet\".\n   4. Rufe `FPCPatternStorer` mit:\n      - `finalCode` = `code` aus dem Tool-Ergebnis\n      - `userPrompt` = wie in Schritt 3 bestimmt\n      - `summary` = wie in Schritt 3 bestimmt\n      - `passed` = `true` (User vouches by storing)\n   5. Zitiere die Storer-Antwort woertlich.\n\n3. **`develop`** — Eine neue Aufgabe (Anforderungstabelle, Funktionsbeschreibung, Bug-Fix). Standard-Ablauf Phase 1-6.\n\n4. **`mixed`** — Neue Aufgabe MIT explizitem Speicher-Auftrag. Standard-Ablauf Phase 1-6, dabei Phase 6 ausfuehren falls Phase 4 `passed:true`.\n\nNenne den erkannten Modus am Anfang deiner Antwort: `Modus: storage_only` / `storage_from_controller` / `develop` / `mixed`.\n\n### Phase 1: Anforderungsanalyse (PFLICHT bei `develop` und `mixed`)\nRufe IMMER zuerst `FPCRequirementAnalyzer` mit chatInput=Original-Prompt, userPrompt=Original-Prompt auf.\nZitiere die JSON-Antwort woertlich.\n\nBei `storage_only` wird Phase 1 UEBERSPRUNGEN.\n\n### Phase 2: Entscheidung anhand `mode`\n- `knowledge_only` → Trefferliste zurueckgeben, Pipeline beenden.\n- `implementation` → weiter zu Phase 3.\n\n### Phase 3: Entwicklung (Code + Plan)\nRufe `FPCDeveloper` mit:\n- `analysis` — PFLICHT: der rohe String-Wert aus dem Feld `output` der Phase-1-Antwort (NICHT der aeussere Wrapper `{\"output\":\"...\"}`, sondern NUR der Inhalt darin). Falls Phase 1 ein JSON-Objekt zurueckgegeben hat, nimm `response.output`. Falls `output` leer oder fehlend ist, brich ab und melde dem User den Fehler.\n- `userPrompt` — Original-Prompt als STRING (identisch mit dem, was an Phase 1 uebergeben wurde)\n- `previousError` — beim ERSTEN Aufruf LEERER String. Bei Retry (siehe Phase 4 Retry-Trigger): der gesamte Fehlerlog aus dem vorigen Deployer-/Debugger-Aufruf als zusammenkopierter String.\n\nHARTE REGEL: `analysis` darf NIEMALS leer, null oder nur `{}` sein. Wenn der Wert leer waere, rufe FPCDeveloper NICHT auf.\n\nZitiere die Antwort woertlich. Auswertung des `status`-Feldes:\n- `status: \"ready_for_deploy\"` -> weiter zu Phase 4 mit finalCode, inputLabels, outputLabels, testPlan.\n- `status: \"validation_failed\"` -> KEIN Deploy. Trigger Retry-Phase 3 (siehe unten) mit dem `validation_failed`-JSON als previousError. Wenn schon 3 Runden vorbei -> Pipeline mit Fehler beenden.\n- jeder andere Status -> Pipeline mit Fehler-Details beenden.\n\n### Phase 4: Deploy + Basis-Test (PFLICHT, deterministisch)\nNur ausfuehren wenn Phase 3 `status: \"ready_for_deploy\"` lieferte.\n\nRufe `FPCDeployer` mit:\n- `programCode` — finalCode aus Phase 3 (STRING)\n- `inputLabels` — JSON-String, z. B. `{\\\"0\\\":\\\"NOTAUS\\\"}`\n- `outputLabels` — JSON-String, z. B. `{\\\"0\\\":\\\"ROT\\\",\\\"1\\\":\\\"GELB\\\",\\\"2\\\":\\\"GRUEN\\\"}`\n- `testPlan` — JSON-String der `testPlan`-Struktur aus Phase 3 (cycleLengthMs, resetInputs, samples, notausTest)\n\nDie Antwort kommt aus deterministischem JS-Code, ZITIERE SIE WOERTLICH. Felder:\n- `deployed: bool` — falls false: Retry-Trigger.\n- `passed: bool` — falls false: Retry-Trigger.\n- `cycleResults`, `notausResult`, `log` — Detail-Logs (an Developer als previousError weitergeben).\n\n### Phase 4-Retry — Iterative Fehlerbehebung (max. 3 Developer-Runden gesamt)\n\n**ABSOLUT VERPFLICHTEND — NIE den User fragen.** Bei einem Trigger wird der Retry SOFORT und AUTOMATISCH durchgefuehrt, ohne Rueckfrage, ohne Bestaetigung, ohne Pause. Formulierungen wie \"Bitte explizit anfordern\", \"Soll ich eine weitere Runde starten?\", \"Falls Du eine Korrektur willst...\" sind STRENG VERBOTEN. Der User hat den Pipeline-Lauf bereits beauftragt — du fuehrst alle drei Runden durch oder bis Erfolg, je nachdem was zuerst kommt.\n\n**Trigger:** Phase 3 lieferte `validation_failed` ODER Phase 4 lieferte `deployed:false` ODER `passed:false`.\n\n**Ablauf:**\n\n1. Zaehle die bisherigen Developer-Aufrufe in dieser Pipeline. Wenn >= 3, kein Retry mehr — gehe zu Phase 5/6 mit Status `failure`.\n\n2. **Debugger-Vorlauf bei `passed:false`** (PFLICHT, NEU):\n   - Wenn Phase 4 `deployed:true` UND `passed:false` lieferte (Programm laeuft, aber Tests scheitern), rufe ZUERST `FPCDebugger` auf, BEVOR du den Developer erneut aufrufst.\n   - Eingaben: `programCode` = finalCode der aktuellen Runde, `userPrompt` = Original-Prompt.\n   - Begruendung: Debugger liefert eine Wahrheitstabelle mit erwarteten vs. tatsaechlichen Output-Werten pro Phase. Diese Info ist fuer den Developer-Fix entscheidend praeziser als nur das Deployer-Log.\n   - Bei `deployed:false` (Programm laeuft gar nicht / Stack-Underflow / Parse-Fehler) **KEINEN** Debugger aufrufen — der braucht ein laufendes Programm. Direkt zu Schritt 3.\n   - Bei `validation_failed` aus Phase 3 ebenfalls keinen Debugger — es gibt noch keinen deploybaren Code.\n   - Zitiere das Debugger-Markdown woertlich im Output (Sektion `## 4. Tieftest — Runde N`).\n\n3. Baue `previousError` als zusammenkopierten String mit klaren Abschnitts-Headern:\n   - `### VALIDATION_FAILED` + Endblock-JSON (status/reason/failedChecks/validatorOutput/dryRunOutput) — falls aus Phase 3.\n   - `### DEPLOYER_LOG` + gesamtes Deployer-Antwort-JSON (deployed/passed/cycleResults/notausResult/log) — falls aus Phase 4.\n   - `### DEBUGGER_REPORT` + gesamtes Debugger-Markdown — falls Schritt 2 ausgefuehrt wurde.\n   - `### RUNDE` + aktuelle Rundennummer.\n\n4. Rufe `FPCDeveloper` ERNEUT auf — gleiches `analysis` und `userPrompt` wie beim ersten Aufruf, aber mit gefuelltem `previousError` aus Schritt 3.\n\n5. Werte das neue Endblock-JSON wie in Phase 3 aus. Bei `ready_for_deploy` -> Phase 4 erneut. Bei `validation_failed` oder weiterem Deploy-Fehler -> wieder Retry-Trigger (Schritt 1).\n\n6. Nach max. 3 Developer-Runden insgesamt (1 Initial + 2 Retries): brich Pipeline mit `Status: failure` ab und liefere alle Developer-Antworten + Deployer-Antworten + Debugger-Reports gesammelt im Output.\n\n**Wichtig:** Du fuehrst KEINE Code-Korrekturen selbst durch — die macht der Developer. Du sammelst nur Fehlerlogs (Deployer + Debugger) und reichst sie weiter.\n\n### Phase 5 (bedingt): Finaler Tieftest\nDieser Tieftest ist getrennt vom Debugger-Vorlauf in Phase 4-Retry. Hier geht es um den Abschluss-Tieftest auf der erfolgreich deployten Runde.\n\nRufe `FPCDebugger` (am Ende der Pipeline, nach erfolgreichem Phase 4) auf, wenn EINER dieser Punkte zutrifft:\n- User-Prompt verlangt explizit Debug/Tieftest/Schritttest/Wahrheitstabelle.\n- Aufgabe ist sicherheitskritisch (NOTAUS, Verriegelung, Tuersteuerung) — fuer Ampel-/NOTAUS-Programme STANDARDMAESSIG ja.\n\nNICHT noch einmal aufrufen, wenn der Debugger im Retry-Loop schon auf demselben finalen Code lief und keine FAILs mehr meldet — zitiere stattdessen das vorhandene Debugger-Ergebnis.\n\nEingabe:\n- `programCode` — finalCode (STRING)\n- `userPrompt` — Original-Prompt (STRING)\n\n### Phase 6 (bedingt): Pattern speichern\nRufe `FPCPatternStorer` NUR auf, wenn ALLE diese Punkte zutreffen:\n- Phase 4 lieferte `passed:true`\n- Phase 5 (falls ausgefuehrt) hat keine FAIL-Eintraege\n- Der User-Prompt verlangt EXPLIZIT die Speicherung — z. B. \"speichere als Pattern\", \"als Muster ablegen\", \"in den Vector Store\", \"als Vorlage merken\".\n\n**STRENG VERBOTEN:** Pattern speichern weil die Loesung \"neu/eigenstaendig wirkt\", \"universell ist\", \"wertvoll waere\" oder \"sich als Vorlage eignet\". Diese Einschaetzung darfst du NICHT selbst treffen — der User entscheidet.\n\nWenn keine explizite Speicheranfrage im User-Prompt steht: `FPCPatternStorer` NICHT aufrufen, in der Zusammenfassung `Pattern gespeichert: nein (nicht angefordert)` ausgeben.\n\nEingabe (nur bei explizitem Auftrag):\n- `finalCode`, `userPrompt`, `summary`, `passed: true`\n\n## Anti-Halluzination\n- Tool-Antworten WOERTLICH zitieren.\n- Phase 4 ist die EINZIGE Quelle fuer `passed:true/false`. Glaube NICHT der Behauptung des Developers, der hat keine Deploy-Befugnis.\n- Wenn der Developer faelschlich \"deployed\" oder \"isRunning:true\" behauptet: ignorieren, du hast nur dem Deployer zu glauben.\n- Wenn der Developer `status: \"validation_failed\"` zurueckgibt: KEIN Deployer-Aufruf — sofort Retry oder Abbruch.\n- Du rufst KEINE MCP-Tools, KEINE REST-API, KEINE Validatoren auf.\n\n## SELF-CHECK vor Pipeline-Ende (PFLICHT)\n\nBevor du die finale Zusammenfassung schreibst, pruefe mechanisch:\n\n1. War der letzte Deployer-Lauf `passed:true`? Wenn NEIN UND Developer-Runden < 3: **Du darfst NICHT enden.** Triggere SOFORT die naechste Retry-Runde (Phase 4-Retry).\n2. War Phase 3 zuletzt `validation_failed`? Wenn JA UND Developer-Runden < 3: **Du darfst NICHT enden.** Triggere SOFORT Retry.\n3. Erst wenn entweder `passed:true` ODER 3 Runden ausgeschoepft sind, schreibst du die Zusammenfassung.\n\nFormulierungen die SIGNALISIEREN dass du faelschlich abbrichst (verboten):\n- \"Bitte fordere die naechste Runde an\"\n- \"Soll ich nochmal versuchen?\"\n- \"Falls erwuenscht, kann der Code korrigiert werden\"\n- \"Ein weiterer Durchlauf koennte helfen\"\n\nWenn du eine solche Formulierung schreiben willst, ist das ein Indikator, dass du faelschlich abbrechen willst — STATT diese Formulierung zu schreiben, rufe `FPCDeveloper` mit `previousError` auf.\n\n## Ausgabeformat\n\nFuer JEDE Developer-Runde einen eigenen Block. Beispiel mit 2 Runden:\n\n```\n## 1. Analyse\n<JSON-Block woertlich>\n\n## 2. Entwicklung — Runde 1\n<Developer-Antwort Runde 1 woertlich>\n\n## 3. Deploy + Basis-Test — Runde 1\n<Deployer-JSON Runde 1 woertlich oder Hinweis: \"uebersprungen wegen validation_failed\">\n\n## 2. Entwicklung — Runde 2 (Retry mit previousError)\n<Developer-Antwort Runde 2 woertlich>\n\n## 3. Deploy + Basis-Test — Runde 2\n<Deployer-JSON Runde 2 woertlich>\n\n## 4. Tieftest (falls ausgefuehrt)\n<Debugger-Markdown woertlich>\n\n## 5. Speicherung (falls ausgefuehrt)\n<Storer-JSON woertlich>\n\n## 6. Zusammenfassung\n- Status: <success | failure>\n- Developer-Runden: <1, 2 oder 3>\n- Code-Zeilen: <n>\n- Deploy: <ok | fehlgeschlagen>\n- Basis-Tests: <X von Y bestanden>\n- Tieftest: <ausgefuehrt: ja/nein, Ergebnis: BESTANDEN/FEHLERHAFT>\n- Pattern gespeichert: <ja/nein/uebersprungen>\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        496,
+        96
+      ],
+      "id": "dp-agent-0004-0004-000000000004",
+      "name": "Orchestrator"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('PrepareData').item.json.sessionId }}",
+        "tableName": "fpc_develop_pipeline_histories",
+        "contextWindowLength": 25
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        368
+      ],
+      "id": "dp-memory-0005-0005-000000000005",
+      "name": "ChatMemory",
+      "credentials": {
+        "postgres": {
+          "id": "iYMqy2OzuA3ajmSK",
+          "name": "Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        368
+      ],
+      "id": "dp-model-0006-0006-000000000006",
+      "name": "ChatModel",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "FPCRequirementAnalyzer",
+        "description": "Analysiert die User-Anforderung und liefert ein Analyse-JSON mit mode, selectedPatterns, intent und originalPrompt. PFLICHT als erster Aufruf jeder Pipeline. Uebergib: chatInput (Original-Prompt des Users als String), userPrompt (kopiere chatInput nochmal ins Feld userPrompt).",
+        "workflowId": {
+          "__rl": true,
+          "value": "ReqAnalyzerSWF01",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ReqAnalyzerSWF01",
+          "cachedResultName": "FPCRequirementAnalyzer"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatInput": "={{ $fromAI('chatInput', 'Der vollstaendige Original-User-Prompt 1:1 als String — komplette Aufgabenstellung inkl. Zeit-Tabellen, Zeilenumbrueche, Sonderzeichen.', 'string') }}",
+            "userPrompt": "={{ $fromAI('userPrompt', 'Der gleiche Original-User-Prompt nochmal 1:1 als String (identisch mit chatInput).', 'string') }}"
+          },
+          "schema": [
+            { "id": "chatInput", "displayName": "chatInput", "required": true, "type": "string", "description": "Der vollstaendige Original-User-Prompt als String." },
+            { "id": "userPrompt", "displayName": "userPrompt", "required": true, "type": "string", "description": "Identisch mit chatInput." }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        448,
+        368
+      ],
+      "id": "dp-tool-ra-0007-0007-000000000007",
+      "name": "FPCRequirementAnalyzer"
+    },
+    {
+      "parameters": {
+        "name": "FPCDeveloper",
+        "description": "Entwickelt und validiert FPC-Code anhand des Analyse-JSON. Kein Deploy, kein Test — das uebernimmt FPCDeployer. Uebergib: analysis (roher String aus `output` der RequirementAnalyzer-Antwort), userPrompt (Original-Prompt 1:1), previousError (OPTIONAL — bei Retry: Fehlerlog des letzten Deploy/Debug-Versuchs als String, sonst leer). Ausgabe: Endblock JSON mit status='ready_for_deploy' (Erfolg) ODER status='validation_failed' (Validator/Dry-Run nicht sauber).",
+        "workflowId": {
+          "__rl": true,
+          "value": "DeveloperSWF0001",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/DeveloperSWF0001",
+          "cachedResultName": "FPCDeveloper"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "analysis": "={{ $fromAI('analysis', 'Das vollstaendige Analyse-JSON aus FPCRequirementAnalyzer als JSON-String. Muss mode, selectedPatterns, channelLabels, constraints, acceptanceTests enthalten.', 'string') }}",
+            "userPrompt": "={{ $fromAI('userPrompt', 'Der ORIGINAL-User-Prompt 1:1 als String — komplette Aufgabenstellung inkl. Zeit-Tabellen.', 'string') }}",
+            "previousError": "={{ $fromAI('previousError', 'OPTIONAL: Bei Retry — der vollstaendige Fehlerlog aus dem vorherigen Deploy- bzw. Debug-Versuch als String (Deployer-JSON + Debugger-Markdown zusammenkopiert). Beim ERSTEN Aufruf leerer String.', 'string') }}"
+          },
+          "schema": [
+            { "id": "analysis", "displayName": "analysis", "required": true, "type": "string", "description": "Analyse-JSON aus Phase 1 als String." },
+            { "id": "userPrompt", "displayName": "userPrompt", "required": true, "type": "string", "description": "Original-User-Prompt als String." },
+            { "id": "previousError", "displayName": "previousError", "required": false, "type": "string", "description": "OPTIONAL: Fehlerlog aus vorigem Deploy/Debug fuer Retry." }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        608,
+        368
+      ],
+      "id": "dp-tool-dev-0008-0008-000000000008",
+      "name": "FPCDeveloper"
+    },
+    {
+      "parameters": {
+        "name": "FPCDeployer",
+        "description": "Deterministischer Deploy + Basis-Test via REST-API. Uebergib: programCode (FPC-Code als String), inputLabels (JSON-String wie \"{\\\"0\\\":\\\"NOTAUS\\\"}\"), outputLabels (JSON-String wie \"{\\\"0\\\":\\\"ROT\\\"}\"), testPlan (JSON-String mit cycleLengthMs, resetInputs, samples, notausTest). Reine JS-Stufe, kein LLM — KEINE Halluzination moeglich. Antwort enthaelt deployed/passed/cycleResults/notausResult/log.",
+        "workflowId": {
+          "__rl": true,
+          "value": "DeployerSWF0001",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/DeployerSWF0001",
+          "cachedResultName": "FPCDeployer"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "programCode": "={{ $fromAI('programCode', 'Der finale FPC-Code als reiner String, eine Instruktion pro Zeile.', 'string') }}",
+            "inputLabels": "={{ $fromAI('inputLabels', 'JSON-String der Input-Labels, z. B. {\"0\":\"NOTAUS\"}.', 'string') }}",
+            "outputLabels": "={{ $fromAI('outputLabels', 'JSON-String der Output-Labels, z. B. {\"0\":\"ROT\",\"1\":\"GELB\",\"2\":\"GRUEN\"}.', 'string') }}",
+            "testPlan": "={{ $fromAI('testPlan', 'JSON-String mit cycleLengthMs (number), resetInputs ([{index,value}]), samples ([{tMs,outputs:[..],label}]), notausTest ({index,expected:[..],label}).', 'string') }}"
+          },
+          "schema": [
+            { "id": "programCode", "displayName": "programCode", "required": true, "type": "string", "description": "Finaler FPC-Code." },
+            { "id": "inputLabels", "displayName": "inputLabels", "required": true, "type": "string", "description": "JSON-String der Input-Labels." },
+            { "id": "outputLabels", "displayName": "outputLabels", "required": true, "type": "string", "description": "JSON-String der Output-Labels." },
+            { "id": "testPlan", "displayName": "testPlan", "required": true, "type": "string", "description": "JSON-String des Test-Plans." }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        688,
+        368
+      ],
+      "id": "dp-tool-deployer-0011-0011-000000000011",
+      "name": "FPCDeployer"
+    },
+    {
+      "parameters": {
+        "name": "FPCDebugger",
+        "description": "Optionaler Tieftest. Uebergib: programCode (der finale FPC-Code aus dem Developer als String), userPrompt (der Original-User-Prompt als String). Ausgabe: Markdown-Testprotokoll. Nur aufrufen bei sicherheitskritischen Aufgaben oder explizit angefordertem Debug.",
+        "workflowId": {
+          "__rl": true,
+          "value": "DebuggerSWF00001",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/DebuggerSWF00001",
+          "cachedResultName": "FPCDebugger"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "programCode": "={{ $fromAI('programCode', 'Der finale FPC-Code aus dem Developer als reiner String, eine Instruktion pro Zeile.', 'string') }}",
+            "userPrompt": "={{ $fromAI('userPrompt', 'Der Original-User-Prompt als String.', 'string') }}"
+          },
+          "schema": [
+            { "id": "programCode", "displayName": "programCode", "required": true, "type": "string", "description": "Finaler FPC-Code." },
+            { "id": "userPrompt", "displayName": "userPrompt", "required": true, "type": "string", "description": "Original-User-Prompt." }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        768,
+        368
+      ],
+      "id": "dp-tool-dbg-0009-0009-000000000009",
+      "name": "FPCDebugger"
+    },
+    {
+      "parameters": {
+        "name": "FPCPatternStorer",
+        "description": "Speichert ein neues, eigenstaendiges Muster im Vector Store. Uebergib: finalCode (der finale FPC-Code als String), userPrompt (Original-User-Prompt als String), summary (Kurz-Zusammenfassung der Loesung als String), passed (Boolean — true nur wenn TestRunner passed:true gemeldet hat). Storer entscheidet selbst, ob tatsaechlich gespeichert wird (Duplikatcheck, passed=true, etc.).",
+        "workflowId": {
+          "__rl": true,
+          "value": "PatternStorerSWF",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/PatternStorerSWF",
+          "cachedResultName": "FPCPatternStorer"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "finalCode": "={{ $fromAI('finalCode', 'Der finale FPC-Code als reiner String.', 'string') }}",
+            "userPrompt": "={{ $fromAI('userPrompt', 'Der Original-User-Prompt als String.', 'string') }}",
+            "summary": "={{ $fromAI('summary', 'Kurz-Zusammenfassung der Loesung als String.', 'string') }}",
+            "passed": "={{ $fromAI('passed', 'Boolean true wenn TestRunner passed:true gemeldet hat.', 'boolean') }}"
+          },
+          "schema": [
+            { "id": "finalCode", "displayName": "finalCode", "required": true, "type": "string", "description": "Finaler FPC-Code." },
+            { "id": "userPrompt", "displayName": "userPrompt", "required": true, "type": "string", "description": "Original-User-Prompt." },
+            { "id": "summary", "displayName": "summary", "required": true, "type": "string", "description": "Kurz-Zusammenfassung." },
+            { "id": "passed", "displayName": "passed", "required": true, "type": "boolean", "description": "TestRunner passed=true." }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        928,
+        368
+      ],
+      "id": "dp-tool-ps-0010-0010-000000000010",
+      "name": "FPCPatternStorer"
+    },
+    {
+      "parameters": {
+        "name": "GetProgramFromController",
+        "description": "Holt das aktuell auf der FPC-Steuerung geladene Programm via REST (GET http://localhost:5555/api/program). Liefert JSON-String mit Feldern: code (FPC-Quellcode), sourceLines (Zeilenzahl), hasParseError (bool), isExecutable (bool), inputLabels (Map idx->label), outputLabels (Map idx->label), error (nur bei Fehler). NUR im Modus storage_from_controller aufrufen.",
+        "jsCode": "try {\n  const programResp = await $http.request({ method: 'GET', url: 'http://localhost:5555/api/program', returnFullResponse: true });\n  let body = programResp.body;\n  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { return JSON.stringify({ error: 'invalid program response', raw: body }); } }\n  if (!body || typeof body !== 'object') return JSON.stringify({ error: 'invalid program response shape' });\n\n  const code = body.programCode || body.source || '';\n  const sourceLines = Number(body.sourceLines) || 0;\n  const hasParseError = body.hasParseError === true;\n  const parseErrorMessage = body.parseErrorMessage || null;\n  const isExecutable = body.isExecutable === true || (sourceLines > 0 && !hasParseError && !!code);\n\n  if (!code || sourceLines === 0) {\n    return JSON.stringify({ error: 'no_program_loaded', message: 'Kein Programm in der Steuerung geladen.' });\n  }\n  if (hasParseError) {\n    return JSON.stringify({ error: 'parse_error', message: parseErrorMessage || 'Programm hat Parse-Fehler', code, sourceLines });\n  }\n\n  // Labels separat holen\n  let inputLabels = {};\n  let outputLabels = {};\n  try {\n    const lblResp = await $http.request({ method: 'GET', url: 'http://localhost:5555/api/labels', returnFullResponse: true });\n    let lblBody = lblResp.body;\n    if (typeof lblBody === 'string') { try { lblBody = JSON.parse(lblBody); } catch { lblBody = null; } }\n    if (lblBody && typeof lblBody === 'object') {\n      inputLabels = lblBody.inputs || lblBody.inputLabels || {};\n      outputLabels = lblBody.outputs || lblBody.outputLabels || {};\n    }\n  } catch (e) { /* labels optional, ignore */ }\n\n  return JSON.stringify({\n    code,\n    sourceLines,\n    hasParseError,\n    isExecutable,\n    inputLabels,\n    outputLabels\n  });\n} catch (e) {\n  return JSON.stringify({ error: 'controller_unreachable', message: e.message });\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        368
+      ],
+      "id": "dp-tool-getprog-0012-0012-000000000012",
+      "name": "GetProgramFromController"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FPCDevelopChat": {
+      "main": [
+        [
+          {
+            "node": "PrepareData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PrepareData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareData": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatMemory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatModel": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCRequirementAnalyzer": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCDeveloper": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCDeployer": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCDebugger": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCPatternStorer": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetProgramFromController": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dp-version-0001-0001-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "FPCDevelopPipeln",
+  "tags": []
+}

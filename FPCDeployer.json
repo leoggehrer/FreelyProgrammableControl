@@ -1,0 +1,56 @@
+{
+  "name": "FPCDeployer",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dpl-trigger-0001-0001-000000000001",
+      "name": "WorkflowTrigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const REST = 'http://localhost:5555';\nconst inp = $input.first().json;\n\n// --- Parse input (handle nested 'query' JSON string from agent tool calls) ---\nlet programCode = inp.programCode || '';\nlet inputLabels = inp.inputLabels || {};\nlet outputLabels = inp.outputLabels || {};\nlet testPlan = inp.testPlan || {};\n\nif (typeof inp.query === 'string') {\n  try {\n    const parsed = JSON.parse(inp.query);\n    if (!programCode) programCode = parsed.programCode || '';\n    if (Object.keys(inputLabels).length === 0) inputLabels = parsed.inputLabels || {};\n    if (Object.keys(outputLabels).length === 0) outputLabels = parsed.outputLabels || {};\n    if (Object.keys(testPlan).length === 0) testPlan = parsed.testPlan || {};\n  } catch {}\n}\n// inputLabels/outputLabels/testPlan may arrive as JSON strings\nif (typeof inputLabels === 'string') { try { inputLabels = JSON.parse(inputLabels); } catch { inputLabels = {}; } }\nif (typeof outputLabels === 'string') { try { outputLabels = JSON.parse(outputLabels); } catch { outputLabels = {}; } }\nif (typeof testPlan === 'string') { try { testPlan = JSON.parse(testPlan); } catch { testPlan = {}; } }\n\nif (!programCode) {\n  return [{ json: { deployed: false, passed: false, error: 'programCode missing in input', receivedInputKeys: Object.keys(inp) } }];\n}\n\n// --- Normalize code: strip // and ; comments, trim leading/trailing whitespace per line, drop empty lines ---\nfunction normalizeFpcCode(src) {\n  const out = [];\n  for (let raw of src.split(/\\r?\\n/)) {\n    let line = raw;\n    // Strip // comments (everything after //)\n    const slashIdx = line.indexOf('//');\n    if (slashIdx >= 0) line = line.slice(0, slashIdx);\n    // Trim leading + trailing whitespace\n    line = line.trim();\n    // Drop empty lines\n    if (!line) continue;\n    // Keep # comments as-is (FPC native comment)\n    out.push(line);\n  }\n  return out.join('\\n');\n}\nconst originalCode = programCode;\nprogramCode = normalizeFpcCode(programCode);\n\nconst log = [];\nlog.push({ step: 'normalizeCode', originalLines: originalCode.split(/\\r?\\n/).length, finalLines: programCode.split('\\n').length });\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\n\nasync function http(method, path, body, contentType) {\n  const opts = {\n    method,\n    url: REST + path,\n    returnFullResponse: true,\n    json: contentType === 'application/json',\n  };\n  if (body !== undefined) {\n    opts.body = body;\n    opts.headers = { 'Content-Type': contentType || 'application/json' };\n  }\n  try {\n    const r = await this.helpers.httpRequest(opts);\n    let b = r && r.body !== undefined ? r.body : r;\n    if (typeof b === 'string') { try { b = JSON.parse(b); } catch {} }\n    return { ok: true, status: r?.statusCode || 200, body: b };\n  } catch (e) {\n    return { ok: false, status: e.statusCode || 0, error: e.message || String(e), body: e.cause?.error || null };\n  }\n}\n\nasync function getInputs() {\n  const r = await http('GET', '/api/inputs');\n  const arr = Array(20).fill(0);\n  if (r.ok && Array.isArray(r.body?.inputs)) {\n    for (const o of r.body.inputs) if (o.index < arr.length) arr[o.index] = o.value ? 1 : 0;\n  }\n  return arr;\n}\n\nasync function getOutputs() {\n  const r = await http('GET', '/api/outputs');\n  const arr = Array(20).fill(0);\n  let okFlag = false;\n  if (r.ok && Array.isArray(r.body?.outputs)) {\n    okFlag = true;\n    for (const o of r.body.outputs) if (o.index < arr.length) arr[o.index] = o.value ? 1 : 0;\n  }\n  return { arr, ok: okFlag };\n}\n\nasync function setInput(idx, val) {\n  const inputs = await getInputs();\n  const target = val ? 1 : 0;\n  if (inputs[idx] !== target) {\n    await http('POST', '/api/inputs/' + idx + '/toggle');\n  }\n}\n\n// --- 0. Stop + Debug-Modus deaktivieren (falls vom Debugger hinterlassen) ---\nawait http('POST', '/api/stop');\nconst debugRes = await http('POST', '/api/debug', 'false', 'application/json');\nlog.push({ step: 'disableDebug', debugEnabled: debugRes.body?.debugEnabled, ok: debugRes.ok });\n\n// --- 1. Stop ---\nconst stopRes = await http('POST', '/api/stop');\nlog.push({ step: 'stop', status: stopRes.status, ok: stopRes.ok });\n\n// --- 2. Set labels (must be when stopped) ---\nfor (const [idx, label] of Object.entries(inputLabels)) {\n  if (!label) continue;\n  const r = await http('PUT', '/api/inputs/' + idx + '/label', String(label), 'text/plain');\n  log.push({ step: 'setInputLabel', idx, label, status: r.status, ok: r.ok, error: r.error });\n}\nfor (const [idx, label] of Object.entries(outputLabels)) {\n  if (!label) continue;\n  const r = await http('PUT', '/api/outputs/' + idx + '/label', String(label), 'text/plain');\n  log.push({ step: 'setOutputLabel', idx, label, status: r.status, ok: r.ok, error: r.error });\n}\n\n// --- 3. Load program ---\nconst loadRes = await http('POST', '/api/program', programCode, 'text/plain');\nlog.push({ step: 'loadProgram', status: loadRes.status, ok: loadRes.ok, body: loadRes.body, error: loadRes.error });\n\nif (!loadRes.ok) {\n  return [{ json: { deployed: false, passed: false, error: 'POST /api/program failed', log } }];\n}\n\n// --- 4. Verify ---\nconst verRes = await http('GET', '/api/program');\nconst hasParseError = verRes.body?.hasParseError === true;\nconst isExecutable = verRes.body?.isExecutable === true;\nlog.push({ step: 'verify', isExecutable, hasParseError, parseErrorMessage: verRes.body?.parseErrorMessage || null });\n\nif (hasParseError || !isExecutable) {\n  return [{ json: {\n    deployed: false,\n    passed: false,\n    error: 'Program not executable',\n    parseErrorMessage: verRes.body?.parseErrorMessage,\n    log\n  } }];\n}\n\n// --- 5. Reset inputs ---\nconst resetInputs = testPlan.resetInputs || [];\nfor (const ri of resetInputs) {\n  await setInput(ri.index, ri.value);\n  log.push({ step: 'resetInput', idx: ri.index, value: !!ri.value });\n}\n\n// --- 6. Start ---\nconst startRes = await http('POST', '/api/start');\nlog.push({ step: 'start', status: startRes.status, ok: startRes.ok });\nif (!startRes.ok) {\n  return [{ json: { deployed: false, passed: false, error: 'start failed', log } }];\n}\nconst startTime = Date.now();\n\n// --- 7. Run cycle samples ---\nconst samples = (testPlan.samples || []).slice().sort((a, b) => (a.tMs || 0) - (b.tMs || 0));\nconst cycleResults = [];\nfor (const s of samples) {\n  const wait = (s.tMs || 0) - (Date.now() - startTime);\n  if (wait > 0) await sleep(wait);\n  const { arr: actual, ok } = await getOutputs();\n  const expected = s.outputs || s.expected || [];\n  const diffs = [];\n  for (let i = 0; i < expected.length; i++) {\n    if (actual[i] !== expected[i]) diffs.push({ O: i, expected: expected[i], actual: actual[i] });\n  }\n  cycleResults.push({\n    label: s.label || ('t=' + (s.tMs || 0) + 'ms'),\n    tMs: s.tMs || 0,\n    actualElapsedMs: Date.now() - startTime,\n    expected,\n    actual: actual.slice(0, Math.max(expected.length, 3)),\n    httpOk: ok,\n    pass: ok && diffs.length === 0,\n    diffs\n  });\n}\n\n// --- 8. NOTAUS test (optional) ---\nlet notausResult = null;\nconst nt = testPlan.notausTest;\nif (nt && nt.index !== undefined) {\n  await http('POST', '/api/stop');\n  await setInput(nt.index, true);\n  await http('POST', '/api/start');\n  const stabMs = Math.max(300, nt.stabiliseMs || 600);\n  await sleep(stabMs);\n  const { arr: actual, ok } = await getOutputs();\n  const expected = nt.expected || [];\n  const diffs = [];\n  for (let i = 0; i < expected.length; i++) {\n    if (actual[i] !== expected[i]) diffs.push({ O: i, expected: expected[i], actual: actual[i] });\n  }\n  notausResult = {\n    label: nt.label || 'NOTAUS',\n    expected,\n    actual: actual.slice(0, Math.max(expected.length, 3)),\n    httpOk: ok,\n    pass: ok && diffs.length === 0,\n    diffs\n  };\n  await http('POST', '/api/stop');\n  await setInput(nt.index, false);\n}\n\n// --- 9. Final stop, leave controller in idle stopped state ---\nawait http('POST', '/api/stop');\n\nconst passCycle = cycleResults.filter((r) => r.pass).length;\nconst total = cycleResults.length + (notausResult ? 1 : 0);\nconst passed = (passCycle === cycleResults.length) && (notausResult ? notausResult.pass : true);\nconst failed = total - passCycle - (notausResult && notausResult.pass ? 1 : 0);\n\nreturn [{\n  json: {\n    deployed: true,\n    passed,\n    summary: passed\n      ? ('ALLE ' + total + ' TESTS BESTANDEN')\n      : (failed + ' von ' + total + ' FEHLGESCHLAGEN — Code korrigieren und neu deployen+testen'),\n    sourceLines: verRes.body?.sourceLines,\n    cycleResults,\n    notausResult,\n    log\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "dpl-code-0002-0002-000000000002",
+      "name": "DeployAndTest"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WorkflowTrigger": {
+      "main": [
+        [
+          {
+            "node": "DeployAndTest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dpl-version-0001-0001-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "DeployerSWF0001",
+  "tags": []
+}

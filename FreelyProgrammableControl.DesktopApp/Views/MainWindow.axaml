@@ -8,8 +8,8 @@
         x:Class="FreelyProgrammableControl.DesktopApp.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Width="1000"
-        Height="900"
+        Width="1100"
+        Height="1000"
         Title="FreelyProgrammableControl">
 
   <Window.KeyBindings>
@@ -381,5 +381,4 @@
       </Border>
     </Grid>
   </DockPanel>
-
 </Window>

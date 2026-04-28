@@ -134,22 +134,38 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         }
 
         /// <summary>GET /api/program — returns the currently loaded source code.</summary>
+        /// <remarks>
+        /// <c>programCode</c> reflects the program that is actually loaded in the execution
+        /// engine (not the editor buffer). It is empty when no executable program is loaded,
+        /// even if the editor still shows text. <c>isExecutable</c> is <c>true</c> only when a
+        /// non-empty, parse-error-free program is present.
+        /// </remarks>
         private async Task HandleGetProgramAsync(HttpContext ctx)
         {
-            var sourceText = _viewModel.SourceText;
-            if (string.IsNullOrWhiteSpace(sourceText) && _viewModel.Source.Length > 0)
-            {
-                sourceText = string.Join(Environment.NewLine, _viewModel.Source);
-            }
+            var engineSource = _viewModel.Source;
+            var hasParseError = _viewModel.HasParseError;
+            var programCode = engineSource.Length > 0
+                ? string.Join(Environment.NewLine, engineSource)
+                : string.Empty;
+            var isExecutable = engineSource.Length > 0 && !hasParseError;
 
             await ctx.Response.WriteAsJsonAsync(new
             {
-                programCode = sourceText,
-                sourceLines = _viewModel.Source.Length
+                programCode,
+                sourceLines = engineSource.Length,
+                hasParseError,
+                parseErrorMessage = _viewModel.ParseErrorMessage,
+                isExecutable
             });
         }
 
         /// <summary>POST /api/program — loads new source code; stops the controller first.</summary>
+        /// <remarks>
+        /// The source is loaded into the execution engine even when it contains parse errors,
+        /// so that <c>HasParseError</c> / <c>ParseErrorMessage</c> consistently reflect the most
+        /// recent POST. Without that, <c>/api/status</c> and <c>/api/program</c> could falsely
+        /// claim a program is loaded after a failed POST.
+        /// </remarks>
         private async Task HandlePostProgramAsync(HttpContext ctx)
         {
             using var reader = new StreamReader(ctx.Request.Body);
@@ -164,19 +180,20 @@ namespace FreelyProgrammableControl.DesktopApp.Services
 
             var lines = programCode.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
             List<string> parseErrors = [];
+            var loadedSourceLines = 0;
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 _viewModel.StopCommand?.Execute(null);
                 _viewModel.SourceText = programCode;
-                _viewModel.LoadSourceCommand?.Execute(null);
 
                 var eu = _viewModel.GetExecutionUnit();
-                var parsedLines = eu.Parse(lines);
-                parseErrors = parsedLines
+                parseErrors = eu.Parse(lines)
                     .Where(pl => pl.HasError)
                     .Select(pl => $"Zeile {pl.LineNumber}: {pl.ErrorMessage}")
                     .ToList();
+                eu.LoadSource(lines);
+                loadedSourceLines = eu.Source.Length;
             });
 
             var response = new
@@ -185,7 +202,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
                 hasParseError = parseErrors.Count > 0,
                 parseErrorMessage = parseErrors.FirstOrDefault(),
                 parseErrors = parseErrors,
-                sourceLines = lines.Length
+                sourceLines = loadedSourceLines
             };
 
             if (!response.success) ctx.Response.StatusCode = 400;

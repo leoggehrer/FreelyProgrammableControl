@@ -169,13 +169,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         public string[] SourceLines
         {
             get => SourceText.Split(Environment.NewLine);
-            set => SourceText = value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+            set => SourceText = value.Length > 0 ? value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}") : string.Empty;
         }
         /// <summary>The output text split into lines for display in the output panel. This is not the raw output from the engine, but rather the annotated parse result or execution output shown to the user.</summary>
         public string[] OutputLines
         {
             get => OutputText.Split(Environment.NewLine);
-            set => OutputText = value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}");
+            set => OutputText = value.Length > 0 ? value.Aggregate((a, b) => $"{a}{Environment.NewLine}{b}") : string.Empty;
         }
         #endregion properties
 

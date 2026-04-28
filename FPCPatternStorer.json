@@ -1,0 +1,200 @@
+{
+  "name": "FPCPatternStorer",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ps-trigger-0001-0001-000000000001",
+      "name": "WorkflowTrigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json) }}",
+        "options": {
+          "maxIterations": 12,
+          "systemMessage": "# FPC Pattern Storer (SWF)\n\nDu bist die Speicher-Stufe einer 4-stufigen FPC-Pipeline.\nEingabe: JSON mit { finalCode, userPrompt, summary, passed, ... } vom Orchestrator.\n\n## Ablauf\n\n### 1. Vorpruefung — speichern oder nicht?\nNUR speichern, wenn ALLE Bedingungen erfuellt sind:\n- `passed === true` (Code wurde getestet und besteht)\n- finalCode ist nicht leer\n- (a) der Benutzer hat im Prompt explizit Speicherung gefordert (z. B. \"speichere\", \"merken\", \"als Pattern hinzufuegen\"), ODER\n- (b) die Loesung ist eine eigenstaendige neue Gesamtloesung (nicht nur Umbenennung eines vorhandenen Patterns)\n\nWenn Bedingung nicht erfuellt: Antwort\n```json\n{ \"stored\": false, \"reason\": \"<begruendung>\" }\n```\n\n### 2. Duplikat-Check\nRufe `FPCKnowledge` mit dem userPrompt + Schluessel-Befehlen aus finalCode auf.\nWenn ein Treffer mit hoher Aehnlichkeit (>= 0.85) existiert UND keine explizite User-Speicheranforderung: NICHT speichern.\nAntwort:\n```json\n{ \"stored\": false, \"reason\": \"Duplikat: <title>\" }\n```\n\n### 3. Code bereinigen (PFLICHT vor Speichern)\nBereinige den finalCode fuer das Embedding:\n- BEHALTE: alle FPC-Instruktionen (eine pro Zeile) und strukturelle `#`-Kommentare (z. B. `# --- Abschnitt ---`)\n- ENTFERNE: alle Prosa-Bloecke am Ende des Codes (Testergebnisse, Kategorie, Level, Tags, Commands-Listen) — diese gehoeren in die Metadaten-Felder, NICHT in pageContent\n- ENTFERNE: Inline-Kommentare hinter Instruktionen (z. B. `MOV O 0    # Rot` → `MOV O 0`)\nErgebnis: reiner, einrueckungsfreier FPC-Code mit optionalen Abschnitts-Kommentaren.\n\n### 4. Speichern\nRufe das Tool `store_fpc_pattern` mit folgenden Feldern:\n- `pageContent`: NUR der bereinigte FPC-Code aus Schritt 3 (kein Prosa-Text, keine Metadaten)\n- `title`: kurzer aussagekraeftiger Titel\n- `category`: Grundlagen | Timer und Blinker | Counter Operationen | Toggle-Logik | Pattern | Komplex\n- `level`: Einfach | Mittel | Komplex\n- `tags`: komma-separiert (aus den Metadaten des finalCode oder userPrompt abgeleitet)\n- `commands`: verwendete FPC-Befehle komma-separiert (nur Befehlsnamen, z. B. GETNOT,DUP,CSET)\n\n### 4. Antwort\n```json\n{ \"stored\": true, \"title\": \"...\", \"category\": \"...\", \"level\": \"...\" }\n```\n\n## Regeln\n- Gib NUR JSON aus.\n- Keine Halluzinationen. Tool-Antwort vom store_fpc_pattern muss tatsaechlich erfolgt sein, bevor stored:true gemeldet wird.\n- Nichts speichern, was nicht bestanden hat (passed:false)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "ps-agent-0002-0002-000000000002",
+      "name": "StorerAgent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        240
+      ],
+      "id": "ps-model-0003-0003-000000000003",
+      "name": "ChatModel",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "FPC Knowledge Base: Pruefe vor dem Speichern, ob bereits ein aehnliches Muster existiert. Suche mit dem userPrompt oder Schluessel-Befehlen aus finalCode.",
+        "tableName": "fpc_doc_vectors",
+        "topK": 3,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        240
+      ],
+      "id": "ps-knowledge-0004-0004-000000000004",
+      "name": "FPCKnowledge",
+      "credentials": {
+        "postgres": {
+          "id": "UoqszLjcmzlEQ1H5",
+          "name": "PGVector"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 3072
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        448
+      ],
+      "id": "ps-embed-0005-0005-000000000005",
+      "name": "Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "avFMsETk9vzF57mg",
+          "name": "OpenAiISO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "store_fpc_pattern",
+        "description": "Speichert ein verifiziertes FPC-Programm-Muster im Vector Store. Uebergib: pageContent (NUR bereinigter FPC-Code — keine Prosa, keine Testergebnisse, keine Tag-Listen), title, category, level, tags (komma-separiert), commands (verwendete FPC-Befehle komma-separiert).",
+        "workflowId": {
+          "__rl": true,
+          "value": "iwudzzrpk1Z03bCl",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/iwudzzrpk1Z03bCl",
+          "cachedResultName": "FPCStorePatternSWF"
+        },
+        "workflowInputs": {
+          "mappingMode": "autoMapInputData"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        624,
+        240
+      ],
+      "id": "ps-store-0006-0006-000000000006",
+      "name": "StoreFPCPattern"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WorkflowTrigger": {
+      "main": [
+        [
+          {
+            "node": "StorerAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatModel": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "StorerAgent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FPCKnowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "StorerAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "FPCKnowledge",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StoreFPCPattern": {
+      "ai_tool": [
+        [
+          {
+            "node": "StorerAgent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ps-version-0001-0001-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "PatternStorerSWF",
+  "tags": []
+}
