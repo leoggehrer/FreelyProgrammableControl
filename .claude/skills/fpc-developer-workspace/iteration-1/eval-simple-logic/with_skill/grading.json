@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "simple-logic",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "self_hold_pattern: Enthält SR-Latch/Selbsthaltung mit CMOV M",
+      "passed": true,
+      "evidence": "Verwendet CMOV M 0 1 (Set via I0) und CMOV M 0 0 (Reset via I1 OR I2)"
+    },
+    {
+      "text": "timer_init_with_memory: Timer-Init-Muster GETNOT M / DUP / CSET T / CMOV M vorhanden",
+      "passed": true,
+      "evidence": "GETNOT M 1 / DUP / CSET T 0 250 / CMOV M 1 1 — verbindliches Muster korrekt verwendet"
+    },
+    {
+      "text": "no_inline_comments: Keine Inline-Kommentare",
+      "passed": true,
+      "evidence": "Alle Kommentare in eigenen Zeilen, keine # nach Befehlen"
+    },
+    {
+      "text": "uses_required_io: Verwendet I0, I1, I2, O0, O1",
+      "passed": true,
+      "evidence": "Alle 5 I/O-Adressen im Programm vorhanden"
+    },
+    {
+      "text": "stack_balanced: Stack-Tiefe endet bei 0, kein Unterlauf",
+      "passed": true,
+      "evidence": "Stack-Trace ergibt min=0, final=0 — kein Fehler"
+    }
+  ],
+  "pass_rate": 1.0
+}

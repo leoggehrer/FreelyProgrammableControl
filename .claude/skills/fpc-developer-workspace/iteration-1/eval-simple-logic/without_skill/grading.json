@@ -1,0 +1,33 @@
+{
+  "eval_id": 1,
+  "eval_name": "simple-logic",
+  "run": "without_skill",
+  "expectations": [
+    {
+      "text": "self_hold_pattern: Enthält SR-Latch/Selbsthaltung",
+      "passed": true,
+      "evidence": "Verwendet klassische Selbsthaltung: (I0 OR M0) AND NOT I1 AND NOT I2 → MOV M 0. Funktionell korrekt, aber ohne CMOV-Muster."
+    },
+    {
+      "text": "timer_init_with_memory: Timer-Init-Muster GETNOT M / DUP / CSET T / CMOV M vorhanden",
+      "passed": false,
+      "evidence": "CSET T 0 250 wird mit leerem Stack aufgerufen — kein Memory-Flag-Schutz. Führt zu Stack-Unterlauf-Fehler."
+    },
+    {
+      "text": "no_inline_comments: Keine Inline-Kommentare",
+      "passed": true,
+      "evidence": "Alle Kommentare in eigenen Zeilen"
+    },
+    {
+      "text": "uses_required_io: Verwendet I0, I1, I2, O0, O1",
+      "passed": true,
+      "evidence": "Alle 5 I/O-Adressen vorhanden"
+    },
+    {
+      "text": "stack_balanced: Stack-Tiefe endet bei 0, kein Unterlauf",
+      "passed": false,
+      "evidence": "Stack-Unterlauf bei CSET T 0 250 (leer) und MOV O 1 (leer). Programm würde mit 'Stack is empty!' abstürzen."
+    }
+  ],
+  "pass_rate": 0.6
+}

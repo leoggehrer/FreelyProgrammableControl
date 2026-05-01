@@ -1,0 +1,140 @@
+# ============================================================
+# FPC-Programm: Zähler mit 10 Tastendrücken -> O0 für 3s
+# ============================================================
+# Eingänge:
+#   I0 = Taster (steigende Flanken werden gezählt)
+#   I1 = Reset-Taster (setzt Zähler und Ausgabe zurück)
+# Ausgänge:
+#   O0 = Lampe (leuchtet 3 Sekunden nach 10 Tastendrücken)
+# Merker (interne Flags):
+#   M0 = vorheriger Zustand von I0 (für Flankenerkennung)
+#   M1 = Latch: "Ausgabe ist aktiv" (O0 soll leuchten)
+#   M2 = Flag: "Timer T0 wurde bereits gestartet"
+# Zähler:
+#   C0 = Zählt die steigenden Flanken von I0
+# Timer:
+#   T0 = 3000ms One-Shot (wird einmalig gestartet, wenn M1 gesetzt wird)
+# ============================================================
+
+# ---- SCHRITT 1: Steigende Flanke von I0 erkennen ----------
+# Steigende Flanke = I0 ist jetzt HIGH UND war vorher LOW
+# Stack vorher: []
+GET I 0
+# Stack: [I0]
+GETNOT M 0
+# Stack: [I0, NOT(M0)]  -- M0 = vorheriger Zustand von I0
+AND
+# Stack: [I0 AND NOT(M0)]  -- TRUE nur bei steigender Flanke
+# ---- SCHRITT 2: Zähler C0 bei steigender Flanke inkrementieren ----
+# Stack: [Flanken-Signal]
+DUP
+# Stack: [Flanken-Signal, Flanken-Signal]
+CINC C 0
+# Stack: [Flanken-Signal]  -- C0 wird um 1 erhöht, wenn Flanken-Signal TRUE
+
+# ---- SCHRITT 3: Vorherigen I0-Zustand aktualisieren (M0 = I0) ----
+# Stack: [Flanken-Signal]
+GET I 0
+# Stack: [Flanken-Signal, I0]
+MOV M 0
+# Stack: [Flanken-Signal]  -- M0 speichert aktuellen I0-Zustand für nächsten Zyklus
+
+# ---- SCHRITT 4: Prüfen ob Zähler C0 >= 10 erreicht hat ----
+# Stack: [Flanken-Signal]  (noch auf Stack, aber wir brauchen ihn nicht mehr)
+# Wir ersetzen mit der Zähler-Vergleichsprüfung
+# Zuerst den Flanken-Wert vom Stack entfernen:
+MOV M 9
+# Stack: []  -- M9 ist Wegwerf-Merker (Flanken-Signal wird verworfen)
+
+# Prüfe: C0 >= 10 ?
+CMP C 0 10
+# Stack: [C0 == 10]  -- TRUE wenn Zähler genau 10 erreicht
+# Hinweis: CMP prüft Gleichheit. Bei steigendem Zähler trifft genau bei 10 zu.
+
+# ---- SCHRITT 5: Latch M1 setzen wenn Zähler 10 erreicht ----
+# Stack: [C0 == 10]
+DUP
+# Stack: [C0 == 10, C0 == 10]
+CMOV M 1 1
+# Stack: [C0 == 10]  -- M1 wird auf 1 gesetzt wenn C0 == 10
+
+# ---- SCHRITT 6: Zähler zurücksetzen wenn 10 erreicht (damit nicht nochmals zählt) ----
+# Stack: [C0 == 10]
+CSET C 0 0
+# Stack: []  -- C0 wird auf 0 zurückgesetzt wenn Bedingung TRUE (Zähler == 10)
+
+# ---- SCHRITT 7: Timer T0 starten (nur einmalig, wenn M1=1 und M2=0) ----
+# T0 soll nur gestartet werden, wenn Latch M1 aktiv ist
+# aber noch nicht gestartet wurde (M2=0), damit der Timer nicht
+# jedes Zyklus neu gestartet wird (sonst würde er nie ablaufen).
+# Stack: []
+GET M 1
+# Stack: [M1]  -- Latch aktiv?
+GETNOT M 2
+# Stack: [M1, NOT(M2)]  -- Timer noch nicht gestartet?
+AND
+# Stack: [M1 AND NOT(M2)]  -- Nur TRUE im ersten Zyklus nach Latch-Setzen
+DUP
+# Stack: [Bedingung, Bedingung]
+CSET T 0 3000
+# Stack: [Bedingung]  -- T0 auf 3000ms setzen, wenn Bedingung TRUE
+CMOV M 2 1
+# Stack: []  -- M2 = 1 setzen (Timer wurde gestartet)
+
+# ---- SCHRITT 8: Timer-Ablauf erkennen und Latch löschen ----
+# T0 ist nach 3 Sekunden FALSE (Pulszeit abgelaufen)
+# Wenn M1=1 (Latch aktiv) UND M2=1 (Timer läuft) UND T0=0 (Timer abgelaufen)
+# -> M1 und M2 löschen, O0 ausschalten
+# Stack: []
+GET M 1
+# Stack: [M1]
+GET M 2
+# Stack: [M1, M2]
+AND
+# Stack: [M1 AND M2]  -- Latch aktiv UND Timer läuft?
+GETNOT T 0
+# Stack: [M1 AND M2, NOT(T0)]  -- Timer abgelaufen (T0 = FALSE)?
+AND
+# Stack: [M1 AND M2 AND NOT(T0)]  -- Alle Bedingungen für Timer-Ende?
+DUP
+# Stack: [Timer-Ende, Timer-Ende]
+DUP
+# Stack: [Timer-Ende, Timer-Ende, Timer-Ende]
+CMOV M 1 0
+# Stack: [Timer-Ende, Timer-Ende]  -- M1 (Latch) löschen wenn Timer abgelaufen
+CMOV M 2 0
+# Stack: [Timer-Ende]  -- M2 (Timer-Flag) löschen wenn Timer abgelaufen
+
+# ---- SCHRITT 9: Ausgabe O0 steuern ----
+# O0 leuchtet solange M1 = 1 (Latch aktiv)
+# Der Timer-Ende-Wert ist noch auf dem Stack, aber wir brauchen ihn nicht
+MOV M 9
+# Stack: []  -- Timer-Ende-Wert verwerfen
+GET M 1
+# Stack: [M1]
+MOV O 0
+# Stack: []  -- O0 = M1 (leuchtet wenn Latch aktiv)
+
+# ---- SCHRITT 10: Reset durch I1 ----
+# I1 setzt Zähler, Latch und Timer-Flag zurück
+# Stack: []
+GET I 1
+# Stack: [I1]
+DUP
+# Stack: [I1, I1]
+DUP
+# Stack: [I1, I1, I1]
+DUP
+# Stack: [I1, I1, I1, I1]
+CMOV M 1 0
+# Stack: [I1, I1, I1]  -- M1 (Latch) löschen
+CMOV M 2 0
+# Stack: [I1, I1]  -- M2 (Timer-Flag) löschen
+CSET C 0 0
+# Stack: [I1]  -- C0 (Zähler) auf 0 zurücksetzen
+MOV M 9
+# Stack: []  -- I1-Wert verwerfen
+
+# ============================================================
+# Ende des Zyklus - Programm startet von vorne
+# ============================================================

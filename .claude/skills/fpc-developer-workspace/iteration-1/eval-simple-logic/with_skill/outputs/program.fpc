@@ -1,0 +1,29 @@
+# Foerderanlage - Selbsthaltung Motor + Warnleuchte 2 Hz
+# I0=Start-Taster, I1=Stop-Taster, I2=Lichtschranke
+# O0=Foerdermotor, O1=Warnleuchte
+
+# --- Blinker-Timer einmalig initialisieren (T0, 250ms = 2 Hz) ---
+GETNOT M 1
+DUP
+CSET T 0 250
+CMOV M 1 1
+
+# --- SR-Latch fuer Motorsteuerung (M0) ---
+# Set: Start-Taster gedrueckt
+GET I 0
+CMOV M 0 1
+# Reset: Stop-Taster ODER Lichtschranke
+GET I 1
+GET I 2
+OR
+CMOV M 0 0
+
+# --- Ausgang O0: Foerdermotor ---
+GET M 0
+MOV O 0
+
+# --- Ausgang O1: Warnleuchte blinkt 2 Hz wenn Motor laeuft ---
+GET M 0
+GET T 0
+AND
+MOV O 1

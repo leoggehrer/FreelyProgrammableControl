@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fpc-developer", "runs": [{"id": "eval-simple-logic-with_skill", "prompt": "Schreib mir ein FPC-Programm f\u00fcr eine einfache F\u00f6rderanlage...", "eval_id": 1, "outputs": [{"name": "explanation.md", "type": "text", "content": "# Foerderanlage \u2013 Programmerkl\u00e4rung\n\n## Belegung\n\n| Signal | Bedeutung |\n|--------|-----------|\n| I0 | Start-Taster |\n| I1 | Stop-Taster |\n| I2 | Lichtschranke |\n| O0 | F\u00f6rdermotor |\n| O1 | Warnleuchte (blinkt 2 Hz) |\n| M0 | Motormerker (Selbsthaltung) |\n| M1 | Timer-Initialisierungsflag |\n| T0 | Blinker-Timer 250 ms |\n\n## Programmstruktur\n\n### 1. Blinker-Timer initialisieren (einmalig)\n\n```fpc\nGETNOT M 1\nDUP\nCSET T 0 250\nCMOV M 1 1\n```\n\n`M1` ist beim ersten Zyklus `false`, daher ist `GETNOT M1 = true`. Der Timer T0 wird mit 250 ms gestartet (2 Hz = 500 ms Periode, jeweils 250 ms EIN / 250 ms AUS). Danach wird `M1=1` gesetzt, sodass der Timer-Start in allen folgenden Zyklen \u00fcbersprungen wird. Das ist das verbindliche Timer-Init-Muster: **Memory-Flag + DUP + CSET + CMOV**.\n\n### 2. SR-Latch \u2013 Motormerker M0\n\n```fpc\nGET I 0\nCMOV M 0 1\n\nGET I 1\nGET I 2\nOR\nCMOV M 0 0\n```\n\n- **Set:** Wird I0 (Start) bet\u00e4tigt, setzt `CMOV M0 1` den Motormerker.\n- **Reset (hat Vorrang):** I1 (Stop) ODER I2 (Lichtschranke) werden per `OR` verkn\u00fcpft. Ist einer davon aktiv, wird `M0` auf 0 zur\u00fcckgesetzt. Da Reset nach Set steht, hat er Vorrang \u2013 dr\u00fcckt man Start und Stop gleichzeitig, bleibt der Motor aus.\n\n### 3. F\u00f6rdermotor O0\n\n```fpc\nGET M 0\nMOV O 0\n```\n\nDer Ausgang O0 folgt direkt dem Motormerker M0.\n\n### 4. Warnleuchte O1 (gated Blinker)\n\n```fpc\nGET M 0\nGET T 0\nAND\nMOV O 1\n```\n\nO1 ist nur dann aktiv, wenn sowohl der Motor l\u00e4uft (`M0=true`) als auch der Blinker-Timer gerade in der EIN-Phase ist (`T0=true`). Das ergibt ein 2-Hz-Blinken, das nur w\u00e4hrend des Motorbetriebs sichtbar ist.\n\n## Zeitverhalten\n\n- Blinker-Periode: 500 ms (250 ms EIN + 250 ms AUS) \u2192 2 Hz\n- Zyklusziet: Standard 100 ms (ausreichend f\u00fcr pr\u00e4zises Timing)\n\n## Stack-Verifikation\n\nAlle Sequenzen enden mit einem leeren Stack (Tiefe = 0). Kein `DUP`-Missbrauch, kein Stack-Unterlauf.\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBGb2VyZGVyYW5sYWdlIC0gU2VsYnN0aGFsdHVuZyBNb3RvciArIFdhcm5sZXVjaHRlIDIgSHoKIyBJMD1TdGFydC1UYXN0ZXIsIEkxPVN0b3AtVGFzdGVyLCBJMj1MaWNodHNjaHJhbmtlCiMgTzA9Rm9lcmRlcm1vdG9yLCBPMT1XYXJubGV1Y2h0ZQoKIyAtLS0gQmxpbmtlci1UaW1lciBlaW5tYWxpZyBpbml0aWFsaXNpZXJlbiAoVDAsIDI1MG1zID0gMiBIeikgLS0tCkdFVE5PVCBNIDEKRFVQCkNTRVQgVCAwIDI1MApDTU9WIE0gMSAxCgojIC0tLSBTUi1MYXRjaCBmdWVyIE1vdG9yc3RldWVydW5nIChNMCkgLS0tCiMgU2V0OiBTdGFydC1UYXN0ZXIgZ2VkcnVlY2t0CkdFVCBJIDAKQ01PViBNIDAgMQojIFJlc2V0OiBTdG9wLVRhc3RlciBPREVSIExpY2h0c2NocmFua2UKR0VUIEkgMQpHRVQgSSAyCk9SCkNNT1YgTSAwIDAKCiMgLS0tIEF1c2dhbmcgTzA6IEZvZXJkZXJtb3RvciAtLS0KR0VUIE0gMApNT1YgTyAwCgojIC0tLSBBdXNnYW5nIE8xOiBXYXJubGV1Y2h0ZSBibGlua3QgMiBIeiB3ZW5uIE1vdG9yIGxhZXVmdCAtLS0KR0VUIE0gMApHRVQgVCAwCkFORApNT1YgTyAxCg=="}], "grading": {"eval_id": 1, "eval_name": "simple-logic", "run": "with_skill", "expectations": [{"text": "self_hold_pattern: Enth\u00e4lt SR-Latch/Selbsthaltung mit CMOV M", "passed": true, "evidence": "Verwendet CMOV M 0 1 (Set via I0) und CMOV M 0 0 (Reset via I1 OR I2)"}, {"text": "timer_init_with_memory: Timer-Init-Muster GETNOT M / DUP / CSET T / CMOV M vorhanden", "passed": true, "evidence": "GETNOT M 1 / DUP / CSET T 0 250 / CMOV M 1 1 \u2014 verbindliches Muster korrekt verwendet"}, {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen, keine # nach Befehlen"}, {"text": "uses_required_io: Verwendet I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen im Programm vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0, kein Unterlauf", "passed": true, "evidence": "Stack-Trace ergibt min=0, final=0 \u2014 kein Fehler"}], "pass_rate": 1.0}}, {"id": "eval-simple-logic-without_skill", "prompt": "Schreib mir ein FPC-Programm f\u00fcr eine einfache F\u00f6rderanlage...", "eval_id": 1, "outputs": [{"name": "explanation.md", "type": "text", "content": "# FPC-Programm: Einfache F\u00f6rderanlage \u2013 Erkl\u00e4rung\n\n## \u00dcberblick\n\nDas Programm steuert eine einfache F\u00f6rderanlage mit Selbsthaltung, Stop-Bedingungen und einer blinkenden Warnleuchte.\n\n## I/O-Belegung\n\n| Signal | Typ | Beschreibung |\n|--------|-----|--------------|\n| I0 | Eingang | Start-Taster |\n| I1 | Eingang | Stop-Taster |\n| I2 | Eingang | Lichtschranke |\n| O0 | Ausgang | F\u00f6rdermotor |\n| O1 | Ausgang | Warnleuchte (2 Hz Blinken) |\n| M0 | Memory | Selbsthaltung Motor |\n| T0 | Timer | 2-Hz-Blinktakt (250 ms) |\n\n## Programmablauf\n\n### 1. Selbsthaltungslogik\n\n```\nGET I 0     # Start-Taster auf Stack\nGET M 0     # Selbsthaltungs-Flag auf Stack\nOR          # Start ODER Selbsthaltung\nGETNOT I 1  # Stop-Taster negiert (0 wenn gedr\u00fcckt)\nAND         # Verkn\u00fcpfung mit Abschaltbedingung Stop\nGETNOT I 2  # Lichtschranke negiert (0 wenn ausgel\u00f6st)\nAND         # Verkn\u00fcpfung mit Abschaltbedingung Lichtschranke\nMOV M 0     # Ergebnis in Selbsthaltungs-Memory schreiben\n```\n\nDie Logik entspricht: `M0 = (I0 OR M0) AND NOT I1 AND NOT I2`\n\n- **Einschalten:** Start-Taster (I0) setzt M0 auf 1\n- **Selbsthaltung:** M0 h\u00e4lt sich \u00fcber den OR-Zweig selbst aktiv\n- **Ausschalten:** Stop-Taster (I1) oder Lichtschranke (I2) unterbrechen die Kette \u2192 M0 wird 0\n\n### 2. Motor-Ausgang\n\n```\nGET M 0\nMOV O 0\n```\n\nDer Motor (O0) folgt direkt dem Selbsthaltungs-Memory M0.\n\n### 3. Warnleuchte mit 2-Hz-Blinken\n\n```\nCSET T 0 250   # Timer T0 nur setzen wenn Stack-Top = 1 (hier immer aktiv)\nGET M 0        # Motor-Status\nGET T 0        # Timer-Puls (250 ms an / 250 ms aus)\nAND            # Blinken nur wenn Motor l\u00e4uft\nMOV O 1        # Warnleuchte setzen\n```\n\nTimer T0 ist ein pulsierender Timer mit 250 ms Periode: 250 ms EIN, 250 ms AUS \u2192 2 Hz Frequenz. Die Warnleuchte leuchtet nur, wenn der Motor l\u00e4uft (M0 = 1) UND der Timer gerade im EIN-Zustand ist.\n\n## Hinweis zu CSET\n\n`CSET T 0 250` setzt den Timer bedingt \u2013 da in diesem Kontext der Stack-Top immer 1 ist (der Timer soll dauerhaft laufen), l\u00e4uft T0 kontinuierlich. Die 2-Hz-Maskierung erfolgt erst durch die AND-Verkn\u00fcpfung mit M0.\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBGUEMtUHJvZ3JhbW06IEVpbmZhY2hlIEZvZXJkZXJhbmxhZ2UKIyBFaW5nYWVuZ2U6IEkwPVN0YXJ0LVRhc3RlciwgSTE9U3RvcC1UYXN0ZXIsIEkyPUxpY2h0c2NocmFua2UKIyBBdXNnYWVuZ2U6IE8wPUZvZXJkZXJtb3RvciwgTzE9V2FybmxldWNodGUgKGJsaW5rdCAyIEh6IHdlbm4gTW90b3IgbGFldWZ0KQojIE1lbW9yeTogTTA9U2VsYnN0aGFsdHVuZyBNb3RvcgoKIyAtLS0gU2VsYnN0aGFsdHVuZyBNb3RvciAtLS0KIyBFaW5zY2hhbHRiZWRpbmd1bmc6IFN0YXJ0LVRhc3RlciBPREVSIFNlbGJzdGhhbHR1bmcgYWt0aXYKR0VUIEkgMApHRVQgTSAwCk9SCiMgQXVzc2NoYWx0YmVkaW5ndW5nOiBTdG9wLVRhc3RlciBPREVSIExpY2h0c2NocmFua2UgKG5lZ2llcnQgYW53ZW5kZW4pCkdFVE5PVCBJIDEKQU5ECkdFVE5PVCBJIDIKQU5ECiMgRXJnZWJuaXMgaW4gU2VsYnN0aGFsdHVuZ3MtTWVtb3J5IHNwZWljaGVybgpNT1YgTSAwCgojIC0tLSBNb3Rvci1BdXNnYW5nIHNldHplbiAtLS0KR0VUIE0gMApNT1YgTyAwCgojIC0tLSBXYXJubGV1Y2h0ZTogYmxpbmt0IDIgSHogd2VubiBNb3RvciBsYWV1ZnQgLS0tCiMgVGltZXIgVDA6IDI1MG1zIGFuLCAyNTBtcyBhdXMgKDIgSHopIC0gUHVsc2llcmVuZGVyIFRpbWVyCkNTRVQgVCAwIDI1MAojIFdhcm5sZXVjaHRlID0gTW90b3IgYWt0aXYgVU5EIFRpbWVyLVB1bHMKR0VUIE0gMApHRVQgVCAwCkFORApNT1YgTyAxCg=="}], "grading": {"eval_id": 1, "eval_name": "simple-logic", "run": "without_skill", "expectations": [{"text": "self_hold_pattern: Enth\u00e4lt SR-Latch/Selbsthaltung", "passed": true, "evidence": "Verwendet klassische Selbsthaltung: (I0 OR M0) AND NOT I1 AND NOT I2 \u2192 MOV M 0. Funktionell korrekt, aber ohne CMOV-Muster."}, {"text": "timer_init_with_memory: Timer-Init-Muster GETNOT M / DUP / CSET T / CMOV M vorhanden", "passed": false, "evidence": "CSET T 0 250 wird mit leerem Stack aufgerufen \u2014 kein Memory-Flag-Schutz. F\u00fchrt zu Stack-Unterlauf-Fehler."}, {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen"}, {"text": "uses_required_io: Verwendet I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0, kein Unterlauf", "passed": false, "evidence": "Stack-Unterlauf bei CSET T 0 250 (leer) und MOV O 1 (leer). Programm w\u00fcrde mit 'Stack is empty!' abst\u00fcrzen."}], "pass_rate": 0.6}}, {"id": "eval-timer-counter-with_skill", "prompt": "Ich brauche ein FPC-Programm mit folgendem Verhalten: I0 ist ein Taster. Wenn I0 10-mal gedr\u00fcckt wurde (steigende Flanken z\u00e4hlen!), soll O0 f\u00fcr 3 Sekunden aufleuchten und dann automatisch erl\u00f6schen. I1 setzt den Z\u00e4hler zur\u00fcck. Schreib das Programm mit Stack-Kommentaren damit ich es verstehe.", "eval_id": 2, "outputs": [{"name": "explanation.md", "type": "text", "content": "# Erkl\u00e4rung: 10x-Taster -> O0 leuchtet 3 Sekunden\n\n## Verwendete Ressourcen\n\n| Ressource | Zweck |\n|-----------|-------|\n| I0 | Taster (steigende Flanken z\u00e4hlen) |\n| I1 | Z\u00e4hler zur\u00fccksetzen |\n| C0 | Flanken-Z\u00e4hler f\u00fcr I0 |\n| M0 | Flanken-Merker (speichert vorherigen I0-Zustand) |\n| M1 | Timer-Aktiv-Merker (O0 soll leuchten) |\n| M2 | Timer-Init-Flag (verhindert mehrfaches Starten) |\n| T0 | 3-Sekunden-Timer f\u00fcr O0 |\n| O0 | Ausgang (leuchtet 3 Sekunden nach 10 Dr\u00fccken) |\n\n## Programm-Abschnitte\n\n### Abschnitt 1: Steigende Flanke erkennen und z\u00e4hlen\nEine **steigende Flanke** liegt vor, wenn I0 jetzt `true` ist und im letzten Zyklus `false` war (M0=false).  \nDas Muster `GET I0 AND GETNOT M0` ergibt genau dann `true`, wenn diese Bedingung erf\u00fcllt ist.  \n`CINC C0` z\u00e4hlt nur bei `true` - also nur bei echter steigender Flanke.  \nDanach wird M0 mit dem aktuellen I0-Zustand aktualisiert (f\u00fcr den n\u00e4chsten Zyklus).\n\n### Abschnitt 2: Reset mit I1\nWenn I1 gedr\u00fcckt wird: Z\u00e4hler C0 auf 0, Timer-Aktiv-Merker M1 auf 0, Timer-Init-Flag M2 auf 0.  \nDas `DUP`-Muster wird verwendet weil I1 f\u00fcr drei konsumierende Befehle gebraucht wird.\n\n### Abschnitt 3: Timer starten bei 10. Druck\nDie Bedingung `CMP C0 10 AND GETNOT M2` ist genau dann `true`, wenn C0 exakt 10 erreicht hat **und** der Timer noch nicht l\u00e4uft (M2=false).  \nDann: Timer T0 f\u00fcr 3000ms starten, M1=1 (O0 soll leuchten), M2=1 (verhindert erneutes Starten).  \nDas doppelte `DUP` ist n\u00f6tig, weil die Bedingung drei konsumierende Befehle braucht.\n\n### Abschnitt 4: O0 automatisch erl\u00f6schen\nPr\u00fcft: `M1=true` (Timer l\u00e4uft gerade) **und** `T0=false` (3-Sekunden-Phase gerade abgelaufen).  \nWenn beide wahr: M1=0 (O0 erl\u00f6scht), C0=0 (Z\u00e4hler f\u00fcr n\u00e4chsten Durchlauf zur\u00fccksetzen).  \n**Wichtig:** Timer T0 pulsiert weiter (3s true -> 3s false -> ...), aber da M1=false ist, bleibt O0 aus.\n\n### Abschnitt 5: Output setzen\nO0 folgt dem Merker M1. So einfach ist es.\n\n## Warum Memory-Flag M2?\n\nOhne M2 w\u00fcrde der Timer in jedem Zyklus neu gestartet, sobald C0==10 ist - und zwar auch w\u00e4hrend die 3 Sekunden laufen. M2 sichert, dass der Timer nur **einmal** gestartet wird. I1 setzt M2 zur\u00fcck, damit der n\u00e4chste Durchlauf funktioniert.\n\n## Getestetes Verhalten\n\n- 10x I0 dr\u00fccken: O0 leuchtet auf\n- O0 erlischt automatisch nach 3 Sekunden\n- I1 setzt Z\u00e4hler zur\u00fcck (auch w\u00e4hrend O0 leuchtet)\n- Nach Reset: erneutes 10x Dr\u00fccken funktioniert wieder\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KIyBQcm9ncmFtbTogMTB4LVRhc3RlciAtPiBPMCBsZXVjaHRldCAzIFNla3VuZGVuCiMgSTAgPSBUYXN0ZXIgKHN0ZWlnZW5kZSBGbGFua2VuIHphZWhsZW4pCiMgSTEgPSBaYWVobGVyLVJlc2V0CiMgQzAgPSBGbGFua2VuLVphZWhsZXIgKHphZWhsdCBEcnVlY2tlIHZvbiBJMCkKIyBNMCA9IEZsYW5rZW4tTWVya2VyICh2b3JoZXJpZ2VyIFp1c3RhbmQgdm9uIEkwKQojIE0xID0gVGltZXItQWt0aXYtTWVya2VyIChPMCBsZXVjaHRldCBnZXJhZGUpCiMgTTIgPSBUaW1lci1Jbml0LUZsYWcgKHZlcmhpbmRlcnQgTmV1c3RhcnQgZGVzIFRpbWVycykKIyBUMCA9IDMtU2VrdW5kZW4tQXVzZ2FiZS1UaW1lcgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQoKIyAtLS0gQUJTQ0hOSVRUIDE6IFN0ZWlnZW5kZSBGbGFua2Ugdm9uIEkwIGVya2VubmVuIHVuZCB6YWVobGVuIC0tLQojIFN0YWNrOiBsZWVyCgojIEZsYW5rZSA9IEkwIGlzdCBqZXR6dCB0cnVlIFVORCB3YXIgdm9yaGVyIGZhbHNlIChNMD1mYWxzZSkKR0VUIEkgMAojIFN0YWNrOiBbSTBdCkdFVE5PVCBNIDAKIyBTdGFjazogW0kwLCAhTTBdCkFORAojIFN0YWNrOiBbSTAgQU5EICFNMF0gIC0+IHRydWUgbnVyIGJlaSBzdGVpZ2VuZGVyIEZsYW5rZQpDSU5DIEMgMAojIFN0YWNrOiBsZWVyIChDSU5DIHZlcmJyYXVjaHQgZGVuIFdlcnQsIHphZWhsdCB3ZW5uIHRydWUpCgojIEZsYW5rZW4tTWVya2VyIE0wIGFrdHVhbGlzaWVyZW46IE0wID0gSTAgKGFrdHVlbGxlbiBadXN0YW5kIG1lcmtlbikKR0VUIEkgMAojIFN0YWNrOiBbSTBdCkRVUAojIFN0YWNrOiBbSTAsIEkwXQpDTU9WIE0gMCAxCiMgU3RhY2s6IFtJMF0gICh3ZW5uIEkwPXRydWUsIHNldHplIE0wPTEpCk5PVAojIFN0YWNrOiBbIUkwXQpDTU9WIE0gMCAwCiMgU3RhY2s6IGxlZXIgICh3ZW5uIEkwPWZhbHNlLCBzZXR6ZSBNMD0wKQoKIyAtLS0gQUJTQ0hOSVRUIDI6IFJlc2V0IG1pdCBJMSAtLS0KIyBTdGFjazogbGVlcgoKIyBXZW5uIEkxIGdlZHJ1ZWNrdDogWmFlaGxlciB1bmQgYWxsZSBNZXJrZXIgenVydWVja3NldHplbgpHRVQgSSAxCiMgU3RhY2s6IFtJMV0KRFVQCiMgU3RhY2s6IFtJMSwgSTFdCkRVUAojIFN0YWNrOiBbSTEsIEkxLCBJMV0KQ1NFVCBDIDAgMAojIFN0YWNrOiBbSTEsIEkxXSAgKFphZWhsZXIgYXVmIDApCkNNT1YgTSAxIDAKIyBTdGFjazogW0kxXSAgKFRpbWVyLUFrdGl2LU1lcmtlciBsb2VzY2hlbikKQ01PViBNIDIgMAojIFN0YWNrOiBsZWVyICAoVGltZXItSW5pdC1GbGFnIGxvZXNjaGVuLCBkYW1pdCBUaW1lciBuZXUgZ2VzdGFydGV0IHdlcmRlbiBrYW5uKQoKIyAtLS0gQUJTQ0hOSVRUIDM6IFRpbWVyIHN0YXJ0ZW4gd2VubiBDMCA9PSAxMCBlcnJlaWNodCAtLS0KIyBTdGFjazogbGVlcgoKIyBCZWRpbmd1bmc6IFphZWhsZXIgaGF0IDEwIGVycmVpY2h0IFVORCBUaW1lciBsYWV1ZnQgbm9jaCBuaWNodApDTVAgQyAwIDEwCiMgU3RhY2s6IFtDMD09MTBdCkdFVE5PVCBNIDIKIyBTdGFjazogW0MwPT0xMCwgIU0yXQpBTkQKIyBTdGFjazogWyhDMD09MTApIEFORCAhTTJdICAtPiB0cnVlIG51ciBiZWltIGVyc3RlbiBNYWwgd2VubiAxMCBlcnJlaWNodApEVVAKIyBTdGFjazogW0JlZGluZ3VuZywgQmVkaW5ndW5nXQpEVVAKIyBTdGFjazogW0JlZGluZ3VuZywgQmVkaW5ndW5nLCBCZWRpbmd1bmddCkNTRVQgVCAwIDMwMDAKIyBTdGFjazogW0JlZGluZ3VuZywgQmVkaW5ndW5nXSAgKFRpbWVyIGZ1ZXIgMyBTZWt1bmRlbiBzdGFydGVuKQpDTU9WIE0gMSAxCiMgU3RhY2s6IFtCZWRpbmd1bmddICAoVGltZXItQWt0aXYtTWVya2VyIHNldHplbjogTzAgc29sbCBsZXVjaHRlbikKQ01PViBNIDIgMQojIFN0YWNrOiBsZWVyICAoVGltZXItSW5pdC1GbGFnIHNldHplbjogdmVyaGluZGVydCBlcm5ldXRlbiBTdGFydCkKCiMgLS0tIEFCU0NITklUVCA0OiBPMCBhdXRvbWF0aXNjaCBlcmxvZXNjaGVuIHdlbm4gVGltZXIgYWJnZWxhdWZlbiAtLS0KIyBTdGFjazogbGVlcgoKIyBUaW1lciBUMCBwdWxzaWVydDogMzAwMG1zIHRydWUgLT4gMzAwMG1zIGZhbHNlIC0+IC4uLgojIE5hY2ggZGVtIGVyc3RlbiBBYmxhdWYgKFQwIHdpcmQgZmFsc2UpIHVuZCBNMSBnZXNldHp0OiBadXN0YW5kIHp1cnVlY2tzZXR6ZW4KR0VUIE0gMQojIFN0YWNrOiBbTTFdCkdFVE5PVCBUIDAKIyBTdGFjazogW00xLCAhVDBdCkFORAojIFN0YWNrOiBbTTEgQU5EICFUMF0gIC0+IHRydWUgd2VubiBUaW1lci1Ba3RpdiBhYmVyIFRpbWVyIGdlcmFkZSBmYWxzZSAoYWJnZWxhdWZlbikKRFVQCiMgU3RhY2s6IFtBYmxhdWYsIEFibGF1Zl0KQ01PViBNIDEgMAojIFN0YWNrOiBbQWJsYXVmXSAgKFRpbWVyLUFrdGl2LU1lcmtlciBsb2VzY2hlbiAtPiBPMCBlcmxvZXNjaHQpCkNTRVQgQyAwIDAKIyBTdGFjazogbGVlciAgKFphZWhsZXIgenVydWVja3NldHplbiBmdWVyIG5hZWNoc3RlbiBEdXJjaGxhdWYpCgojIC0tLSBBQlNDSE5JVFQgNTogT3V0cHV0IE8wIHNldHplbiAtLS0KIyBTdGFjazogbGVlcgoKIyBPMCBsZXVjaHRldCBzb2xhbmdlIE0xIGdlc2V0enQgaXN0CkdFVCBNIDEKIyBTdGFjazogW00xXQpNT1YgTyAwCiMgU3RhY2s6IGxlZXIK"}], "grading": {"eval_id": 2, "eval_name": "timer-counter", "run": "with_skill", "expectations": [{"text": "edge_detection: Flankenerkennung vorhanden (GET I 0 + GETNOT M 0 + AND)", "passed": true, "evidence": "GET I 0 / GETNOT M 0 / AND / CINC C 0 \u2014 steigende Flanke korrekt erkannt"}, {"text": "counter_threshold: Vergleich bei 10 (CMP C 0 10 oder GT C 0 9)", "passed": true, "evidence": "CMP C 0 10 vorhanden"}, {"text": "counter_reset_i1: I1 setzt Counter zur\u00fcck (CSET C 0 0)", "passed": true, "evidence": "Section 2 mit GET I 1 / DUP / DUP / CSET C 0 0 \u2014 vollst\u00e4ndiger Reset"}, {"text": "timer_3sec_pulse: Timer mit 3000ms", "passed": true, "evidence": "CSET T 0 3000 in Section 3 mit Memory-Flag-Schutz"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Stack-Trace ergibt min=0, final=0. Programm wurde zudem auf Desktop-App geladen und getestet (33 Tool-Uses)."}], "pass_rate": 1.0}}, {"id": "eval-timer-counter-without_skill", "prompt": "Ich brauche ein FPC-Programm mit folgendem Verhalten: I0 ist ein Taster. Wenn I0 10-mal gedr\u00fcckt wurde (steigende Flanken z\u00e4hlen!), soll O0 f\u00fcr 3 Sekunden aufleuchten und dann automatisch erl\u00f6schen. I1 setzt den Z\u00e4hler zur\u00fcck. Schreib das Programm mit Stack-Kommentaren damit ich es verstehe.", "eval_id": 2, "outputs": [{"name": "explanation.md", "type": "text", "content": "# Erkl\u00e4rung: Z\u00e4hler mit 10 Tastendr\u00fccken \u2192 O0 f\u00fcr 3 Sekunden\n\n## Aufgabe\n\n- **I0**: Taster \u2013 steigende Flanken (0\u21921) werden gez\u00e4hlt\n- **I1**: Reset-Taster \u2013 setzt Z\u00e4hler und Ausgabe zur\u00fcck\n- **O0**: Lampe \u2013 leuchtet 3 Sekunden, nachdem I0 exakt 10-mal gedr\u00fcckt wurde\n\n---\n\n## Verwendete Ressourcen\n\n| Ressource | Bedeutung |\n|-----------|-----------|\n| `C0`      | Flankenz\u00e4hler f\u00fcr I0 |\n| `T0`      | 3000ms-Timer (One-Shot) |\n| `M0`      | Vorheriger Zustand von I0 (f\u00fcr Flankenerkennung) |\n| `M1`      | Latch: O0 soll leuchten |\n| `M2`      | Flag: Timer T0 wurde bereits gestartet |\n| `M9`      | Wegwerf-Merker (zum Entfernen von Stack-Werten) |\n\n---\n\n## Programmablauf (pro Zyklus)\n\n### 1. Steigende Flanke erkennen (Schritt 1\u20132)\nEine steigende Flanke liegt vor, wenn I0 aktuell **HIGH** ist und im letzten Zyklus **LOW** war (gespeichert in M0). Diese Bedingung ergibt `I0 AND NOT(M0)`. Ist sie wahr, wird C0 via `CINC` um 1 erh\u00f6ht.\n\n### 2. Vorherigen Zustand speichern (Schritt 3)\nAm Ende jedes Zyklus wird der aktuelle Wert von I0 in M0 gespeichert, damit im n\u00e4chsten Zyklus die Flanke erkannt werden kann.\n\n### 3. Z\u00e4hler-Vergleich und Latch setzen (Schritt 4\u20136)\nMit `CMP C 0 10` wird gepr\u00fcft, ob C0 genau 10 betr\u00e4gt. Ist das der Fall:\n- M1 (Latch) wird auf 1 gesetzt \u2192 O0 soll leuchten\n- C0 wird auf 0 zur\u00fcckgesetzt, damit der Z\u00e4hler nicht bei 10 stecken bleibt und kein Dauerfeuer entsteht\n\n### 4. Timer einmalig starten (Schritt 7)\nDer Timer T0 wird **nur gestartet, wenn M1=1 UND M2=0** \u2013 also nur im ersten Zyklus nach Latch-Setzen. Danach wird M2=1 gesetzt, sodass T0 nicht jedes Zyklus neu gestartet wird. W\u00fcrde T0 jedes Zyklus auf 3000ms gesetzt, w\u00fcrde er nie ablaufen.\n\n### 5. Timer-Ablauf und Latch l\u00f6schen (Schritt 8)\nWenn M1=1, M2=1 und T0=FALSE (Timer abgelaufen), werden M1 und M2 auf 0 gesetzt. Dadurch erlischt O0 automatisch.\n\n### 6. Ausgabe setzen (Schritt 9)\nO0 folgt direkt dem Latch M1: `O0 = M1`.\n\n### 7. Reset durch I1 (Schritt 10)\nWenn I1 HIGH ist, werden C0, M1 und M2 sofort auf 0 gesetzt. Damit wird der gesamte Vorgang abgebrochen und O0 erlischt.\n\n---\n\n## Hinweis zum Timer\n\nFPC-Timer sind pulsierend: nach `CSET T 0 3000` ist T0 f\u00fcr 3000ms TRUE, dann 3000ms FALSE, usw. Der Trick ist, den Timer **nur einmal zu starten** (via M2-Flag) und das Abfallen von T0 auf FALSE als Signal zu nutzen, dass 3 Sekunden abgelaufen sind. Wird der Timer jedes Zyklus neu gesetzt, l\u00e4uft er nie ab \u2013 daher das M2-Schutz-Flag.\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KIyBGUEMtUHJvZ3JhbW06IFrDpGhsZXIgbWl0IDEwIFRhc3RlbmRyw7xja2VuIC0+IE8wIGbDvHIgM3MKIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KIyBFaW5nw6RuZ2U6CiMgICBJMCA9IFRhc3RlciAoc3RlaWdlbmRlIEZsYW5rZW4gd2VyZGVuIGdlesOkaGx0KQojICAgSTEgPSBSZXNldC1UYXN0ZXIgKHNldHp0IFrDpGhsZXIgdW5kIEF1c2dhYmUgenVyw7xjaykKIyBBdXNnw6RuZ2U6CiMgICBPMCA9IExhbXBlIChsZXVjaHRldCAzIFNla3VuZGVuIG5hY2ggMTAgVGFzdGVuZHLDvGNrZW4pCiMgTWVya2VyIChpbnRlcm5lIEZsYWdzKToKIyAgIE0wID0gdm9yaGVyaWdlciBadXN0YW5kIHZvbiBJMCAoZsO8ciBGbGFua2VuZXJrZW5udW5nKQojICAgTTEgPSBMYXRjaDogIkF1c2dhYmUgaXN0IGFrdGl2IiAoTzAgc29sbCBsZXVjaHRlbikKIyAgIE0yID0gRmxhZzogIlRpbWVyIFQwIHd1cmRlIGJlcmVpdHMgZ2VzdGFydGV0IgojIFrDpGhsZXI6CiMgICBDMCA9IFrDpGhsdCBkaWUgc3RlaWdlbmRlbiBGbGFua2VuIHZvbiBJMAojIFRpbWVyOgojICAgVDAgPSAzMDAwbXMgT25lLVNob3QgKHdpcmQgZWlubWFsaWcgZ2VzdGFydGV0LCB3ZW5uIE0xIGdlc2V0enQgd2lyZCkKIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KCiMgLS0tLSBTQ0hSSVRUIDE6IFN0ZWlnZW5kZSBGbGFua2Ugdm9uIEkwIGVya2VubmVuIC0tLS0tLS0tLS0KIyBTdGVpZ2VuZGUgRmxhbmtlID0gSTAgaXN0IGpldHp0IEhJR0ggVU5EIHdhciB2b3JoZXIgTE9XCiMgU3RhY2sgdm9yaGVyOiBbXQpHRVQgSSAwCiMgU3RhY2s6IFtJMF0KR0VUTk9UIE0gMAojIFN0YWNrOiBbSTAsIE5PVChNMCldICAtLSBNMCA9IHZvcmhlcmlnZXIgWnVzdGFuZCB2b24gSTAKQU5ECiMgU3RhY2s6IFtJMCBBTkQgTk9UKE0wKV0gIC0tIFRSVUUgbnVyIGJlaSBzdGVpZ2VuZGVyIEZsYW5rZQojIC0tLS0gU0NIUklUVCAyOiBaw6RobGVyIEMwIGJlaSBzdGVpZ2VuZGVyIEZsYW5rZSBpbmtyZW1lbnRpZXJlbiAtLS0tCiMgU3RhY2s6IFtGbGFua2VuLVNpZ25hbF0KRFVQCiMgU3RhY2s6IFtGbGFua2VuLVNpZ25hbCwgRmxhbmtlbi1TaWduYWxdCkNJTkMgQyAwCiMgU3RhY2s6IFtGbGFua2VuLVNpZ25hbF0gIC0tIEMwIHdpcmQgdW0gMSBlcmjDtmh0LCB3ZW5uIEZsYW5rZW4tU2lnbmFsIFRSVUUKCiMgLS0tLSBTQ0hSSVRUIDM6IFZvcmhlcmlnZW4gSTAtWnVzdGFuZCBha3R1YWxpc2llcmVuIChNMCA9IEkwKSAtLS0tCiMgU3RhY2s6IFtGbGFua2VuLVNpZ25hbF0KR0VUIEkgMAojIFN0YWNrOiBbRmxhbmtlbi1TaWduYWwsIEkwXQpNT1YgTSAwCiMgU3RhY2s6IFtGbGFua2VuLVNpZ25hbF0gIC0tIE0wIHNwZWljaGVydCBha3R1ZWxsZW4gSTAtWnVzdGFuZCBmw7xyIG7DpGNoc3RlbiBaeWtsdXMKCiMgLS0tLSBTQ0hSSVRUIDQ6IFByw7xmZW4gb2IgWsOkaGxlciBDMCA+PSAxMCBlcnJlaWNodCBoYXQgLS0tLQojIFN0YWNrOiBbRmxhbmtlbi1TaWduYWxdICAobm9jaCBhdWYgU3RhY2ssIGFiZXIgd2lyIGJyYXVjaGVuIGlobiBuaWNodCBtZWhyKQojIFdpciBlcnNldHplbiBtaXQgZGVyIFrDpGhsZXItVmVyZ2xlaWNoc3Byw7xmdW5nCiMgWnVlcnN0IGRlbiBGbGFua2VuLVdlcnQgdm9tIFN0YWNrIGVudGZlcm5lbjoKTU9WIE0gOQojIFN0YWNrOiBbXSAgLS0gTTkgaXN0IFdlZ3dlcmYtTWVya2VyIChGbGFua2VuLVNpZ25hbCB3aXJkIHZlcndvcmZlbikKCiMgUHLDvGZlOiBDMCA+PSAxMCA/CkNNUCBDIDAgMTAKIyBTdGFjazogW0MwID09IDEwXSAgLS0gVFJVRSB3ZW5uIFrDpGhsZXIgZ2VuYXUgMTAgZXJyZWljaHQKIyBIaW53ZWlzOiBDTVAgcHLDvGZ0IEdsZWljaGhlaXQuIEJlaSBzdGVpZ2VuZGVtIFrDpGhsZXIgdHJpZmZ0IGdlbmF1IGJlaSAxMCB6dS4KCiMgLS0tLSBTQ0hSSVRUIDU6IExhdGNoIE0xIHNldHplbiB3ZW5uIFrDpGhsZXIgMTAgZXJyZWljaHQgLS0tLQojIFN0YWNrOiBbQzAgPT0gMTBdCkRVUAojIFN0YWNrOiBbQzAgPT0gMTAsIEMwID09IDEwXQpDTU9WIE0gMSAxCiMgU3RhY2s6IFtDMCA9PSAxMF0gIC0tIE0xIHdpcmQgYXVmIDEgZ2VzZXR6dCB3ZW5uIEMwID09IDEwCgojIC0tLS0gU0NIUklUVCA2OiBaw6RobGVyIHp1csO8Y2tzZXR6ZW4gd2VubiAxMCBlcnJlaWNodCAoZGFtaXQgbmljaHQgbm9jaG1hbHMgesOkaGx0KSAtLS0tCiMgU3RhY2s6IFtDMCA9PSAxMF0KQ1NFVCBDIDAgMAojIFN0YWNrOiBbXSAgLS0gQzAgd2lyZCBhdWYgMCB6dXLDvGNrZ2VzZXR6dCB3ZW5uIEJlZGluZ3VuZyBUUlVFIChaw6RobGVyID09IDEwKQoKIyAtLS0tIFNDSFJJVFQgNzogVGltZXIgVDAgc3RhcnRlbiAobnVyIGVpbm1hbGlnLCB3ZW5uIE0xPTEgdW5kIE0yPTApIC0tLS0KIyBUMCBzb2xsIG51ciBnZXN0YXJ0ZXQgd2VyZGVuLCB3ZW5uIExhdGNoIE0xIGFrdGl2IGlzdAojIGFiZXIgbm9jaCBuaWNodCBnZXN0YXJ0ZXQgd3VyZGUgKE0yPTApLCBkYW1pdCBkZXIgVGltZXIgbmljaHQKIyBqZWRlcyBaeWtsdXMgbmV1IGdlc3RhcnRldCB3aXJkIChzb25zdCB3w7xyZGUgZXIgbmllIGFibGF1ZmVuKS4KIyBTdGFjazogW10KR0VUIE0gMQojIFN0YWNrOiBbTTFdICAtLSBMYXRjaCBha3Rpdj8KR0VUTk9UIE0gMgojIFN0YWNrOiBbTTEsIE5PVChNMildICAtLSBUaW1lciBub2NoIG5pY2h0IGdlc3RhcnRldD8KQU5ECiMgU3RhY2s6IFtNMSBBTkQgTk9UKE0yKV0gIC0tIE51ciBUUlVFIGltIGVyc3RlbiBaeWtsdXMgbmFjaCBMYXRjaC1TZXR6ZW4KRFVQCiMgU3RhY2s6IFtCZWRpbmd1bmcsIEJlZGluZ3VuZ10KQ1NFVCBUIDAgMzAwMAojIFN0YWNrOiBbQmVkaW5ndW5nXSAgLS0gVDAgYXVmIDMwMDBtcyBzZXR6ZW4sIHdlbm4gQmVkaW5ndW5nIFRSVUUKQ01PViBNIDIgMQojIFN0YWNrOiBbXSAgLS0gTTIgPSAxIHNldHplbiAoVGltZXIgd3VyZGUgZ2VzdGFydGV0KQoKIyAtLS0tIFNDSFJJVFQgODogVGltZXItQWJsYXVmIGVya2VubmVuIHVuZCBMYXRjaCBsw7ZzY2hlbiAtLS0tCiMgVDAgaXN0IG5hY2ggMyBTZWt1bmRlbiBGQUxTRSAoUHVsc3plaXQgYWJnZWxhdWZlbikKIyBXZW5uIE0xPTEgKExhdGNoIGFrdGl2KSBVTkQgTTI9MSAoVGltZXIgbMOkdWZ0KSBVTkQgVDA9MCAoVGltZXIgYWJnZWxhdWZlbikKIyAtPiBNMSB1bmQgTTIgbMO2c2NoZW4sIE8wIGF1c3NjaGFsdGVuCiMgU3RhY2s6IFtdCkdFVCBNIDEKIyBTdGFjazogW00xXQpHRVQgTSAyCiMgU3RhY2s6IFtNMSwgTTJdCkFORAojIFN0YWNrOiBbTTEgQU5EIE0yXSAgLS0gTGF0Y2ggYWt0aXYgVU5EIFRpbWVyIGzDpHVmdD8KR0VUTk9UIFQgMAojIFN0YWNrOiBbTTEgQU5EIE0yLCBOT1QoVDApXSAgLS0gVGltZXIgYWJnZWxhdWZlbiAoVDAgPSBGQUxTRSk/CkFORAojIFN0YWNrOiBbTTEgQU5EIE0yIEFORCBOT1QoVDApXSAgLS0gQWxsZSBCZWRpbmd1bmdlbiBmw7xyIFRpbWVyLUVuZGU/CkRVUAojIFN0YWNrOiBbVGltZXItRW5kZSwgVGltZXItRW5kZV0KRFVQCiMgU3RhY2s6IFtUaW1lci1FbmRlLCBUaW1lci1FbmRlLCBUaW1lci1FbmRlXQpDTU9WIE0gMSAwCiMgU3RhY2s6IFtUaW1lci1FbmRlLCBUaW1lci1FbmRlXSAgLS0gTTEgKExhdGNoKSBsw7ZzY2hlbiB3ZW5uIFRpbWVyIGFiZ2VsYXVmZW4KQ01PViBNIDIgMAojIFN0YWNrOiBbVGltZXItRW5kZV0gIC0tIE0yIChUaW1lci1GbGFnKSBsw7ZzY2hlbiB3ZW5uIFRpbWVyIGFiZ2VsYXVmZW4KCiMgLS0tLSBTQ0hSSVRUIDk6IEF1c2dhYmUgTzAgc3RldWVybiAtLS0tCiMgTzAgbGV1Y2h0ZXQgc29sYW5nZSBNMSA9IDEgKExhdGNoIGFrdGl2KQojIERlciBUaW1lci1FbmRlLVdlcnQgaXN0IG5vY2ggYXVmIGRlbSBTdGFjaywgYWJlciB3aXIgYnJhdWNoZW4gaWhuIG5pY2h0Ck1PViBNIDkKIyBTdGFjazogW10gIC0tIFRpbWVyLUVuZGUtV2VydCB2ZXJ3ZXJmZW4KR0VUIE0gMQojIFN0YWNrOiBbTTFdCk1PViBPIDAKIyBTdGFjazogW10gIC0tIE8wID0gTTEgKGxldWNodGV0IHdlbm4gTGF0Y2ggYWt0aXYpCgojIC0tLS0gU0NIUklUVCAxMDogUmVzZXQgZHVyY2ggSTEgLS0tLQojIEkxIHNldHp0IFrDpGhsZXIsIExhdGNoIHVuZCBUaW1lci1GbGFnIHp1csO8Y2sKIyBTdGFjazogW10KR0VUIEkgMQojIFN0YWNrOiBbSTFdCkRVUAojIFN0YWNrOiBbSTEsIEkxXQpEVVAKIyBTdGFjazogW0kxLCBJMSwgSTFdCkRVUAojIFN0YWNrOiBbSTEsIEkxLCBJMSwgSTFdCkNNT1YgTSAxIDAKIyBTdGFjazogW0kxLCBJMSwgSTFdICAtLSBNMSAoTGF0Y2gpIGzDtnNjaGVuCkNNT1YgTSAyIDAKIyBTdGFjazogW0kxLCBJMV0gIC0tIE0yIChUaW1lci1GbGFnKSBsw7ZzY2hlbgpDU0VUIEMgMCAwCiMgU3RhY2s6IFtJMV0gIC0tIEMwIChaw6RobGVyKSBhdWYgMCB6dXLDvGNrc2V0emVuCk1PViBNIDkKIyBTdGFjazogW10gIC0tIEkxLVdlcnQgdmVyd2VyZmVuCgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQojIEVuZGUgZGVzIFp5a2x1cyAtIFByb2dyYW1tIHN0YXJ0ZXQgdm9uIHZvcm5lCiMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Cg=="}], "grading": {"eval_id": 2, "eval_name": "timer-counter", "run": "without_skill", "expectations": [{"text": "edge_detection: Flankenerkennung vorhanden (GET I 0 + GETNOT M 0 + AND)", "passed": true, "evidence": "GET I 0 / GETNOT M 0 / AND \u2014 Flankenerkennung vorhanden, aber mit DUP+MOV M 9 (Trash-Pattern) statt sauberem Flanken-Merker-Update"}, {"text": "counter_threshold: Vergleich bei 10 (CMP C 0 10 oder GT C 0 9)", "passed": true, "evidence": "CMP C 0 10 vorhanden"}, {"text": "counter_reset_i1: I1 setzt Counter zur\u00fcck (CSET C 0 0)", "passed": true, "evidence": "GET I 1 mit CSET C 0 0 in Schritt 10 vorhanden"}, {"text": "timer_3sec_pulse: Timer mit 3000ms", "passed": true, "evidence": "CSET T 0 3000 vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Stack-Tiefe final=0. Verwendet MOV M 9 als Trash-Pattern zum Leeren des Stacks \u2014 funktioniert, ist aber Code-Smell."}], "pass_rate": 1.0}}, {"id": "eval-debug-stack-with_skill", "prompt": "Mein FPC-Programm hat einen Fehler...", "eval_id": 3, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Fehleranalyse: \"Stack is empty!\"\n\n## Fehlerhaftes Programm (Original)\n\nGETNOT M 0\nCSET T 0 500    <- verbraucht Stack-Wert\nCMOV M 0 1      <- Stack leer! -> \"Stack is empty!\"\nGET I 0\nGET T 0\nAND\nMOV O 0\nMOV O 1         <- ebenfalls Stack leer nach MOV O 0\n\n## Fehler 1: Timer-Init ohne DUP (Hauptfehler)\n\nGETNOT M 0 legt einen Wert auf den Stack.\nCSET T 0 500 verbraucht (pop) diesen Wert.\nCMOV M 0 1 versucht ebenfalls einen Wert zu holen -- Stack ist leer.\n\nStack-Trace:\n  GETNOT M 0    depth: 0 -> 1   [!M0]\n  CSET T 0 500  depth: 1 -> 0   []\n  CMOV M 0 1    depth: 0 -> -1  FEHLER: Stack is empty!\n\nRegel: Wenn ein Wert zwei konsumierenden Befehlen zugefuehrt werden muss, DUP verwenden.\nVerbindliches Timer-Init-Muster:\n  GETNOT M n\n  DUP\n  CSET T n v\n  CMOV M n 1\n\n## Fehler 2: Zwei MOV ohne DUP\n\nAND erzeugt einen Wert. MOV O 0 verbraucht ihn.\nMOV O 1 findet dann einen leeren Stack.\n\nStack-Trace (nach Fix von Fehler 1):\n  GET I 0   depth: 0 -> 1   [I0]\n  GET T 0   depth: 1 -> 2   [I0, T0]\n  AND       depth: 2 -> 1   [I0&&T0]\n  MOV O 0   depth: 1 -> 0   []\n  MOV O 1   depth: 0 -> -1  FEHLER: Stack is empty!\n\nKorrektur: DUP vor den beiden MOV-Befehlen.\n\n## Stack-Trace des korrigierten Programms\n\n  GETNOT M 0    depth: 0 -> 1  [!M0]\n  DUP           depth: 1 -> 2  [!M0, !M0]\n  CSET T 0 500  depth: 2 -> 1  [!M0]\n  CMOV M 0 1    depth: 1 -> 0  []\n  GET I 0       depth: 0 -> 1  [I0]\n  GET T 0       depth: 1 -> 2  [I0, T0]\n  AND           depth: 2 -> 1  [I0&&T0]\n  DUP           depth: 1 -> 2  [I0&&T0, I0&&T0]\n  MOV O 0       depth: 2 -> 1  [I0&&T0]\n  MOV O 1       depth: 1 -> 0  []\n\nStack am Ende: leer (Tiefe = 0) -- korrekt.\n"}, {"name": "explanation.md", "type": "text", "content": "# Erklarung der Korrekturen\n\n## Was war falsch?\n\nDas Programm hatte zwei Stack-Unterlauf-Fehler (\"Stack is empty!\"):\n\n1. **Timer-Init ohne DUP**: `GETNOT M 0` legt einen Wert auf den Stack. Sowohl `CSET T 0 500` als auch `CMOV M 0 1` wollen diesen Wert verbrauchen \u2014 aber es gibt nur einen. Losung: `DUP` zwischen `GETNOT M 0` und `CSET` einfugen, damit beide Befehle ihren Wert bekommen.\n\n2. **Zwei MOV ohne DUP**: `AND` erzeugt einen Wert. `MOV O 0` verbraucht ihn. Danach ist der Stack leer, `MOV O 1` findet nichts. Losung: `DUP` vor den beiden `MOV`-Befehlen einfugen.\n\n## Regel\n\nImmer wenn ein Stack-Wert von mehr als einem konsumierenden Befehl benotigt wird, muss er mit `DUP` dupliziert werden. Das verbindliche Timer-Initialisierungsmuster ist:\n\n```\nGETNOT M n\nDUP\nCSET T n v\nCMOV M n 1\n```\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBCbGlua2VyIG1pdCBGcmVpZ2FiZQojIFRpbWVyIGVpbm1hbGlnIGluaXRpYWxpc2llcmVuIChNZW1vcnktRmxhZyBNMCkKR0VUTk9UIE0gMApEVVAKQ1NFVCBUIDAgNTAwCkNNT1YgTSAwIDEKIyBPdXRwdXQ6IEkwIEFORCBUaW1lciAoQmxpbmtlciBudXIgYmVpIEZyZWlnYWJlIGFrdGl2KQpHRVQgSSAwCkdFVCBUIDAKQU5ECkRVUApNT1YgTyAwCk1PViBPIDEK"}], "grading": {"eval_id": 3, "eval_name": "debug-stack-error", "run": "with_skill", "expectations": [{"text": "finds_dup_error: Erkennt fehlendes DUP nach GETNOT M 0 als ersten Fehler", "passed": true, "evidence": "Explizit erkl\u00e4rt: CSET und CMOV brauchen je einen Stack-Wert, DUP fehlt. Korrektes Verst\u00e4ndnis."}, {"text": "finds_double_mov_error: Erkennt fehlendes DUP vor MOV O 0 / MOV O 1 als zweiten Fehler", "passed": true, "evidence": "Explizit erkl\u00e4rt: zweites MOV O 1 findet leeren Stack nach MOV O 0. DUP als Fix angegeben."}, {"text": "corrected_has_dup: Korrigiertes Programm hat DUP nach GETNOT M 0 (verbindliches Muster)", "passed": true, "evidence": "GETNOT M 0 / DUP / CSET T 0 500 / CMOV M 0 1 \u2014 verbindliches Timer-Init-Muster verwendet"}, {"text": "corrected_stack_balanced: Korrigiertes Programm hat Stack-Tiefe 0 am Ende", "passed": true, "evidence": "Stack-Trace ergibt min=0, final=0"}], "pass_rate": 1.0}}, {"id": "eval-debug-stack-without_skill", "prompt": "Mein FPC-Programm hat einen Fehler...", "eval_id": 3, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Stack-Fehler Analyse\n\n## Originalprogramm\n\n```\n# Blinker mit Freigabe\nGETNOT M 0\nCSET T 0 500\nCMOV M 0 1\nGET I 0\nGET T 0\nAND\nMOV O 0\nMOV O 1\n```\n\n## Stack-Trace (Schritt f\u00fcr Schritt)\n\n| Schritt | Befehl       | Stack davor | Operation                             | Stack danach |\n|---------|--------------|-------------|---------------------------------------|--------------|\n| 1       | GETNOT M 0   | []          | Push NOT(M[0])                        | [NOT_M0]     |\n| 2       | CSET T 0 500 | [NOT_M0]    | Pop Bedingung, setze T[0]=500 ms wenn | []           |\n| 3       | CMOV M 0 1   | []          | FEHLER: Pop noetig, Stack leer!       | \u2014            |\n\n## Fehler 1: CMOV M 0 1 bei leerem Stack (Zeile 4)\n\nCSET T 0 500 verbraucht (pop) den einzigen Stack-Wert von GETNOT M 0.\nAnschliessend versucht CMOV M 0 1 einen Wert vom Stack zu lesen \u2014 der Stack ist leer.\n=> \"Stack is empty!\"\n\n## Fehler 2: MOV O 1 bei leerem Stack (Zeile 9)\n\nAND produziert einen Wert, MOV O 0 verbraucht ihn.\nDanach versucht MOV O 1 erneut zu poppen \u2014 Stack ist leer.\n=> zweites \"Stack is empty!\"\n\n## Ursache\n\n- CSET und CMOV benoetigen je einen eigenen Stack-Wert als Bedingung.\n- Es wird aber nur ein Wert gepusht (GETNOT M 0).\n- Das AND-Ergebnis wird zweimal benoetigt (fuer O 0 und O 1), aber nur einmal produziert.\n\n## Korrekturen\n\n1. Vor CMOV M 0 1 ein weiteres GETNOT M 0 einfuegen (neue Bedingung fuer CMOV).\n2. Nach AND ein DUP einfuegen, um das Ergebnis fuer beide Ausgaenge bereitzustellen.\n"}, {"name": "explanation.md", "type": "text", "content": "# Erlaeuterung der Korrekturen\n\nDas Originalprogramm hat zwei Stack-Fehler:\n\n## Fehler 1: CSET verbraucht den einzigen Stack-Wert\n\nGETNOT M 0 schiebt einen Wert auf den Stack.\nCSET T 0 500 liest (pop) diesen Wert als Bedingung.\nCMOV M 0 1 findet danach einen leeren Stack => \"Stack is empty!\"\n\nKorrektur: GETNOT M 0 vor CMOV wiederholen, damit beide Befehle je einen Wert bekommen.\n\n## Fehler 2: AND-Ergebnis wird zweimal benoetigt\n\nAND produziert einen Bool-Wert. MOV O 0 verbraucht ihn.\nMOV O 1 findet danach einen leeren Stack => \"Stack is empty!\"\n\nKorrektur: DUP vor den beiden MOV-Befehlen, um den Wert zu duplizieren.\n\n## Korrigiertes Programm\n\n```\n# Blinker mit Freigabe\nGETNOT M 0\nCSET T 0 500\nGETNOT M 0\nCMOV M 0 1\nGET I 0\nGET T 0\nAND\nDUP\nMOV O 0\nMOV O 1\n```\n\nStack-Trace des korrigierten Programms:\n1. GETNOT M 0   => [NOT_M0]\n2. CSET T 0 500 => []          (T 0 auf 500ms gesetzt wenn M 0 false)\n3. GETNOT M 0   => [NOT_M0]\n4. CMOV M 0 1   => []          (M 0 auf 1 gesetzt wenn M 0 false => einmaliges Init-Flag)\n5. GET I 0      => [I0]\n6. GET T 0      => [I0, T0]\n7. AND          => [I0 AND T0]\n8. DUP          => [I0 AND T0, I0 AND T0]\n9. MOV O 0      => [I0 AND T0]\n10. MOV O 1     => []\n\nStack am Ende leer: kein Fehler.\n"}, {"name": "program.fpc", "type": "binary", "mime": "application/octet-stream", "data_uri": "data:application/octet-stream;base64,IyBCbGlua2VyIG1pdCBGcmVpZ2FiZQpHRVROT1QgTSAwCkNTRVQgVCAwIDUwMApHRVROT1QgTSAwCkNNT1YgTSAwIDEKR0VUIEkgMApHRVQgVCAwCkFORApEVVAKTU9WIE8gMApNT1YgTyAxCg=="}], "grading": {"eval_id": 3, "eval_name": "debug-stack-error", "run": "without_skill", "expectations": [{"text": "finds_dup_error: Erkennt fehlendes DUP nach GETNOT M 0 als ersten Fehler", "passed": true, "evidence": "Fehler korrekt identifiziert: CSET verbraucht den Stack-Wert, CMOV findet leeren Stack. Fix allerdings mit zweitem GETNOT statt DUP."}, {"text": "finds_double_mov_error: Erkennt fehlendes DUP vor MOV O 0 / MOV O 1 als zweiten Fehler", "passed": true, "evidence": "Zweiter Fehler korrekt erkannt und mit DUP behoben."}, {"text": "corrected_has_dup: Korrigiertes Programm hat DUP nach GETNOT M 0 (verbindliches Muster)", "passed": false, "evidence": "Fix verwendet zweites GETNOT M 0 statt DUP: 'GETNOT M 0 / CSET T 0 500 / GETNOT M 0 / CMOV M 0 1'. Funktioniert, aber nicht das verbindliche Idiom."}, {"text": "corrected_stack_balanced: Korrigiertes Programm hat Stack-Tiefe 0 am Ende", "passed": true, "evidence": "Stack-Tiefe final=0, kein Unterlauf"}], "pass_rate": 0.75}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "fpc-developer", "skill_path": ".claude/skills/fpc-developer", "executor_model": "claude-sonnet-4-6", "timestamp": "2026-05-01T19:33:00Z", "evals_run": ["simple-logic", "timer-counter", "debug-stack-error"], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "eval_name": "simple-logic", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 46.5, "tokens": 20027, "tool_calls": 8, "errors": 0}, "expectations": [{"text": "self_hold_pattern: SR-Latch mit CMOV M", "passed": true, "evidence": "CMOV M 0 1 / CMOV M 0 0 mit I0, I1 OR I2"}, {"text": "timer_init_with_memory: GETNOT M / DUP / CSET T / CMOV M", "passed": true, "evidence": "Verbindliches Muster mit M1-Flag korrekt verwendet"}, {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen"}, {"text": "uses_required_io: I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "min=0, final=0"}]}, {"eval_id": 1, "eval_name": "simple-logic", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 32.0, "tokens": 11357, "tool_calls": 3, "errors": 0}, "expectations": [{"text": "self_hold_pattern: SR-Latch oder Selbsthaltung", "passed": true, "evidence": "(I0 OR M0) AND NOT I1 AND NOT I2 - funktionell korrekt"}, {"text": "timer_init_with_memory: GETNOT M / DUP / CSET T / CMOV M", "passed": false, "evidence": "CSET T 0 250 mit leerem Stack - kein Memory-Flag, Stack-Unterlauf"}, {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen"}, {"text": "uses_required_io: I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": false, "evidence": "Stack-Unterlauf bei CSET T 0 250 und MOV O 1 - Programm wuerde abstuerzen"}]}, {"eval_id": 2, "eval_name": "timer-counter", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 240.5, "tokens": 34324, "tool_calls": 33, "errors": 0}, "expectations": [{"text": "edge_detection: GET I 0 + GETNOT M 0 + AND", "passed": true, "evidence": "Korrekte Flankenerkennung mit Merker-Update"}, {"text": "counter_threshold: CMP C 0 10", "passed": true, "evidence": "CMP C 0 10 in Section 3"}, {"text": "counter_reset_i1: CSET C 0 0 mit I1", "passed": true, "evidence": "Section 2 mit vollstaendigem Reset"}, {"text": "timer_3sec_pulse: CSET T 0 3000", "passed": true, "evidence": "CSET T 0 3000 mit Memory-Flag-Schutz"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Auf Desktop-App geladen und getestet (33 Tool-Calls)"}]}, {"eval_id": 2, "eval_name": "timer-counter", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 77.2, "tokens": 14239, "tool_calls": 3, "errors": 0}, "expectations": [{"text": "edge_detection: Flankenerkennung vorhanden", "passed": true, "evidence": "GET I 0 / GETNOT M 0 / AND - aber mit MOV M 9 Trash-Pattern"}, {"text": "counter_threshold: CMP C 0 10", "passed": true, "evidence": "CMP C 0 10 vorhanden"}, {"text": "counter_reset_i1: CSET C 0 0 mit I1", "passed": true, "evidence": "Vorhanden in Schritt 10"}, {"text": "timer_3sec_pulse: CSET T 0 3000", "passed": true, "evidence": "CSET T 0 3000 vorhanden"}, {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Stack-Tiefe final=0. MOV M 9 als Trash-Pattern - funktioniert aber Code-Smell."}]}, {"eval_id": 3, "eval_name": "debug-stack-error", "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 74.1, "tokens": 22894, "tool_calls": 11, "errors": 0}, "expectations": [{"text": "finds_dup_error: Fehlendes DUP nach GETNOT M 0 erkannt", "passed": true, "evidence": "Explizit erklaert: CSET und CMOV brauchen je einen Stack-Wert"}, {"text": "finds_double_mov_error: Fehlendes DUP vor MOV O 0 / MOV O 1", "passed": true, "evidence": "Zweiter Fehler korrekt erkannt, DUP als Fix"}, {"text": "corrected_has_dup: Verbindliches GETNOT M / DUP / CSET T / CMOV M Muster", "passed": true, "evidence": "GETNOT M 0 / DUP / CSET T 0 500 / CMOV M 0 1"}, {"text": "corrected_stack_balanced: Stack-Tiefe 0 am Ende", "passed": true, "evidence": "min=0, final=0"}]}, {"eval_id": 3, "eval_name": "debug-stack-error", "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 57.1, "tokens": 13657, "tool_calls": 7, "errors": 0}, "expectations": [{"text": "finds_dup_error: Fehlendes DUP nach GETNOT M 0 erkannt", "passed": true, "evidence": "Fehler erkannt, aber Fix mit zweitem GETNOT statt DUP"}, {"text": "finds_double_mov_error: Fehlendes DUP vor MOV O 0 / MOV O 1", "passed": true, "evidence": "Korrekt erkannt und mit DUP behoben"}, {"text": "corrected_has_dup: Verbindliches GETNOT M / DUP Muster", "passed": false, "evidence": "Zweites GETNOT M 0 statt DUP - kein verbindliches Initialisierungsmuster"}, {"text": "corrected_stack_balanced: Stack-Tiefe 0 am Ende", "passed": true, "evidence": "Stack-Tiefe final=0"}]}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 120.4, "stddev": 101.0, "min": 46.5, "max": 240.5}, "tokens": {"mean": 25748, "stddev": 7383, "min": 20027, "max": 34324}}, "without_skill": {"pass_rate": {"mean": 0.783, "stddev": 0.187, "min": 0.6, "max": 1.0}, "time_seconds": {"mean": 55.4, "stddev": 22.8, "min": 32.0, "max": 77.2}, "tokens": {"mean": 13084, "stddev": 1494, "min": 11357, "max": 14239}}, "delta": {"pass_rate": "+0.217", "time_seconds": "+65.0", "tokens": "+12664"}}, "notes": ["Eval 1 (simple-logic): KRITISCHER Unterschied - ohne Skill erzeugt das Modell ein Programm mit Stack-Unterlauf (CSET T mit leerem Stack), das auf der Steuerung abstuerzen wuerde. Mit Skill: alle Assertions bestanden, verbindliches Timer-Init-Muster korrekt angewandt.", "Eval 2 (timer-counter): Assertions von beiden bestanden. Entscheidender Qualitaetsunterschied: Mit Skill wurde das Programm auf der Desktop-App geladen und vollstaendig getestet (33 Tool-Calls, 4 Min). Ohne Skill: nur Code generiert, nicht validiert, MOV M 9 Trash-Pattern als Code-Smell.", "Eval 3 (debug-stack-error): Mit Skill wird verbindliches DUP-Muster korrekt angewandt. Ohne Skill wird zweites GETNOT M 0 als Workaround verwendet - funktioniert, aber nicht das idiomatische FPC-Pattern.", "Token-/Zeit-Overhead mit Skill (+65s, +12k Tokens) ist auf vollstaendigen Workflow zurueckzufuehren (Status pruefen, Validierung, MCP-Tests). Dieser Overhead ist gerechtfertigt: Eval 1 ohne Skill haette auf der Hardware versagt."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

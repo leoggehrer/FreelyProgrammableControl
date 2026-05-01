@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "skill_name": "fpc-developer",
+    "skill_path": ".claude/skills/fpc-developer",
+    "executor_model": "claude-sonnet-4-6",
+    "timestamp": "2026-05-01T19:33:00Z",
+    "evals_run": ["simple-logic", "timer-counter", "debug-stack-error"],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "simple-logic",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 46.5,
+        "tokens": 20027,
+        "tool_calls": 8,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "self_hold_pattern: SR-Latch mit CMOV M", "passed": true, "evidence": "CMOV M 0 1 / CMOV M 0 0 mit I0, I1 OR I2"},
+        {"text": "timer_init_with_memory: GETNOT M / DUP / CSET T / CMOV M", "passed": true, "evidence": "Verbindliches Muster mit M1-Flag korrekt verwendet"},
+        {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen"},
+        {"text": "uses_required_io: I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen vorhanden"},
+        {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "min=0, final=0"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "simple-logic",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 32.0,
+        "tokens": 11357,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "self_hold_pattern: SR-Latch oder Selbsthaltung", "passed": true, "evidence": "(I0 OR M0) AND NOT I1 AND NOT I2 - funktionell korrekt"},
+        {"text": "timer_init_with_memory: GETNOT M / DUP / CSET T / CMOV M", "passed": false, "evidence": "CSET T 0 250 mit leerem Stack - kein Memory-Flag, Stack-Unterlauf"},
+        {"text": "no_inline_comments: Keine Inline-Kommentare", "passed": true, "evidence": "Alle Kommentare in eigenen Zeilen"},
+        {"text": "uses_required_io: I0, I1, I2, O0, O1", "passed": true, "evidence": "Alle 5 I/O-Adressen vorhanden"},
+        {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": false, "evidence": "Stack-Unterlauf bei CSET T 0 250 und MOV O 1 - Programm wuerde abstuerzen"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "timer-counter",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 240.5,
+        "tokens": 34324,
+        "tool_calls": 33,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "edge_detection: GET I 0 + GETNOT M 0 + AND", "passed": true, "evidence": "Korrekte Flankenerkennung mit Merker-Update"},
+        {"text": "counter_threshold: CMP C 0 10", "passed": true, "evidence": "CMP C 0 10 in Section 3"},
+        {"text": "counter_reset_i1: CSET C 0 0 mit I1", "passed": true, "evidence": "Section 2 mit vollstaendigem Reset"},
+        {"text": "timer_3sec_pulse: CSET T 0 3000", "passed": true, "evidence": "CSET T 0 3000 mit Memory-Flag-Schutz"},
+        {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Auf Desktop-App geladen und getestet (33 Tool-Calls)"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "timer-counter",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 77.2,
+        "tokens": 14239,
+        "tool_calls": 3,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "edge_detection: Flankenerkennung vorhanden", "passed": true, "evidence": "GET I 0 / GETNOT M 0 / AND - aber mit MOV M 9 Trash-Pattern"},
+        {"text": "counter_threshold: CMP C 0 10", "passed": true, "evidence": "CMP C 0 10 vorhanden"},
+        {"text": "counter_reset_i1: CSET C 0 0 mit I1", "passed": true, "evidence": "Vorhanden in Schritt 10"},
+        {"text": "timer_3sec_pulse: CSET T 0 3000", "passed": true, "evidence": "CSET T 0 3000 vorhanden"},
+        {"text": "stack_balanced: Stack-Tiefe endet bei 0", "passed": true, "evidence": "Stack-Tiefe final=0. MOV M 9 als Trash-Pattern - funktioniert aber Code-Smell."}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "debug-stack-error",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 74.1,
+        "tokens": 22894,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "finds_dup_error: Fehlendes DUP nach GETNOT M 0 erkannt", "passed": true, "evidence": "Explizit erklaert: CSET und CMOV brauchen je einen Stack-Wert"},
+        {"text": "finds_double_mov_error: Fehlendes DUP vor MOV O 0 / MOV O 1", "passed": true, "evidence": "Zweiter Fehler korrekt erkannt, DUP als Fix"},
+        {"text": "corrected_has_dup: Verbindliches GETNOT M / DUP / CSET T / CMOV M Muster", "passed": true, "evidence": "GETNOT M 0 / DUP / CSET T 0 500 / CMOV M 0 1"},
+        {"text": "corrected_stack_balanced: Stack-Tiefe 0 am Ende", "passed": true, "evidence": "min=0, final=0"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "debug-stack-error",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 57.1,
+        "tokens": 13657,
+        "tool_calls": 7,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "finds_dup_error: Fehlendes DUP nach GETNOT M 0 erkannt", "passed": true, "evidence": "Fehler erkannt, aber Fix mit zweitem GETNOT statt DUP"},
+        {"text": "finds_double_mov_error: Fehlendes DUP vor MOV O 0 / MOV O 1", "passed": true, "evidence": "Korrekt erkannt und mit DUP behoben"},
+        {"text": "corrected_has_dup: Verbindliches GETNOT M / DUP Muster", "passed": false, "evidence": "Zweites GETNOT M 0 statt DUP - kein verbindliches Initialisierungsmuster"},
+        {"text": "corrected_stack_balanced: Stack-Tiefe 0 am Ende", "passed": true, "evidence": "Stack-Tiefe final=0"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 120.4, "stddev": 101.0, "min": 46.5, "max": 240.5},
+      "tokens": {"mean": 25748, "stddev": 7383, "min": 20027, "max": 34324}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.783, "stddev": 0.187, "min": 0.60, "max": 1.0},
+      "time_seconds": {"mean": 55.4, "stddev": 22.8, "min": 32.0, "max": 77.2},
+      "tokens": {"mean": 13084, "stddev": 1494, "min": 11357, "max": 14239}
+    },
+    "delta": {
+      "pass_rate": "+0.217",
+      "time_seconds": "+65.0",
+      "tokens": "+12664"
+    }
+  },
+  "notes": [
+    "Eval 1 (simple-logic): KRITISCHER Unterschied - ohne Skill erzeugt das Modell ein Programm mit Stack-Unterlauf (CSET T mit leerem Stack), das auf der Steuerung abstuerzen wuerde. Mit Skill: alle Assertions bestanden, verbindliches Timer-Init-Muster korrekt angewandt.",
+    "Eval 2 (timer-counter): Assertions von beiden bestanden. Entscheidender Qualitaetsunterschied: Mit Skill wurde das Programm auf der Desktop-App geladen und vollstaendig getestet (33 Tool-Calls, 4 Min). Ohne Skill: nur Code generiert, nicht validiert, MOV M 9 Trash-Pattern als Code-Smell.",
+    "Eval 3 (debug-stack-error): Mit Skill wird verbindliches DUP-Muster korrekt angewandt. Ohne Skill wird zweites GETNOT M 0 als Workaround verwendet - funktioniert, aber nicht das idiomatische FPC-Pattern.",
+    "Token-/Zeit-Overhead mit Skill (+65s, +12k Tokens) ist auf vollstaendigen Workflow zurueckzufuehren (Status pruefen, Validierung, MCP-Tests). Dieser Overhead ist gerechtfertigt: Eval 1 ohne Skill haette auf der Hardware versagt."
+  ]
+}

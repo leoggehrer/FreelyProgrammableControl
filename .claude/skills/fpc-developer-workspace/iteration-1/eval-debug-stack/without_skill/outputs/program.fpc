@@ -1,0 +1,11 @@
+# Blinker mit Freigabe
+GETNOT M 0
+CSET T 0 500
+GETNOT M 0
+CMOV M 0 1
+GET I 0
+GET T 0
+AND
+DUP
+MOV O 0
+MOV O 1

@@ -1,0 +1,30 @@
+# FPC-Programm: Einfache Foerderanlage
+# Eingaenge: I0=Start-Taster, I1=Stop-Taster, I2=Lichtschranke
+# Ausgaenge: O0=Foerdermotor, O1=Warnleuchte (blinkt 2 Hz wenn Motor laeuft)
+# Memory: M0=Selbsthaltung Motor
+
+# --- Selbsthaltung Motor ---
+# Einschaltbedingung: Start-Taster ODER Selbsthaltung aktiv
+GET I 0
+GET M 0
+OR
+# Ausschaltbedingung: Stop-Taster ODER Lichtschranke (negiert anwenden)
+GETNOT I 1
+AND
+GETNOT I 2
+AND
+# Ergebnis in Selbsthaltungs-Memory speichern
+MOV M 0
+
+# --- Motor-Ausgang setzen ---
+GET M 0
+MOV O 0
+
+# --- Warnleuchte: blinkt 2 Hz wenn Motor laeuft ---
+# Timer T0: 250ms an, 250ms aus (2 Hz) - Pulsierender Timer
+CSET T 0 250
+# Warnleuchte = Motor aktiv UND Timer-Puls
+GET M 0
+GET T 0
+AND
+MOV O 1

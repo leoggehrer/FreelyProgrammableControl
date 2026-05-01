@@ -1,0 +1,33 @@
+{
+  "eval_id": 2,
+  "eval_name": "timer-counter",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "edge_detection: Flankenerkennung vorhanden (GET I 0 + GETNOT M 0 + AND)",
+      "passed": true,
+      "evidence": "GET I 0 / GETNOT M 0 / AND / CINC C 0 — steigende Flanke korrekt erkannt"
+    },
+    {
+      "text": "counter_threshold: Vergleich bei 10 (CMP C 0 10 oder GT C 0 9)",
+      "passed": true,
+      "evidence": "CMP C 0 10 vorhanden"
+    },
+    {
+      "text": "counter_reset_i1: I1 setzt Counter zurück (CSET C 0 0)",
+      "passed": true,
+      "evidence": "Section 2 mit GET I 1 / DUP / DUP / CSET C 0 0 — vollständiger Reset"
+    },
+    {
+      "text": "timer_3sec_pulse: Timer mit 3000ms",
+      "passed": true,
+      "evidence": "CSET T 0 3000 in Section 3 mit Memory-Flag-Schutz"
+    },
+    {
+      "text": "stack_balanced: Stack-Tiefe endet bei 0",
+      "passed": true,
+      "evidence": "Stack-Trace ergibt min=0, final=0. Programm wurde zudem auf Desktop-App geladen und getestet (33 Tool-Uses)."
+    }
+  ],
+  "pass_rate": 1.0
+}

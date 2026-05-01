@@ -1,0 +1,6 @@
+{
+  "eval_id": 3,
+  "eval_name": "debug-stack-error",
+  "prompt": "Mein FPC-Programm hat einen Fehler...",
+  "assertions": []
+}

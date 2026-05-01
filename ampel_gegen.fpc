@@ -1,0 +1,138 @@
+# ============================================================
+# Ampelsteuerung mit Gegenampel
+# I0=NOTAUS (0=Notaus aktiv), O0=Rot, O1=Gelb, O2=Gruen
+# O3=Gegen-Rot, O4=Gegen-Gelb, O5=Gegen-Gruen
+# T10=100ms Takt, M10=T10-Init, M11=C0-Init
+# C0: Zykluszaehler 1..250 (1 Tick = 100ms)
+# ============================================================
+
+# --- Block 1: Takt-Timer T10 einmalig initialisieren (100ms) ---
+GETNOT M 10
+DUP
+CSET T 10 100
+CMOV M 10 1
+
+# --- Block 2: Counter C0 einmalig auf 1 setzen ---
+GETNOT M 11
+DUP
+CSET C 0 1
+CMOV M 11 1
+
+# --- Block 3: C0 bei jedem Takt-Impuls erhoehen ---
+GET T 10
+CINC C 0
+
+# --- Block 4: NOTAUS-Erkennung (I0=0 bedeutet NOTAUS aktiv) ---
+# Bei NOTAUS: Counter und Init-Flags zuruecksetzen
+GETNOT I 0
+DUP
+CMOV M 10 0
+DUP
+CMOV M 11 0
+CSET C 0 0
+
+# --- Block 5: Reset C0 nach 250 Ticks ---
+GT C 0 250
+CSET C 0 1
+
+# ============================================================
+# HAUPTAMPEL-AUSGAENGE
+# ============================================================
+
+# --- O0: ROT ---
+# Phase 1-100 (0-10s): Rot
+# Phase 101-130 (10-13s): Rot+Gelb
+# NOTAUS: Rot
+# Berechnung: (C0 >= 1 AND C0 <= 130) OR NOTAUS
+GT C 0 0
+LE C 0 130
+AND
+GETNOT I 0
+OR
+MOV O 0
+
+# --- O1: GELB ---
+# Phase 101-130 (10-13s): Gelb
+# Phase 231-250 (23-25s): Gelb
+# NOTAUS: kein Gelb
+# Berechnung: ((C0 > 100 AND C0 <= 130) OR (C0 > 230 AND C0 <= 250)) AND I0
+GT C 0 100
+LE C 0 130
+AND
+GT C 0 230
+LE C 0 250
+AND
+OR
+GET I 0
+AND
+MOV O 1
+
+# --- O2: GRUEN ---
+# Phase 131-200 (13-20s): Gruen
+# Phase 201-205 (20-20.5s): aus (Blinken)
+# Phase 206-210 (20.5-21s): Gruen
+# Phase 211-215 (21-21.5s): aus
+# Phase 216-220 (21.5-22s): Gruen
+# Phase 221-225 (22-22.5s): aus
+# Phase 226-230 (22.5-23s): Gruen
+# = Phase 131-200 ODER Phase 206-210 ODER 216-220 ODER 226-230
+# = (C0 > 130 AND C0 <= 200) OR (C0 > 205 AND C0 <= 210) OR (C0 > 215 AND C0 <= 220) OR (C0 > 225 AND C0 <= 230)
+# NOTAUS: kein Gruen
+GT C 0 130
+LE C 0 200
+AND
+GT C 0 205
+LE C 0 210
+AND
+OR
+GT C 0 215
+LE C 0 220
+AND
+OR
+GT C 0 225
+LE C 0 230
+AND
+OR
+GET I 0
+AND
+MOV O 2
+
+# ============================================================
+# GEGENAMPEL-AUSGAENGE
+# ============================================================
+
+# --- O3: GEGEN-ROT ---
+# Phase 131-250 (13-25s): Rot (wenn Hauptampel Gruen oder Gelb)
+# NOTAUS: Rot
+# Berechnung: (C0 > 130) OR NOTAUS
+GT C 0 130
+GETNOT I 0
+OR
+MOV O 3
+
+# --- O4: GEGEN-GELB ---
+# Phase 101-130 (10-13s): Gelb (Haupt Rot+Gelb -> Gegen: Gelb allein, Gruen aus)
+# Phase 231-250 (23-25s): Gelb (Haupt Gelb -> Gegen: Rot+Gelb)
+# NOTAUS: kein Gelb
+# Berechnung: ((C0 > 100 AND C0 <= 130) OR (C0 > 230 AND C0 <= 250)) AND I0
+GT C 0 100
+LE C 0 130
+AND
+GT C 0 230
+LE C 0 250
+AND
+OR
+GET I 0
+AND
+MOV O 4
+
+# --- O5: GEGEN-GRUEN ---
+# Phase 1-100 (0-10s): Gruen (Hauptampel Rot)
+# NOTAUS: kein Gruen
+# Berechnung: (C0 > 0 AND C0 <= 100) AND I0
+GT C 0 0
+LE C 0 100
+AND
+GET I 0
+AND
+MOV O 5

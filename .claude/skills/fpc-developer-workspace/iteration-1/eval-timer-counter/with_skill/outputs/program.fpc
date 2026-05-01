@@ -1,0 +1,100 @@
+# ============================================================
+# Programm: 10x-Taster -> O0 leuchtet 3 Sekunden
+# I0 = Taster (steigende Flanken zaehlen)
+# I1 = Zaehler-Reset
+# C0 = Flanken-Zaehler (zaehlt Druecke von I0)
+# M0 = Flanken-Merker (vorheriger Zustand von I0)
+# M1 = Timer-Aktiv-Merker (O0 leuchtet gerade)
+# M2 = Timer-Init-Flag (verhindert Neustart des Timers)
+# T0 = 3-Sekunden-Ausgabe-Timer
+# ============================================================
+
+# --- ABSCHNITT 1: Steigende Flanke von I0 erkennen und zaehlen ---
+# Stack: leer
+
+# Flanke = I0 ist jetzt true UND war vorher false (M0=false)
+GET I 0
+# Stack: [I0]
+GETNOT M 0
+# Stack: [I0, !M0]
+AND
+# Stack: [I0 AND !M0]  -> true nur bei steigender Flanke
+CINC C 0
+# Stack: leer (CINC verbraucht den Wert, zaehlt wenn true)
+
+# Flanken-Merker M0 aktualisieren: M0 = I0 (aktuellen Zustand merken)
+GET I 0
+# Stack: [I0]
+DUP
+# Stack: [I0, I0]
+CMOV M 0 1
+# Stack: [I0]  (wenn I0=true, setze M0=1)
+NOT
+# Stack: [!I0]
+CMOV M 0 0
+# Stack: leer  (wenn I0=false, setze M0=0)
+
+# --- ABSCHNITT 2: Reset mit I1 ---
+# Stack: leer
+
+# Wenn I1 gedrueckt: Zaehler und alle Merker zuruecksetzen
+GET I 1
+# Stack: [I1]
+DUP
+# Stack: [I1, I1]
+DUP
+# Stack: [I1, I1, I1]
+CSET C 0 0
+# Stack: [I1, I1]  (Zaehler auf 0)
+CMOV M 1 0
+# Stack: [I1]  (Timer-Aktiv-Merker loeschen)
+CMOV M 2 0
+# Stack: leer  (Timer-Init-Flag loeschen, damit Timer neu gestartet werden kann)
+
+# --- ABSCHNITT 3: Timer starten wenn C0 == 10 erreicht ---
+# Stack: leer
+
+# Bedingung: Zaehler hat 10 erreicht UND Timer laeuft noch nicht
+CMP C 0 10
+# Stack: [C0==10]
+GETNOT M 2
+# Stack: [C0==10, !M2]
+AND
+# Stack: [(C0==10) AND !M2]  -> true nur beim ersten Mal wenn 10 erreicht
+DUP
+# Stack: [Bedingung, Bedingung]
+DUP
+# Stack: [Bedingung, Bedingung, Bedingung]
+CSET T 0 3000
+# Stack: [Bedingung, Bedingung]  (Timer fuer 3 Sekunden starten)
+CMOV M 1 1
+# Stack: [Bedingung]  (Timer-Aktiv-Merker setzen: O0 soll leuchten)
+CMOV M 2 1
+# Stack: leer  (Timer-Init-Flag setzen: verhindert erneuten Start)
+
+# --- ABSCHNITT 4: O0 automatisch erloeschen wenn Timer abgelaufen ---
+# Stack: leer
+
+# Timer T0 pulsiert: 3000ms true -> 3000ms false -> ...
+# Nach dem ersten Ablauf (T0 wird false) und M1 gesetzt: Zustand zuruecksetzen
+GET M 1
+# Stack: [M1]
+GETNOT T 0
+# Stack: [M1, !T0]
+AND
+# Stack: [M1 AND !T0]  -> true wenn Timer-Aktiv aber Timer gerade false (abgelaufen)
+DUP
+# Stack: [Ablauf, Ablauf]
+CMOV M 1 0
+# Stack: [Ablauf]  (Timer-Aktiv-Merker loeschen -> O0 erloescht)
+CSET C 0 0
+# Stack: leer  (Zaehler zuruecksetzen fuer naechsten Durchlauf)
+
+# --- ABSCHNITT 5: Output O0 setzen ---
+# Stack: leer
+
+# O0 leuchtet solange M1 gesetzt ist
+GET M 1
+# Stack: [M1]
+MOV O 0
+# Stack: leer

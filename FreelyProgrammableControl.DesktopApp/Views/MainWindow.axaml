@@ -32,6 +32,9 @@
     <KeyBinding Gesture="F7" Command="{Binding ParseCommand}" />
     <KeyBinding Gesture="F10" Command="{Binding StepCommand}" />
     <KeyBinding Gesture="F1" Command="{Binding AboutCommand}" />
+
+    <!-- AI Operations -->
+    <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding OpenDevelopChatCommand}" />
   </Window.KeyBindings>
 
   <Design.DataContext>
@@ -65,6 +68,9 @@
         <MenuItem Header="_Copy" Command="{Binding CopyCommand}" HotKey="Ctrl+C"/>
         <MenuItem Header="_Paste" Command="{Binding PasteCommand}" HotKey="Ctrl+V"/>
         <MenuItem Header="Cu_t" Command="{Binding CutCommand}" HotKey="Ctrl+X"/>
+      </MenuItem>
+      <MenuItem Header="_AI">
+        <MenuItem Header="FPC Develop _Chat..." Command="{Binding OpenDevelopChatCommand}" HotKey="Ctrl+Shift+C"/>
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="_About" Command="{Binding AboutCommand}" HotKey="F1"/>
@@ -123,6 +129,19 @@
                   Orientation="Horizontal"
                   HorizontalAlignment="Center"
                   Margin="5">
+        <Button Width="120"
+                Height="30"
+                Margin="5,0"
+                HorizontalContentAlignment="Center"
+                Background="#FF9C27B0"
+                Foreground="White"
+                Command="{Binding OpenDevelopChatCommand}"
+                ToolTip.Tip="FPC Develop Chat öffnen (Ctrl+Shift+C)">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <TextBlock Text="💬" FontSize="14" />
+            <TextBlock Text="AI Chat" />
+          </StackPanel>
+        </Button>
         <Button Width="100"
                 Height="30"
                 Margin="5,0"

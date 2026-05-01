@@ -1,0 +1,28 @@
+{
+  "eval_id": 3,
+  "eval_name": "debug-stack-error",
+  "run": "with_skill",
+  "expectations": [
+    {
+      "text": "finds_dup_error: Erkennt fehlendes DUP nach GETNOT M 0 als ersten Fehler",
+      "passed": true,
+      "evidence": "Explizit erklärt: CSET und CMOV brauchen je einen Stack-Wert, DUP fehlt. Korrektes Verständnis."
+    },
+    {
+      "text": "finds_double_mov_error: Erkennt fehlendes DUP vor MOV O 0 / MOV O 1 als zweiten Fehler",
+      "passed": true,
+      "evidence": "Explizit erklärt: zweites MOV O 1 findet leeren Stack nach MOV O 0. DUP als Fix angegeben."
+    },
+    {
+      "text": "corrected_has_dup: Korrigiertes Programm hat DUP nach GETNOT M 0 (verbindliches Muster)",
+      "passed": true,
+      "evidence": "GETNOT M 0 / DUP / CSET T 0 500 / CMOV M 0 1 — verbindliches Timer-Init-Muster verwendet"
+    },
+    {
+      "text": "corrected_stack_balanced: Korrigiertes Programm hat Stack-Tiefe 0 am Ende",
+      "passed": true,
+      "evidence": "Stack-Trace ergibt min=0, final=0"
+    }
+  ],
+  "pass_rate": 1.0
+}

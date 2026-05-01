@@ -1,0 +1,13 @@
+# Blinker mit Freigabe
+# Timer einmalig initialisieren (Memory-Flag M0)
+GETNOT M 0
+DUP
+CSET T 0 500
+CMOV M 0 1
+# Output: I0 AND Timer (Blinker nur bei Freigabe aktiv)
+GET I 0
+GET T 0
+AND
+DUP
+MOV O 0
+MOV O 1

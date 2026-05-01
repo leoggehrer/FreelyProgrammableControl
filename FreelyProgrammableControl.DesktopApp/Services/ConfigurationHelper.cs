@@ -83,5 +83,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
         public string LoadFPCSampleWebhookUrl { get; set; } = string.Empty;
         public string FPCSampleListFolderName { get; set; } = string.Empty;
         public string SaveToVectorWebhookUrl { get; set; } = string.Empty;
+        public string DevelopPipelineWebhookUrl { get; set; } = string.Empty;
+        public int DevelopPipelineTimeoutSeconds { get; set; } = 1800;
     }
 }

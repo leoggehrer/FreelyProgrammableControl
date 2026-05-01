@@ -781,6 +781,35 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             return executionUnit.IsRunning && executionUnit.DebugEnabled;
         }
 
+        /// <summary>
+        /// Öffnet das Chat-Fenster für die n8n-Pipeline <c>FPCDevelopPipeline</c>.
+        /// Das Chat-Fenster erlaubt es, Anforderungen direkt an die Pipeline zu schicken
+        /// und einen ggf. zurückgelieferten FPC-Codeblock in den Editor zu übernehmen.
+        /// </summary>
+        [RelayCommand]
+        private void OpenDevelopChat()
+        {
+            var chatViewModel = new DevelopChatViewModel(applyCode =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    SourceText = applyCode;
+                    StatusText = "FPC-Code aus Develop-Chat übernommen.";
+                });
+            });
+
+            var chatWindow = new Views.DevelopChatWindow(chatViewModel);
+
+            if (ownerWindow != null)
+            {
+                chatWindow.Show(ownerWindow);
+            }
+            else
+            {
+                chatWindow.Show();
+            }
+        }
+
         /// <summary>Shows the About dialog with version and API status information.</summary>
         [RelayCommand]
         private async Task AboutAsync()

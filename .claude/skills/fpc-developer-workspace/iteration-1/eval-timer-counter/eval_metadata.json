@@ -1,0 +1,6 @@
+{
+  "eval_id": 2,
+  "eval_name": "timer-counter",
+  "prompt": "Ich brauche ein FPC-Programm mit folgendem Verhalten: I0 ist ein Taster. Wenn I0 10-mal gedrückt wurde (steigende Flanken zählen!), soll O0 für 3 Sekunden aufleuchten und dann automatisch erlöschen. I1 setzt den Zähler zurück. Schreib das Programm mit Stack-Kommentaren damit ich es verstehe.",
+  "assertions": []
+}

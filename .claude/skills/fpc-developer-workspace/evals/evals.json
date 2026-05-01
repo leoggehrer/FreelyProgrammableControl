@@ -1,0 +1,26 @@
+{
+  "skill_name": "fpc-developer",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "simple-logic",
+      "prompt": "Schreib mir ein FPC-Programm für eine einfache Förderanlage. Eingänge: I0=Start-Taster, I1=Stop-Taster, I2=Lichtschranke. Ausgänge: O0=Fördermotor, O1=Warnleuchte blinkt 2 Hz wenn Motor läuft. Der Motor startet wenn Start gedrückt wird und bleibt an (Selbsthaltung). Stop oder Lichtschranke schalten den Motor aus. Erstelle das Programm und erkläre es kurz.",
+      "expected_output": "Korrektes FPC-Programm mit SR-Latch/Selbsthaltung, korrekter Stack-Balance, Timer-Init mit Memory-Flag für Blinker, keine Inline-Kommentare.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "timer-counter",
+      "prompt": "Ich brauche ein FPC-Programm mit folgendem Verhalten: I0 ist ein Taster. Wenn I0 10-mal gedrückt wurde (steigende Flanken zählen!), soll O0 für 3 Sekunden aufleuchten und dann automatisch erlöschen. I1 setzt den Zähler zurück. Schreib das Programm mit Stack-Kommentaren damit ich es verstehe.",
+      "expected_output": "Flankengesteuerter Zähler (Flankenerkennung mit Memory), Timer für 3-Sekunden-Puls, Counter-Reset mit I1, korrekte Stack-Balance.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "eval_name": "debug-stack-error",
+      "prompt": "Mein FPC-Programm hat einen Fehler, ich bekomme 'Stack is empty!' — kannst du es analysieren und korrigieren?\n\n```\n# Blinker mit Freigabe\nGETNOT M 0\nCSET T 0 500\nCMOV M 0 1\nGET I 0\nGET T 0\nAND\nMOV O 0\nMOV O 1\n```",
+      "expected_output": "Korrekte Diagnose: fehlendes DUP nach GETNOT M 0 (CSET verbraucht Wert, CMOV findet leeren Stack). Zweiter Fehler: zweites MOV O 1 ohne DUP. Korrigiertes Programm.",
+      "files": []
+    }
+  ]
+}

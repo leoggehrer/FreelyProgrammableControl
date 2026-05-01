@@ -1,0 +1,33 @@
+{
+  "eval_id": 2,
+  "eval_name": "timer-counter",
+  "run": "without_skill",
+  "expectations": [
+    {
+      "text": "edge_detection: Flankenerkennung vorhanden (GET I 0 + GETNOT M 0 + AND)",
+      "passed": true,
+      "evidence": "GET I 0 / GETNOT M 0 / AND — Flankenerkennung vorhanden, aber mit DUP+MOV M 9 (Trash-Pattern) statt sauberem Flanken-Merker-Update"
+    },
+    {
+      "text": "counter_threshold: Vergleich bei 10 (CMP C 0 10 oder GT C 0 9)",
+      "passed": true,
+      "evidence": "CMP C 0 10 vorhanden"
+    },
+    {
+      "text": "counter_reset_i1: I1 setzt Counter zurück (CSET C 0 0)",
+      "passed": true,
+      "evidence": "GET I 1 mit CSET C 0 0 in Schritt 10 vorhanden"
+    },
+    {
+      "text": "timer_3sec_pulse: Timer mit 3000ms",
+      "passed": true,
+      "evidence": "CSET T 0 3000 vorhanden"
+    },
+    {
+      "text": "stack_balanced: Stack-Tiefe endet bei 0",
+      "passed": true,
+      "evidence": "Stack-Tiefe final=0. Verwendet MOV M 9 als Trash-Pattern zum Leeren des Stacks — funktioniert, ist aber Code-Smell."
+    }
+  ],
+  "pass_rate": 1.0
+}
