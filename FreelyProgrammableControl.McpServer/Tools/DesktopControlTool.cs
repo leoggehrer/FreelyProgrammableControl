@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using FreelyProgrammableControl.McpServer.Models;
 using FreelyProgrammableControl.McpServer.Services;
 using ModelContextProtocol.Server;
 
@@ -537,77 +538,4 @@ namespace FreelyProgrammableControl.McpServer.Tools
             return indexes;
         }
     }
-
-    #region Result Classes
-    public class DesktopStatusResult
-    {
-        public bool IsConnected { get; set; }
-        public bool IsRunning { get; set; }
-        public bool HasParseError { get; set; }
-        public string? ParseErrorMessage { get; set; }
-        public bool DebugEnabled { get; set; }
-        public int SourceLines { get; set; }
-        public string? ExecutionState { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ProgramLoadResult
-    {
-        public bool Success { get; set; }
-        public bool HasParseError { get; set; }
-        public string? ParseErrorMessage { get; set; }
-        public int SourceLines { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ExecutionControlResult
-    {
-        public bool Success { get; set; }
-        public bool IsRunning { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ProgramRetrieveResult
-    {
-        public bool Success { get; set; }
-        public string ProgramCode { get; set; } = string.Empty;
-        public int SourceLines { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class DebugModeResult
-    {
-        public bool Success { get; set; }
-        public bool DebugEnabled { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class StepResult
-    {
-        public bool Success { get; set; }
-        public string? ExecutionState { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ExecutionStateResult
-    {
-        public bool Success { get; set; }
-        public string? ExecutionState { get; set; }
-        public bool IsRunning { get; set; }
-        public bool DebugEnabled { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    public class ControllerResetResult
-    {
-        public bool Success { get; set; }
-        public bool IsRunning { get; set; }
-        public bool DebugEnabled { get; set; }
-        public int SourceLines { get; set; }
-        public int InputsReset { get; set; }
-        public int OutputsReset { get; set; }
-        public string Message { get; set; } = string.Empty;
-    }
-
-    #endregion
 }
