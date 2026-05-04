@@ -537,8 +537,8 @@ namespace FreelyProgrammableControl.McpServer.Tools
             return indexes;
         }
     }
-    #region Result Classes
 
+    #region Result Classes
     public class DesktopStatusResult
     {
         public bool IsConnected { get; set; }

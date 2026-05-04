@@ -58,7 +58,7 @@ namespace FreelyProgrammableControl.McpServer.Tools
             | Befehl       | Beschreibung                                                     |
             |--------------|------------------------------------------------------------------|
             | `NOP`        | Keine Operation                                                  |
-            | `DUP`        | Dupliziert das oberste Element zweimal (+2 auf Stack)            |
+            | `DUP`        | Dupliziert das oberste Element zweimal (+1 auf Stack)            |
             | `DUP <n>`    | Schiebt das oberste Element n-1 mal zusätzlich (+n-1 auf Stack). `DUP 1` = dupliziert einmal (+1). |
             | `NOT`        | Negiert das oberste Stack-Element (pop → !wert → push)           |
             | `AND`        | Verknüpft die beiden obersten Elemente mit UND (2 pop, 1 push)   |

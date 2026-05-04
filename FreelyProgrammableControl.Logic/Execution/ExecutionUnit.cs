@@ -653,7 +653,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                             }
                             break;
                         case "DUP":
-                            for (int i = 1; i < parsedLine.Value; i++)
+                            for (int i = 0; i < parsedLine.Value; i++)
                             {
                                 stack.Push(stack.Top());
                             }
