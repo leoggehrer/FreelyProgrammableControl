@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +20,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
     /// </summary>
     public class ApiService : IDisposable
     {
-        private IWebHost? _webHost;
+        private WebApplication? _webHost;
         private readonly MainWindowViewModel _viewModel;
         private readonly int _port;
         private bool _disposed;
@@ -52,23 +51,14 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             if (_webHost != null)
                 return Task.CompletedTask;
 
-            _webHost = new WebHostBuilder()
-                .UseKestrel()
-                .UseUrls($"http://localhost:{_port}")
-                .ConfigureServices(services =>
-                {
-                    services.AddSingleton(_viewModel);
-                    services.AddRouting();
-                    services.AddCors(options =>
-                        options.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
-                })
-                .Configure(app =>
-                {
-                    app.UseCors();
-                    app.UseRouting();
-                    app.UseEndpoints(RegisterEndpoints);
-                })
-                .Build();
+            var builder = WebApplication.CreateBuilder();
+            builder.Services.AddSingleton(_viewModel);
+            builder.Services.AddCors(options =>
+                options.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+            _webHost = builder.Build();
+            _webHost.Urls.Add($"http://localhost:{_port}");
+            _webHost.UseCors();
+            RegisterEndpoints(_webHost);
 
             return _webHost.StartAsync();
         }
@@ -79,7 +69,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             if (_webHost != null)
             {
                 await _webHost.StopAsync();
-                _webHost.Dispose();
+                await _webHost.DisposeAsync();
                 _webHost = null;
             }
         }
@@ -636,7 +626,7 @@ namespace FreelyProgrammableControl.DesktopApp.Services
             if (disposing)
             {
                 _webHost?.StopAsync().GetAwaiter().GetResult();
-                _webHost?.Dispose();
+                _webHost?.DisposeAsync().AsTask().GetAwaiter().GetResult();
                 _webHost = null;
             }
             _disposed = true;
