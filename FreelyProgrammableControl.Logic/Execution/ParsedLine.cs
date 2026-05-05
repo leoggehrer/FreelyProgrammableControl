@@ -239,7 +239,7 @@ namespace FreelyProgrammableControl.Logic.Execution
                         Instruction = "DUP";
                         Subject = "OP";  // OP = Operator
                         Address = 0;
-                        Value = 2;
+                        Value = 1;
                     }
                     // e.g.: DUP 3 => stack.push(stack.top())
                     //                stack.push(stack.top()) 
