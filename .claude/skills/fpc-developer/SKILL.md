@@ -41,17 +41,25 @@ Falls erreichbar: weiter mit Schritt 3.
 
 ### 3. Befehlsreferenz holen (bei Bedarf)
 
-Vollständige Befehlsreferenz aus dem MCP-Server:
+**Token-optimiert: Referenzen NIEMALS vollständig lesen! Immer zuerst greppen:**
 
-```
-Tool: get_fpc_command_reference
+```bash
+# Schritt 1: Relevante Zeilen finden
+grep -n "Timer\|Blinker\|Ampel\|Counter\|SR-Latch" \
+  .claude/skills/fpc-developer/references/fpc-patterns.md | head -30
+
+# Schritt 2: Nur den gefundenen Abschnitt lesen (offset + limit)
+# Beispiel: Zeile 58 gefunden → Read offset=55 limit=50
 ```
 
-Alternativ: Referenz in `references/fpc-language.md` lesen.
+Vollständige Dateien **nur lesen wenn grep nicht reicht:**
+- `references/fpc-language.md` — Befehlstabelle + Stack-Regeln (154 Zeilen, ~1.200 Tokens)
+- `references/fpc-patterns.md` — Pattern-Bibliothek (336 Zeilen, ~2.600 Tokens)
+- `/FPCSamples.md` — Vollsammlung; **zuerst grep**, dann Abschnitt lesen
 
 ### 4. Programm schreiben
 
-Schreibe das FPC-Programm. Kritische Regeln (Details in `references/fpc-language.md`):
+Schreibe das FPC-Programm. Kritische Regeln (alles Wichtige steht bereits hier — Referenzen nur bei Unsicherheit laden):
 
 **Stack-Disziplin** – vor jedem Befehl prüfen:
 - Push (+1): `GET`, `GETNOT`, `CMP`, `GT`, `LE`, `DUP`
@@ -68,9 +76,28 @@ CMOV M n 1   # Initialisierungsflag setzen
 ```
 NIEMALS `SET T` oder `CSET T` ohne Memory-Flag-Schutz in der Hauptschleife!
 
-**Keine Inline-Kommentare** – Kommentare immer in eigener Zeile mit `#`.
+**Counter-Phasensteuerung** – Bewährtes Muster (Ampel, Ablaufsteuerung):
+```
+# Init Takt-Timer T0 (100ms) + Counter C0 auf 1
+GETNOT M 0
+DUP
+CSET T 0 100
+CMOV M 0 1
+GETNOT M 1
+DUP
+CSET C 0 1
+CMOV M 1 1
+# Tick
+GET T 0
+CINC C 0
+# Reset nach N Ticks
+GT C 0 N
+CSET C 0 1
+# Bereich [x+1..y]: GT C 0 x → LE C 0 y → AND → MOV M phase
+```
+LE C 0 y bedeutet C0 ≤ y (inklusiv). GT C 0 x bedeutet C0 > x.
 
-Pattern-Bibliothek (Blinker, SR-Latch, TON/TOF, Ampel, etc.) in `references/fpc-patterns.md`.
+**Keine Inline-Kommentare** – Kommentare immer in eigener Zeile mit `#`.
 
 ### 5. Validieren und laden
 
@@ -103,6 +130,20 @@ Tool: get_output_states        # Ausgänge prüfen
 Tool: get_timers               # Timer-Zustand
 Tool: get_counters             # Counter-Werte
 ```
+
+**Token-optimiertes Monitoring** – NIEMALS enge Polling-Schleifen! Stattdessen:
+```bash
+# Einmalige Prüfung nach bekannter Wartezeit
+sleep 22 && curl -s http://localhost:5555/api/outputs | python3 -c \
+  "import sys,json; [print(f'O{o[\"index\"]}={o[\"value\"]}') \
+   for o in json.load(sys.stdin)['outputs'][:4]]"
+
+# Oder: Counter + Outputs in einem Call
+curl -s http://localhost:5555/api/counters && \
+curl -s http://localhost:5555/api/outputs
+```
+Faustregel: **max. 3 Monitoring-Calls pro Testphase**. Bei zeitgesteuerten Programmen
+Wartezeit aus der Phasenlänge ableiten, nicht blind pollen.
 
 **Debug-Modus (Schritt für Schritt):**
 ```
