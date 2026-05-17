@@ -9,7 +9,61 @@
         <local:ViewLocator/>
     </Application.DataTemplates>
   
+    <Application.Resources>
+        <SolidColorBrush x:Key="SurfaceBrush">#FFF7F7F4</SolidColorBrush>
+        <SolidColorBrush x:Key="PanelBrush">#FFFFFFFF</SolidColorBrush>
+        <SolidColorBrush x:Key="PanelBorderBrush">#FFD6DBD8</SolidColorBrush>
+        <SolidColorBrush x:Key="ToolbarBrush">#FFF0F3F1</SolidColorBrush>
+
+        <SolidColorBrush x:Key="PrimaryBrush">#FF0D5C63</SolidColorBrush>
+        <SolidColorBrush x:Key="SuccessBrush">#FF2E7D32</SolidColorBrush>
+        <SolidColorBrush x:Key="DangerBrush">#FFB3261E</SolidColorBrush>
+        <SolidColorBrush x:Key="InfoBrush">#FF006D77</SolidColorBrush>
+        <SolidColorBrush x:Key="WarningBrush">#FFB7791F</SolidColorBrush>
+        <SolidColorBrush x:Key="OnActionBrush">#FFFFFFFF</SolidColorBrush>
+
+        <SolidColorBrush x:Key="UserBubbleBrush">#FFE8F3F4</SolidColorBrush>
+        <SolidColorBrush x:Key="AssistantBubbleBrush">#FFFFFFFF</SolidColorBrush>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="FontFamily" Value="Inter, Segoe UI, Arial" />
+        </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <Style Selector="Button.action-primary, ToggleButton.action-primary">
+            <Setter Property="Foreground" Value="{StaticResource OnActionBrush}" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        </Style>
+
+        <Style Selector="Button.action-success, ToggleButton.action-success">
+            <Setter Property="Foreground" Value="{StaticResource OnActionBrush}" />
+            <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
+        </Style>
+
+        <Style Selector="Button.action-danger, ToggleButton.action-danger">
+            <Setter Property="Foreground" Value="{StaticResource OnActionBrush}" />
+            <Setter Property="Background" Value="{StaticResource DangerBrush}" />
+        </Style>
+
+        <Style Selector="Button.action-info, ToggleButton.action-info">
+            <Setter Property="Foreground" Value="{StaticResource OnActionBrush}" />
+            <Setter Property="Background" Value="{StaticResource InfoBrush}" />
+        </Style>
+
+        <Style Selector="Button.action-warning, ToggleButton.action-warning">
+            <Setter Property="Foreground" Value="{StaticResource OnActionBrush}" />
+            <Setter Property="Background" Value="{StaticResource WarningBrush}" />
+        </Style>
     </Application.Styles>
 </Application>

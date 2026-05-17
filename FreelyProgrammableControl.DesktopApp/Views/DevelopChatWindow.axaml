@@ -6,62 +6,97 @@
         mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="800"
         x:Class="FreelyProgrammableControl.DesktopApp.Views.DevelopChatWindow"
         x:DataType="vm:DevelopChatViewModel"
-        Width="780"
-        Height="900"
+  Width="880"
+  Height="760"
+  MinWidth="680"
+  MinHeight="520"
         Title="FPC Develop Pipeline – Chat">
 
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SendCommand}" />
   </Window.KeyBindings>
 
-  <Grid RowDefinitions="*,Auto,Auto,Auto" Margin="8">
+  <Grid RowDefinitions="Auto,*,Auto,Auto,Auto" Margin="10">
+
+    <Border Grid.Row="0"
+            Classes="card"
+            Background="{StaticResource ToolbarBrush}"
+            Padding="10,8"
+            Margin="0,0,0,8">
+      <TextBlock Text="FPC Develop Pipeline"
+                 FontSize="15"
+                 FontWeight="Bold" />
+    </Border>
 
     <!-- Verlauf -->
-    <Border Grid.Row="0"
-            BorderBrush="LightGray"
-            BorderThickness="1"
-            CornerRadius="5">
+    <Border Grid.Row="1"
+            Classes="card">
       <ScrollViewer x:Name="HistoryScroll"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
-                    Padding="6">
+                    Padding="8">
         <ItemsControl ItemsSource="{Binding Messages}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ChatMessageViewModel">
-              <Border Margin="4"
-                      Padding="8"
-                      CornerRadius="6"
-                      BorderBrush="LightGray"
-                      BorderThickness="1">
-                <StackPanel Spacing="4">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding Author}"
-                               FontWeight="Bold"
-                               FontSize="12" />
-                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
-                               FontSize="11"
-                               Foreground="Gray" />
-                    <TextBlock Text="(läuft …)"
-                               FontSize="11"
-                               Foreground="DarkOrange"
-                               IsVisible="{Binding IsPending}" />
+              <Grid Margin="0,0,0,8">
+                <Border Padding="10"
+                        MaxWidth="620"
+                        HorizontalAlignment="Right"
+                        Background="{StaticResource UserBubbleBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        IsVisible="{Binding IsUser}">
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Author}"
+                                 FontWeight="Bold"
+                                 FontSize="12" />
+                      <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                 FontSize="11"
+                                 Foreground="Gray" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Text, Mode=OneWay}"
+                               TextWrapping="Wrap"
+                               FontSize="13" />
                   </StackPanel>
-                  <TextBox Text="{Binding Text, Mode=OneWay}"
-                           IsReadOnly="True"
-                           AcceptsReturn="True"
-                           TextWrapping="Wrap"
-                           BorderThickness="0"
-                           Background="Transparent"
-                           FontFamily="Courier New, Consolas, monospace"
-                           FontSize="13" />
-                  <Button Content="FPC-Code in Editor übernehmen"
-                          IsVisible="{Binding HasFpcCode}"
-                          Command="{Binding $parent[ItemsControl].((vm:DevelopChatViewModel)DataContext).ApplyCodeCommand}"
-                          CommandParameter="{Binding}"
-                          HorizontalAlignment="Left"
-                          Margin="0,4,0,0" />
-                </StackPanel>
-              </Border>
+                </Border>
+
+                <Border Padding="10"
+                        MaxWidth="700"
+                        HorizontalAlignment="Left"
+                        Background="{StaticResource AssistantBubbleBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        IsVisible="{Binding IsAssistant}">
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Author}"
+                                 FontWeight="Bold"
+                                 FontSize="12" />
+                      <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                 FontSize="11"
+                                 Foreground="Gray" />
+                      <TextBlock Text="laeuft ..."
+                                 FontSize="11"
+                                 Foreground="#FFB7791F"
+                                 IsVisible="{Binding IsPending}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Text, Mode=OneWay}"
+                               TextWrapping="Wrap"
+                               FontFamily="Courier New, Consolas, monospace"
+                               FontSize="13" />
+                    <Button Content="FPC-Code in Editor uebernehmen"
+                            Classes="action-info"
+                            IsVisible="{Binding HasFpcCode}"
+                            Command="{Binding $parent[ItemsControl].((vm:DevelopChatViewModel)DataContext).ApplyCodeCommand}"
+                            CommandParameter="{Binding}"
+                            HorizontalAlignment="Left"
+                            Margin="0,4,0,0" />
+                  </StackPanel>
+                </Border>
+              </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -69,8 +104,9 @@
     </Border>
 
     <!-- Statusleiste -->
-    <Border Grid.Row="1"
-            Background="#FFF0F0F0"
+    <Border Grid.Row="2"
+            Classes="card"
+            Background="{StaticResource ToolbarBrush}"
             Padding="8,4"
             Margin="0,6,0,0"
             CornerRadius="4">
@@ -80,7 +116,7 @@
     </Border>
 
     <!-- Eingabezeile -->
-    <Grid Grid.Row="2"
+    <Grid Grid.Row="3"
           ColumnDefinitions="*,Auto"
           Margin="0,6,0,0">
       <TextBox Grid.Column="0"
@@ -97,8 +133,8 @@
                   Margin="6,0,0,0"
                   VerticalAlignment="Stretch">
         <Button Content="Senden"
+          Classes="action-success"
                 Command="{Binding SendCommand}"
-                Background="#FF4CAF50"
                 Width="120"
                 Height="36"
                 ToolTip.Tip="Nachricht senden (Ctrl+Enter)" />
@@ -110,7 +146,7 @@
     </Grid>
 
     <!-- Busy-Indikator -->
-    <ProgressBar Grid.Row="3"
+    <ProgressBar Grid.Row="4"
                  Height="4"
                  Margin="0,6,0,0"
                  IsIndeterminate="True"

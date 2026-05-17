@@ -21,6 +21,8 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         [ObservableProperty]
         private bool isUser;
 
+        public bool IsAssistant => IsUser == false;
+
         /// <summary><c>true</c>, solange auf eine Antwort gewartet wird (Platzhalter-Nachricht).</summary>
         [ObservableProperty]
         private bool isPending;
@@ -34,6 +36,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         partial void OnExtractedFpcCodeChanged(string? value)
         {
             OnPropertyChanged(nameof(HasFpcCode));
+        }
+
+        partial void OnIsUserChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsAssistant));
         }
     }
 }

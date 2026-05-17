@@ -8,8 +8,10 @@
         x:Class="FreelyProgrammableControl.DesktopApp.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Width="1100"
-        Height="1000"
+  Width="1280"
+  Height="860"
+  MinWidth="980"
+  MinHeight="680"
         Title="FreelyProgrammableControl">
 
   <Window.KeyBindings>
@@ -42,7 +44,7 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
     <vm:MainWindowViewModel/>
   </Design.DataContext>
-  <DockPanel>
+  <DockPanel LastChildFill="True">
 
     <!-- Menu bar (File, Edit, Help) -->
     <Menu DockPanel.Dock="Top">
@@ -78,25 +80,97 @@
     </Menu>
 
     <!-- Main content with inputs, editor, and outputs -->
-    <Grid>
+    <Grid Margin="8,8,8,0">
       <Grid.RowDefinitions>
-        <RowDefinition Height="35" />
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
-        <RowDefinition Height="30" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="150" />
+        <ColumnDefinition Width="Auto" MinWidth="140" />
+        <ColumnDefinition Width="5" />
         <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="150" />
+        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="Auto" MinWidth="140" />
       </Grid.ColumnDefinitions>
+
+      <!-- Control bar (grouped actions) -->
+      <Border Grid.Row="0"
+              Grid.Column="0"
+              Grid.ColumnSpan="5"
+              Classes="card"
+              Background="{StaticResource ToolbarBrush}"
+              Padding="10,8"
+              Margin="0,0,0,8">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Width="120"
+                    Height="32"
+                    Classes="action-primary"
+                    Command="{Binding OpenDevelopChatCommand}"
+                    ToolTip.Tip="FPC Develop Chat oeffnen (Ctrl+Shift+C)"
+                    Content="AI Chat" />
+          </StackPanel>
+
+          <Separator Width="1" Margin="6,2" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Width="100"
+                    Height="32"
+                    Classes="action-success"
+                    Command="{Binding StartCommand}"
+                    ToolTip.Tip="Programm starten (F5)"
+                    Content="Start" />
+            <Button Width="100"
+                    Height="32"
+                    Classes="action-danger"
+                    Command="{Binding StopCommand}"
+                    ToolTip.Tip="Programm stoppen (Shift+F5)"
+                    Content="Stop" />
+            <Button Width="100"
+                    Height="32"
+                    Classes="action-info"
+                    Command="{Binding ParseCommand}"
+                    ToolTip.Tip="Programm parsen (F7)"
+                    Content="Parse" />
+          </StackPanel>
+
+          <Separator Width="1" Margin="6,2" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ToggleButton Width="120"
+                          Height="32"
+                          HorizontalContentAlignment="Center"
+                          Classes="action-warning"
+                          IsEnabled="{Binding IsDebugEnabled}"
+                          IsChecked="{Binding DebugEnabled}"
+                          Content="{Binding DebugButtonText}"
+                          ToolTip.Tip="Debug-Modus umschalten" />
+            <NumericUpDown Width="140"
+                           Height="32"
+                           Increment="1"
+                           FormatString="0000"
+                           Minimum="{Binding MinLineNumber}"
+                           Maximum="{Binding MaxLineNumber}"
+                           Value="{Binding CurrentLineNumber}"
+                           IsEnabled="{Binding DebugEnabled}"
+                           ToolTip.Tip="Zeilennummer" />
+            <Button Width="110"
+                    Height="32"
+                    Classes="action-warning"
+                    Command="{Binding StepCommand}"
+                    ToolTip.Tip="Einzelschritt ausfuehren (F10)"
+                    Content="Step" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
 
       <!-- Inputs -->
       <Border Grid.Row="1" Grid.Column="0" 
-              Margin="5" 
+              Classes="card"
+              Margin="0,0,8,8" 
               Padding="5"
-              BorderBrush="LightGray" 
-              BorderThickness="1"
-              CornerRadius="5">
+              MinWidth="140">
         <StackPanel>
           <TextBlock Text="Inputs" 
                      FontWeight="Bold" 
@@ -122,110 +196,27 @@
           </ItemsControl>
         </StackPanel>
       </Border>
-      <!-- Control bar (Start/Stop/Parse) -->
-      <StackPanel x:Name="Buttons"
-                  Grid.Row="0"
-                  Grid.Column="1"
-                  Orientation="Horizontal"
-                  HorizontalAlignment="Center"
-                  Margin="5">
-        <Button Width="120"
-                Height="30"
-                Margin="5,0"
-                HorizontalContentAlignment="Center"
-                Background="#FF9C27B0"
-                Foreground="White"
-                Command="{Binding OpenDevelopChatCommand}"
-                ToolTip.Tip="FPC Develop Chat öffnen (Ctrl+Shift+C)">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBlock Text="💬" FontSize="14" />
-            <TextBlock Text="AI Chat" />
-          </StackPanel>
-        </Button>
-        <Button Width="100"
-                Height="30"
-                Margin="5,0"
-                HorizontalContentAlignment="Center"
-                Background="#FF4CAF50"
-                Command="{Binding StartCommand}"
-                ToolTip.Tip="Programm starten (F5)">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBlock Text="▶" FontSize="14" />
-            <TextBlock Text="Start" />
-          </StackPanel>
-        </Button>
-        <Button Width="100"
-                Height="30"
-                Margin="5,0"
-                HorizontalContentAlignment="Center"
-                Background="#FFF44336"
-                Command="{Binding StopCommand}"
-                ToolTip.Tip="Programm stoppen (Shift+F5)">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBlock Text="■" FontSize="14" />
-            <TextBlock Text="Stop" />
-          </StackPanel>
-        </Button>
-        <Button Width="100"
-                Height="30"
-                Margin="5,0"
-                HorizontalContentAlignment="Center"
-                Background="#FF2196F3"
-                Command="{Binding ParseCommand}"
-                ToolTip.Tip="Programm parsen (F7)">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBlock Text="✓" FontSize="14" />
-            <TextBlock Text="Parse" />
-          </StackPanel>
-        </Button>
-        <ToggleButton Width="100"
-                      Height="30"
-                      Margin="5,0"
-                      HorizontalContentAlignment="Center"
-                      IsEnabled="{Binding IsDebugEnabled}"
-                      IsChecked="{Binding DebugEnabled}"
-                      Content="{Binding DebugButtonText}"
-                      ToolTip.Tip="Debug-Modus umschalten" />
-        <NumericUpDown Width="140"
-                       Height="30"
-                       Margin="5,0"
-                       Increment="1"
-                       FormatString="0000"
-                       Minimum="{Binding MinLineNumber}"
-                       Maximum="{Binding MaxLineNumber}"
-                       Value="{Binding CurrentLineNumber}"
-                       IsEnabled="{Binding DebugEnabled}"
-                       ToolTip.Tip="Zeilennummer" />
-        <Button Width="100"
-                Height="30"
-                Margin="5,0"
-                HorizontalContentAlignment="Center"
-                Background="#FFFF9800"
-                Command="{Binding StepCommand}"
-                ToolTip.Tip="Einzelschritt ausführen (F10)">
-          <StackPanel Orientation="Horizontal" Spacing="5">
-            <TextBlock Text="➡" FontSize="14" />
-            <TextBlock Text="Step" />
-          </StackPanel>
-        </Button>
-      </StackPanel>
+
+      <GridSplitter Grid.Row="1"
+                    Grid.Column="1"
+                    Width="5"
+                    Background="{StaticResource PanelBorderBrush}"
+                    ResizeDirection="Columns" />
 
       <!-- Editor area (source/output) with splitter -->
-      <Grid Grid.Row="1" Grid.Column="1" Margin="5">
-		  <Grid.ColumnDefinitions>
+      <Grid Grid.Row="1" Grid.Column="2" Margin="0,0,0,8">
+          <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="3" />
+            <RowDefinition Height="5" />
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
 
           <!-- Source -->
           <Border Grid.Row="0" Grid.Column="0"
-                  BorderBrush="LightGray" 
-                  BorderThickness="1"
-                  CornerRadius="5">
+                  Classes="card">
             <Grid>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -240,11 +231,14 @@
                        Grid.Row="1"
                        VerticalAlignment="Stretch"
                        HorizontalAlignment="Stretch"
+                       AcceptsTab="True"
                        AcceptsReturn="True"
-                       TextWrapping="Wrap"
+                       TextWrapping="NoWrap"
                        FontFamily="Courier New, Consolas, monospace"
                        FontSize="14"
                        Margin="5"
+                       DoubleTapped="SourceTextBox_DoubleTapped"
+                       PointerReleased="SourceTextBox_PointerReleased"
                        IsReadOnly="{Binding IsSourceReadOnly}"
                        Text="{Binding SourceText, Mode=TwoWay}" />
             </Grid>
@@ -252,22 +246,19 @@
           <!-- Splitter between source and output -->
           <GridSplitter Grid.Row="1" 
                         Grid.Column="0" 
-                        Margin="0,5" 
-                        Height="3"
-                        Background="LightGray" 
+                        Height="5"
+                        Background="{StaticResource PanelBorderBrush}" 
                         ResizeDirection="Rows" />
           <!-- Output -->
           <Border Grid.Row="2" Grid.Column="0"
-                  BorderBrush="LightGray" 
-                  BorderThickness="1"
-                  CornerRadius="5">
+                  Classes="card">
             <TabControl>
               <TabItem Header="Output" FontSize="12">
                 <TextBox IsReadOnly="True"
                          VerticalAlignment="Stretch"
                          HorizontalAlignment="Stretch"
                          AcceptsReturn="True"
-                         TextWrapping="Wrap"
+                         TextWrapping="NoWrap"
                          FontFamily="Courier New, Consolas, monospace"
                          FontSize="14"
                          Margin="5"
@@ -281,7 +272,7 @@
                            VerticalAlignment="Stretch"
                            HorizontalAlignment="Stretch"
                            AcceptsReturn="True"
-                           TextWrapping="Wrap"
+                           TextWrapping="NoWrap"
                            FontFamily="Courier New, Consolas, monospace"
                            FontSize="14"
                            Margin="0,0,4,0"
@@ -291,7 +282,7 @@
                            VerticalAlignment="Stretch"
                            HorizontalAlignment="Stretch"
                            AcceptsReturn="True"
-                           TextWrapping="Wrap"
+                           TextWrapping="NoWrap"
                            FontFamily="Courier New, Consolas, monospace"
                            FontSize="14"
                            Margin="0,0,4,0"
@@ -301,7 +292,7 @@
                            VerticalAlignment="Stretch"
                            HorizontalAlignment="Stretch"
                            AcceptsReturn="True"
-                           TextWrapping="Wrap"
+                           TextWrapping="NoWrap"
                            FontFamily="Courier New, Consolas, monospace"
                            FontSize="14"
                            Margin="0,0,4,0"
@@ -311,7 +302,7 @@
                            VerticalAlignment="Stretch"
                            HorizontalAlignment="Stretch"
                            AcceptsReturn="True"
-                           TextWrapping="Wrap"
+                           TextWrapping="NoWrap"
                            FontFamily="Courier New, Consolas, monospace"
                            FontSize="14"
                            Margin="0,0,4,0"
@@ -321,7 +312,7 @@
                            VerticalAlignment="Stretch"
                            HorizontalAlignment="Stretch"
                            AcceptsReturn="True"
-                           TextWrapping="Wrap"
+                           TextWrapping="NoWrap"
                            FontFamily="Courier New, Consolas, monospace"
                            FontSize="14"
                            Text="{Binding ExecutionStatePart5}" />
@@ -331,13 +322,18 @@
           </Border>
       </Grid>
 
+      <GridSplitter Grid.Row="1"
+                    Grid.Column="3"
+                    Width="5"
+                    Background="{StaticResource PanelBorderBrush}"
+                    ResizeDirection="Columns" />
+
       <!-- Outputs -->
-      <Border Grid.Row="1" Grid.Column="2" 
-              Margin="5" 
+      <Border Grid.Row="1" Grid.Column="4" 
+              Classes="card"
+              Margin="8,0,0,8" 
               Padding="5"
-              BorderBrush="LightGray" 
-              BorderThickness="1"
-              CornerRadius="5">
+              MinWidth="140">
         <StackPanel>
           <TextBlock Text="Outputs" 
                      FontWeight="Bold" 
@@ -368,12 +364,12 @@
       </Border>
 
       <!-- Status bar -->
-      <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3"
-              Background="LightGray"
-              BorderBrush="Gray"
+            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5"
+              Background="{StaticResource ToolbarBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}"
               BorderThickness="0,1,0,0"
               MinHeight="30"
-              Padding="10,5">
+              Padding="10,6">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
