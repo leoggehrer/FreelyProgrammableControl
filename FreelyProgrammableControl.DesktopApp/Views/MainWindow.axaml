@@ -60,6 +60,10 @@
           <MenuItem Header="Save To Google drive" Command="{Binding SaveToGoogleDriveCommand}"/>
           <MenuItem Header="In Vector Store speichern" Command="{Binding SaveToVektorCommand}"/>
         </MenuItem>
+        <MenuItem Header="Labels">
+          <MenuItem Header="_Import Labels..." Command="{Binding ImportLabelsCommand}" HotKey="Ctrl+Shift+I"/>
+          <MenuItem Header="_Export Labels..." Command="{Binding ExportLabelsCommand}" HotKey="Ctrl+Shift+E"/>
+        </MenuItem>
         <Separator/>
         <MenuItem Header="E_xit" Command="{Binding ExitCommand}" HotKey="Alt+F4"/>
       </MenuItem>

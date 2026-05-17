@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
@@ -23,6 +24,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
     public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         private const int IOPageSize = 20;
+        private const int LabelFileVersion = 1;
 
         #region fields
         private bool isInitialized;
@@ -37,6 +39,19 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private readonly Stack<string> redoStack = new();
         private string lastSourceText = string.Empty;
         private readonly ExecutionUnit executionUnit;
+
+        private sealed class IoLabelEntry
+        {
+            public int Index { get; set; }
+            public string Label { get; set; } = string.Empty;
+        }
+
+        private sealed class IoLabelsFile
+        {
+            public int Version { get; set; } = LabelFileVersion;
+            public List<IoLabelEntry> Inputs { get; set; } = new();
+            public List<IoLabelEntry> Outputs { get; set; } = new();
+        }
         #endregion fields
 
         #region properties
@@ -288,6 +303,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             CreateInputItems();
             CreateOutputItems();
 
+            if (!string.IsNullOrWhiteSpace(selectedFile))
+            {
+                TryLoadLabelsForProgram(selectedFile!, out _);
+            }
+
             // Start API Service
             StartApiService(settings);
         }
@@ -344,6 +364,14 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             SourceText = string.Empty;
             selectedFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "newProgram.fpc");
             StatusText = selectedFile;
+
+            CreateInputItems();
+            CreateOutputItems();
+
+            if (!string.IsNullOrWhiteSpace(selectedFile))
+            {
+                TryLoadLabelsForProgram(selectedFile, out _);
+            }
         }
 
         /// <summary>Opens a file picker and loads the selected .fpc file into the editor.</summary>
@@ -372,7 +400,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 {
                     selectedFile = result[0].Path.LocalPath;
                     SourceText = await File.ReadAllTextAsync(selectedFile);
-                    StatusText = selectedFile;
+
+                    var labelsLoaded = TryLoadLabelsForProgram(selectedFile, out var labelsMessage);
+                    StatusText = labelsLoaded
+                        ? $"{selectedFile} - {labelsMessage}"
+                        : selectedFile;
                 }
             }
             catch (Exception ex)
@@ -394,7 +426,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 try
                 {
                     await File.WriteAllTextAsync(selectedFile, SourceText ?? string.Empty);
-                    StatusText = $"{selectedFile} - Gespeichert";
+
+                    var labelsSaved = SaveLabelsForProgram(selectedFile, out var labelsMessage);
+                    StatusText = labelsSaved
+                        ? $"{selectedFile} - Gespeichert ({labelsMessage})"
+                        : $"{selectedFile} - Gespeichert";
                 }
                 catch (Exception ex)
                 {
@@ -445,7 +481,11 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                     string content = SourceText ?? string.Empty;
                     await File.WriteAllTextAsync(result.Path.LocalPath, content);
                     selectedFile = result.Path.LocalPath;
-                    StatusText = $"{selectedFile} - Gespeichert";
+
+                    var labelsSaved = SaveLabelsForProgram(selectedFile, out var labelsMessage);
+                    StatusText = labelsSaved
+                        ? $"{selectedFile} - Gespeichert ({labelsMessage})"
+                        : $"{selectedFile} - Gespeichert";
                 }
             }
             catch (Exception ex)
@@ -514,6 +554,114 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
         private bool CanSaveToVektor()
         {
             return !string.IsNullOrWhiteSpace(SourceText) && !executionUnit.IsRunning;
+        }
+
+        private bool CanImportOrExportLabels()
+        {
+            return executionUnit.IsRunning == false;
+        }
+
+        /// <summary>Imports input/output labels from a .labels.json file chosen by the user.</summary>
+        [RelayCommand(CanExecute = nameof(CanImportOrExportLabels))]
+        private async Task ImportLabelsAsync()
+        {
+            if (storageProvider is null)
+            {
+                await ShowErrorDialogAsync(ownerWindow, "Fehler", "Dateisystem nicht verfügbar.");
+                return;
+            }
+
+            try
+            {
+                var result = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                {
+                    AllowMultiple = false,
+                    Title = "Labels importieren",
+                    FileTypeFilter =
+                    [
+                        new FilePickerFileType("Label files") { Patterns = ["*.labels.json"] },
+                        new FilePickerFileType("JSON files") { Patterns = ["*.json"] },
+                        new FilePickerFileType("All files") { Patterns = ["*"] }
+                    ]
+                });
+
+                if (result.Count != 1)
+                {
+                    StatusText = "Labels-Import abgebrochen";
+                    return;
+                }
+
+                var labelsPath = result[0].Path.LocalPath;
+                if (TryLoadLabelsFromFile(labelsPath, out var statusMessage))
+                {
+                    StatusText = statusMessage;
+                }
+                else
+                {
+                    await ShowErrorDialogAsync(ownerWindow, "Labels importieren", statusMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync(ownerWindow, "Labels importieren", $"Die Label-Datei konnte nicht geladen werden:\n{ex.Message}");
+            }
+        }
+
+        /// <summary>Exports the current input/output labels to a .labels.json file chosen by the user.</summary>
+        [RelayCommand(CanExecute = nameof(CanImportOrExportLabels))]
+        private async Task ExportLabelsAsync()
+        {
+            if (storageProvider is null)
+            {
+                await ShowErrorDialogAsync(ownerWindow, "Fehler", "Dateisystem nicht verfügbar.");
+                return;
+            }
+
+            if (!storageProvider.CanSave)
+            {
+                await ShowErrorDialogAsync(ownerWindow, "Nicht unterstützt", "Speichern wird auf dieser Plattform nicht unterstützt.");
+                return;
+            }
+
+            try
+            {
+                var suggestedName = string.IsNullOrWhiteSpace(selectedFile)
+                    ? "newProgram.labels.json"
+                    : $"{Path.GetFileNameWithoutExtension(selectedFile)}.labels.json";
+
+                var saveOptions = new FilePickerSaveOptions
+                {
+                    Title = "Labels exportieren",
+                    FileTypeChoices =
+                    [
+                        new FilePickerFileType("Label files") { Patterns = ["*.labels.json"] },
+                        new FilePickerFileType("JSON files") { Patterns = ["*.json"] },
+                        new FilePickerFileType("All files") { Patterns = ["*"] }
+                    ],
+                    SuggestedFileName = suggestedName,
+                    SuggestedStartLocation = selectedFile is null ? null : await storageProvider.TryGetFolderFromPathAsync(selectedFile)
+                };
+
+                var result = await storageProvider.SaveFilePickerAsync(saveOptions);
+                if (result == null)
+                {
+                    StatusText = "Labels-Export abgebrochen";
+                    return;
+                }
+
+                if (SaveLabelsToFile(result.Path.LocalPath, out var statusMessage))
+                {
+                    StatusText = statusMessage;
+                }
+                else
+                {
+                    await ShowErrorDialogAsync(ownerWindow, "Labels exportieren", statusMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync(ownerWindow, "Labels exportieren", $"Die Label-Datei konnte nicht gespeichert werden:\n{ex.Message}");
+            }
         }
 
         private bool CanLoadFromGoogleDrive()
@@ -1106,6 +1254,212 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
                 Outputs[i].UpdateFromDevice();
                 VisibleOutputs.Add(Outputs[i]);
             }
+        }
+
+        private static string GetLabelsFilePath(string programFilePath)
+        {
+            var directory = Path.GetDirectoryName(programFilePath);
+            var baseName = Path.GetFileNameWithoutExtension(programFilePath);
+
+            return Path.Combine(directory ?? string.Empty, $"{baseName}.labels.json");
+        }
+
+        private bool TryLoadLabelsFromFile(string labelsPath, out string statusMessage)
+        {
+            statusMessage = string.Empty;
+
+            try
+            {
+                if (!File.Exists(labelsPath))
+                {
+                    statusMessage = "Label-Datei nicht gefunden.";
+                    return false;
+                }
+
+                var json = File.ReadAllText(labelsPath);
+                var labels = JsonSerializer.Deserialize<IoLabelsFile>(json);
+                if (labels == null)
+                {
+                    statusMessage = "Label-Datei ist leer oder ungueltig.";
+                    return false;
+                }
+
+                var inputResult = ApplyInputLabels(labels.Inputs);
+                var outputResult = ApplyOutputLabels(labels.Outputs);
+                var totalApplied = inputResult.Applied + outputResult.Applied;
+                var totalIgnored = inputResult.Ignored + outputResult.Ignored;
+
+                statusMessage = totalIgnored > 0
+                    ? $"Labels geladen ({totalApplied} gesetzt, {totalIgnored} ignoriert)"
+                    : $"Labels geladen ({totalApplied} gesetzt)";
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                statusMessage = $"Label-Datei konnte nicht geladen werden: {ex.Message}";
+                return false;
+            }
+        }
+
+        private bool SaveLabelsToFile(string labelsPath, out string statusMessage)
+        {
+            statusMessage = string.Empty;
+
+            try
+            {
+                var labels = new IoLabelsFile
+                {
+                    Inputs = Inputs.Select((item, index) => new IoLabelEntry
+                    {
+                        Index = index,
+                        Label = item.Label
+                    }).ToList(),
+                    Outputs = Outputs.Select((item, index) => new IoLabelEntry
+                    {
+                        Index = index,
+                        Label = item.Label
+                    }).ToList()
+                };
+
+                var json = JsonSerializer.Serialize(labels, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                File.WriteAllText(labelsPath, json);
+                statusMessage = $"Labels gespeichert: {Path.GetFileName(labelsPath)}";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                statusMessage = $"Labels konnten nicht gespeichert werden: {ex.Message}";
+                return false;
+            }
+        }
+
+        private bool TryLoadLabelsForProgram(string programFilePath, out string statusMessage)
+        {
+            statusMessage = string.Empty;
+
+            try
+            {
+                var labelsPath = GetLabelsFilePath(programFilePath);
+                if (!File.Exists(labelsPath))
+                {
+                    return false;
+                }
+
+                var json = File.ReadAllText(labelsPath);
+                var labels = JsonSerializer.Deserialize<IoLabelsFile>(json);
+                if (labels == null)
+                {
+                    statusMessage = "Label-Datei ist leer oder ungueltig.";
+                    return false;
+                }
+
+                var inputResult = ApplyInputLabels(labels.Inputs);
+                var outputResult = ApplyOutputLabels(labels.Outputs);
+
+                var ignored = inputResult.Ignored + outputResult.Ignored;
+                statusMessage = ignored > 0
+                    ? $"Labels geladen ({inputResult.Applied + outputResult.Applied} gesetzt, {ignored} ignoriert)"
+                    : $"Labels geladen ({inputResult.Applied + outputResult.Applied} gesetzt)";
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                statusMessage = $"Label-Datei konnte nicht geladen werden: {ex.Message}";
+                return false;
+            }
+        }
+
+        private bool SaveLabelsForProgram(string programFilePath, out string statusMessage)
+        {
+            statusMessage = string.Empty;
+
+            try
+            {
+                var labelsPath = GetLabelsFilePath(programFilePath);
+                var labels = new IoLabelsFile
+                {
+                    Inputs = Inputs.Select((item, index) => new IoLabelEntry
+                    {
+                        Index = index,
+                        Label = item.Label
+                    }).ToList(),
+                    Outputs = Outputs.Select((item, index) => new IoLabelEntry
+                    {
+                        Index = index,
+                        Label = item.Label
+                    }).ToList()
+                };
+
+                var json = JsonSerializer.Serialize(labels, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                File.WriteAllText(labelsPath, json);
+                statusMessage = $"Labels gespeichert: {Path.GetFileName(labelsPath)}";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                statusMessage = $"Labels konnten nicht gespeichert werden: {ex.Message}";
+                return false;
+            }
+        }
+
+        private (int Applied, int Ignored) ApplyInputLabels(IEnumerable<IoLabelEntry>? entries)
+        {
+            if (entries == null)
+            {
+                return (0, 0);
+            }
+
+            var applied = 0;
+            var ignored = 0;
+
+            foreach (var entry in entries)
+            {
+                if (entry.Index < 0 || entry.Index >= Inputs.Count || string.IsNullOrWhiteSpace(entry.Label))
+                {
+                    ignored++;
+                    continue;
+                }
+
+                Inputs[entry.Index].SetLabel(entry.Label);
+                applied++;
+            }
+
+            return (applied, ignored);
+        }
+
+        private (int Applied, int Ignored) ApplyOutputLabels(IEnumerable<IoLabelEntry>? entries)
+        {
+            if (entries == null)
+            {
+                return (0, 0);
+            }
+
+            var applied = 0;
+            var ignored = 0;
+
+            foreach (var entry in entries)
+            {
+                if (entry.Index < 0 || entry.Index >= Outputs.Count || string.IsNullOrWhiteSpace(entry.Label))
+                {
+                    ignored++;
+                    continue;
+                }
+
+                Outputs[entry.Index].SetLabel(entry.Label);
+                applied++;
+            }
+
+            return (applied, ignored);
         }
 
         /// <summary>

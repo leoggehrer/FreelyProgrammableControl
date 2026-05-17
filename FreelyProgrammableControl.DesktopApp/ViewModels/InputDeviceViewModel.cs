@@ -69,6 +69,13 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             isUpdating = false;
         }
 
+        public void SetLabel(string label)
+        {
+            var normalized = string.IsNullOrWhiteSpace(label) ? Label : label.Trim();
+            Label = normalized;
+            device.Label = normalized;
+        }
+
         /// <summary>
         /// Opens a dialog allowing the user to rename this input device.
         /// No-op if no owner window is available.
@@ -82,8 +89,7 @@ namespace FreelyProgrammableControl.DesktopApp.ViewModels
             var newLabel = await ShowLabelEditDialogAsync(ownerWindow, Label);
             if (newLabel != null)
             {
-                Label = newLabel;
-                device.Label = newLabel;
+                SetLabel(newLabel);
             }
         }
 
