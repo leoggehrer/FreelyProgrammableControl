@@ -92,9 +92,9 @@
       </Grid.RowDefinitions>
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto" MinWidth="140" />
-        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="15" />
         <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="5" />
+        <ColumnDefinition Width="15" />
         <ColumnDefinition Width="Auto" MinWidth="140" />
       </Grid.ColumnDefinitions>
 
@@ -201,9 +201,11 @@
         </StackPanel>
       </Border>
 
+      <!-- Splitter between input and source code -->
       <GridSplitter Grid.Row="1"
                     Grid.Column="1"
                     Width="5"
+                    Margin="0,0,5,8"
                     Background="{StaticResource PanelBorderBrush}"
                     ResizeDirection="Columns" />
 
@@ -251,6 +253,7 @@
           <GridSplitter Grid.Row="1" 
                         Grid.Column="0" 
                         Height="5"
+                        Margin="5,5,5,5"
                         Background="{StaticResource PanelBorderBrush}" 
                         ResizeDirection="Rows" />
           <!-- Output -->
@@ -329,6 +332,7 @@
       <GridSplitter Grid.Row="1"
                     Grid.Column="3"
                     Width="5"
+                    Margin="8,0,0,8"
                     Background="{StaticResource PanelBorderBrush}"
                     ResizeDirection="Columns" />
 
