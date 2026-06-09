@@ -1,9 +1,13 @@
-Erstelle eine Ampelsteuerung mit Gegenampel mit folgendem Verhalten:
+# Erstelle eine Ampelsteuerung mit Gegenampel mit folgendem Verhalten:
 
 Eingang...I
 Ausgang...O
 
-### Hauptampel
+## Ampelsystem
+
+Ein. Ampelsystem besteht aus einer Frontampel und einer Gegenampel für den Gegenverkehr
+
+### Frontample
 
 | Zeit in Sekunden | I 0 (NOTAUS) | O 0 (ROT) | O 1 (GELB) | O 2 (GRÜN) |
 | ---------------- | ------------ | --------- | ---------- | ----------- |
@@ -29,11 +33,16 @@ Ausgang...O
 | 13 bis 23        | 1            | 1               | 0                | 0                |
 | 23 bis 25        | 1            | 1               | 1                | 0                |
 
+## Zusatz Ampelsystem
+
+Auf dem Straßenzug in 1000m befindet sich eim weiteres Ampelsystem. Dieses System hat die gleiche Steuerung wie das oben beschriebene. Es gilt jedoch, dass die Ampelsystems so geschaltet sind, dass ein Autofahrer mit einer grünen Welle bei einer Durchschnittsgeschwindigkeit von 40 Kmh die Starße durchfahren kann. 
+
 **Setze:** 
 - Eingang 0...NOTAUS
 - Ausgang 0...Rot, Ausgang 1...Gelb, Ausgang 2...Grün
 - Ausgang 3...Gegen-Rot, Ausgang 4...Gegen-Gelb, Ausgang 5...Gegen-Grün
 
+## 
 ACHTUNG: Nach der Aktivierung vom NOTAUS startet die ZEIT wieder von Beginn an!
 
 Dieser Ablauf wiederholt sich immer wieder!

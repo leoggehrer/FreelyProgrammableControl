@@ -109,7 +109,7 @@
         <StackPanel Orientation="Horizontal" Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Width="120"
-                    Height="32"
+                    Height="28"
                     Classes="action-primary"
                     Command="{Binding OpenDevelopChatCommand}"
                     ToolTip.Tip="FPC Develop Chat oeffnen (Ctrl+Shift+C)"
@@ -120,19 +120,19 @@
 
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Width="100"
-                    Height="32"
+                    Height="28"
                     Classes="action-success"
                     Command="{Binding StartCommand}"
                     ToolTip.Tip="Programm starten (F5)"
                     Content="Start" />
             <Button Width="100"
-                    Height="32"
+                    Height="28"
                     Classes="action-danger"
                     Command="{Binding StopCommand}"
                     ToolTip.Tip="Programm stoppen (Shift+F5)"
                     Content="Stop" />
             <Button Width="100"
-                    Height="32"
+                    Height="28"
                     Classes="action-info"
                     Command="{Binding ParseCommand}"
                     ToolTip.Tip="Programm parsen (F7)"
@@ -143,15 +143,21 @@
 
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ToggleButton Width="120"
-                          Height="32"
+                          Height="28"
                           HorizontalContentAlignment="Center"
                           Classes="action-warning"
                           IsEnabled="{Binding IsDebugEnabled}"
                           IsChecked="{Binding DebugEnabled}"
                           Content="{Binding DebugButtonText}"
                           ToolTip.Tip="Debug-Modus umschalten" />
+            <Button Width="110"
+                    Height="28"
+                    Classes="action-warning"
+                    Command="{Binding StepCommand}"
+                    ToolTip.Tip="Einzelschritt ausfuehren (F10)"
+                    Content="Step" />
             <NumericUpDown Width="140"
-                           Height="32"
+                           Height="28"
                            Increment="1"
                            FormatString="0000"
                            Minimum="{Binding MinLineNumber}"
@@ -159,12 +165,6 @@
                            Value="{Binding CurrentLineNumber}"
                            IsEnabled="{Binding DebugEnabled}"
                            ToolTip.Tip="Zeilennummer" />
-            <Button Width="110"
-                    Height="32"
-                    Classes="action-warning"
-                    Command="{Binding StepCommand}"
-                    ToolTip.Tip="Einzelschritt ausfuehren (F10)"
-                    Content="Step" />
           </StackPanel>
         </StackPanel>
       </Border>
